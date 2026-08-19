@@ -1,0 +1,614 @@
+{
+  "project_info": {
+    "project_number": "1041336319516",
+    "firebase_url": "https://rapyogo-2bccd-default-rtdb.firebaseio.com",
+    "project_id": "rapyogo-2bccd",
+    "storage_bucket": "rapyogo-2bccd.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041336319516:android:1f5cf2fd608eeafa3729d9",
+        "android_client_info": {
+          "package_name": "com.example.rapyogo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCczqHZKtCNh89vcEb1L_-d5U4RfPn9Tmk"
+        },
+        {
+          "current_key": "AIzaSyACw_dKm9zpecUjrTWRVVb9NNuwEZam7Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1041336319516-729npoje7ivlv9idjnts2poecruk10bv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.foodies.driver.ios"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041336319516:android:184a7861898baf573729d9",
+        "android_client_info": {
+          "package_name": "com.example.riders_rapyogo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCczqHZKtCNh89vcEb1L_-d5U4RfPn9Tmk"
+        },
+        {
+          "current_key": "AIzaSyACw_dKm9zpecUjrTWRVVb9NNuwEZam7Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1041336319516-729npoje7ivlv9idjnts2poecruk10bv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.foodies.driver.ios"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041336319516:android:63389f4dd39648393729d9",
+        "android_client_info": {
+          "package_name": "com.exemple.rapyogo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCczqHZKtCNh89vcEb1L_-d5U4RfPn9Tmk"
+        },
+        {
+          "current_key": "AIzaSyACw_dKm9zpecUjrTWRVVb9NNuwEZam7Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1041336319516-729npoje7ivlv9idjnts2poecruk10bv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.foodies.driver.ios"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041336319516:android:49a0cfcae6efcde43729d9",
+        "android_client_info": {
+          "package_name": "com.foodies.customer.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1041336319516-k8om8thlqnjfb9oleu36u4kl88igsk4o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.foodies.customer.android",
+            "certificate_hash": "abac7e72d4dce65a16c422c9055ff3414a79fc10"
+          }
+        },
+        {
+          "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCczqHZKtCNh89vcEb1L_-d5U4RfPn9Tmk"
+        },
+        {
+          "current_key": "AIzaSyACw_dKm9zpecUjrTWRVVb9NNuwEZam7Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1041336319516-729npoje7ivlv9idjnts2poecruk10bv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.foodies.driver.ios"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041336319516:android:014b8d7128c4a36a3729d9",
+        "android_client_info": {
+          "package_name": "com.foodies.driver.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCczqHZKtCNh89vcEb1L_-d5U4RfPn9Tmk"
+        },
+        {
+          "current_key": "AIzaSyACw_dKm9zpecUjrTWRVVb9NNuwEZam7Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1041336319516-729npoje7ivlv9idjnts2poecruk10bv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.foodies.driver.ios"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041336319516:android:f857d9e8343f1dfc3729d9",
+        "android_client_info": {
+          "package_name": "com.rapyogo.client"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1041336319516-7v4dlmrqj9eve779po18oul85b5as3ic.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rapyogo.client",
+            "certificate_hash": "abac7e72d4dce65a16c422c9055ff3414a79fc10"
+          }
+        },
+        {
+          "client_id": "1041336319516-a9q4at4gbut92320dhhopnicvomcn9ui.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rapyogo.client",
+            "certificate_hash": "ec56561b951fcae4a3601aef1b7e22612fadb15c"
+          }
+        },
+        {
+          "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCczqHZKtCNh89vcEb1L_-d5U4RfPn9Tmk"
+        },
+        {
+          "current_key": "AIzaSyACw_dKm9zpecUjrTWRVVb9NNuwEZam7Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1041336319516-729npoje7ivlv9idjnts2poecruk10bv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.foodies.driver.ios"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041336319516:android:6a3b00bc5f23b2453729d9",
+        "android_client_info": {
+          "package_name": "com.rapyogo.customer.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1041336319516-rdiffopjg5st5mmocncr94qb6ucde0uk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rapyogo.customer.android",
+            "certificate_hash": "f87503ca24d3280c86edf8c1aa43709bafe02f1a"
+          }
+        },
+        {
+          "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCczqHZKtCNh89vcEb1L_-d5U4RfPn9Tmk"
+        },
+        {
+          "current_key": "AIzaSyACw_dKm9zpecUjrTWRVVb9NNuwEZam7Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1041336319516-729npoje7ivlv9idjnts2poecruk10bv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.foodies.driver.ios"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041336319516:android:96bcb2e8ee05afe73729d9",
+        "android_client_info": {
+          "package_name": "com.rapyogo.driver"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1041336319516-p2jdncimmtkb362n775m9p9o3qjq4vnd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rapyogo.driver",
+            "certificate_hash": "b2b6f04aca006ec24b1a75d6e17c459b7d605380"
+          }
+        },
+        {
+          "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCczqHZKtCNh89vcEb1L_-d5U4RfPn9Tmk"
+        },
+        {
+          "current_key": "AIzaSyACw_dKm9zpecUjrTWRVVb9NNuwEZam7Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1041336319516-729npoje7ivlv9idjnts2poecruk10bv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.foodies.driver.ios"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041336319516:android:d2b86b17babe16a43729d9",
+        "android_client_info": {
+          "package_name": "com.rapyogo.livrheur"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1041336319516-22j40bmvbr9r2dtv55h36ur2ht7b2jue.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rapyogo.livrheur",
+            "certificate_hash": "ec56561b951fcae4a3601aef1b7e22612fadb15c"
+          }
+        },
+        {
+          "client_id": "1041336319516-2hkeppl986kd6839erm1v8oh94vt4bh6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rapyogo.livrheur",
+            "certificate_hash": "abac7e72d4dce65a16c422c9055ff3414a79fc10"
+          }
+        },
+        {
+          "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCczqHZKtCNh89vcEb1L_-d5U4RfPn9Tmk"
+        },
+        {
+          "current_key": "AIzaSyACw_dKm9zpecUjrTWRVVb9NNuwEZam7Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1041336319516-729npoje7ivlv9idjnts2poecruk10bv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.foodies.driver.ios"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041336319516:android:e1351d330aaebde83729d9",
+        "android_client_info": {
+          "package_name": "com.rapyogo.owner"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1041336319516-fgvt8qugfr0b3n5u9f6bc3r52lljkfvm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rapyogo.owner",
+            "certificate_hash": "b2b6f04aca006ec24b1a75d6e17c459b7d605380"
+          }
+        },
+        {
+          "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCczqHZKtCNh89vcEb1L_-d5U4RfPn9Tmk"
+        },
+        {
+          "current_key": "AIzaSyACw_dKm9zpecUjrTWRVVb9NNuwEZam7Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1041336319516-729npoje7ivlv9idjnts2poecruk10bv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.foodies.driver.ios"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041336319516:android:f2c55aa1a33b436a3729d9",
+        "android_client_info": {
+          "package_name": "com.rapyogo.resto"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1041336319516-0mqvqo8km3bssrlfvg8r9jnk2lhb2fsq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rapyogo.resto",
+            "certificate_hash": "abac7e72d4dce65a16c422c9055ff3414a79fc10"
+          }
+        },
+        {
+          "client_id": "1041336319516-788u54bgtrgvsb90bo2l5t9c4a2594jj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rapyogo.resto",
+            "certificate_hash": "ec56561b951fcae4a3601aef1b7e22612fadb15c"
+          }
+        },
+        {
+          "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCczqHZKtCNh89vcEb1L_-d5U4RfPn9Tmk"
+        },
+        {
+          "current_key": "AIzaSyACw_dKm9zpecUjrTWRVVb9NNuwEZam7Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1041336319516-729npoje7ivlv9idjnts2poecruk10bv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.foodies.driver.ios"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041336319516:android:0148f12f5f444e053729d9",
+        "android_client_info": {
+          "package_name": "com.rapyogo.user"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1041336319516-m3n43ttscfau4pqleb7ecgb1p8ihvkoo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rapyogo.user",
+            "certificate_hash": "b2b6f04aca006ec24b1a75d6e17c459b7d605380"
+          }
+        },
+        {
+          "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCczqHZKtCNh89vcEb1L_-d5U4RfPn9Tmk"
+        },
+        {
+          "current_key": "AIzaSyACw_dKm9zpecUjrTWRVVb9NNuwEZam7Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1041336319516-729npoje7ivlv9idjnts2poecruk10bv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.foodies.driver.ios"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1041336319516:android:02e92bc0a778d3983729d9",
+        "android_client_info": {
+          "package_name": "con.android.application"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1041336319516-8okcjibnmhj1l6e44i779eisr2c1dcvc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "con.android.application",
+            "certificate_hash": "abac7e72d4dce65a16c422c9055ff3414a79fc10"
+          }
+        },
+        {
+          "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCczqHZKtCNh89vcEb1L_-d5U4RfPn9Tmk"
+        },
+        {
+          "current_key": "AIzaSyACw_dKm9zpecUjrTWRVVb9NNuwEZam7Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1041336319516-729npoje7ivlv9idjnts2poecruk10bv.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.foodies.driver.ios"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
