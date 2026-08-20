@@ -51,11 +51,20 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_API_KEY_HERE" />
+            android:value="AIzaSyDQIaQvoR9MXwxPNk5pgW5RPPICK6cXEnU" />
 
         <meta-data
             android:name="com.google.android.gms.wallet.api.enabled"
             android:value="true" />
+
+        <!-- Desactive l'auto-init native de Firebase (via google-services)
+             pour eviter le conflit "[core/duplicate-app]" avec l'appel
+             explicite Firebase.initializeApp() dans main.dart, qui choisit
+             la base par defaut ou "staging". -->
+        <provider
+            android:name="com.google.firebase.provider.FirebaseInitProvider"
+            android:authorities="${applicationId}.firebaseinitprovider"
+            tools:node="remove" />
 
     </application>
     <!-- Required to query activities that can process text, see:

@@ -109,10 +109,15 @@ class FireStoreUtils {
 
   static Future<bool> isMaintenanceMode() async {
     bool isMaintenance = false;
-    await fireStore.collection(CollectionName.settings).doc('maintenance_mode_settings').get().then((value) async {
-      isMaintenance = value.data()?['customerApp'] == true;
-      log("isMaintenance :: $isMaintenance");
-    });
+    try {
+      await fireStore.collection(CollectionName.settings).doc('maintenance_mode_settings').get().then((value) async {
+        isMaintenance = value.data()?['customerApp'] == true;
+        log("isMaintenance :: $isMaintenance");
+      });
+    } catch (e) {
+      log("isMaintenanceMode error :: $e");
+      rethrow;
+    }
     return isMaintenance;
   }
 

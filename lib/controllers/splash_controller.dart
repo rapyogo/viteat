@@ -22,7 +22,23 @@ class SplashController extends GetxController {
     super.onInit();
   }
 
-  Future<void> redirectScreen() async {
+  Future<void> redirectScreen({int retryCount = 0}) async {
+    try {
+      await _redirectScreen();
+    } catch (e) {
+      log("SplashController.redirectScreen error :: $e");
+      if (retryCount < 1) {
+        // Transient Firestore/network failure right at startup (e.g. connectivity
+        // not fully up yet) — retry once instead of leaving the splash stuck forever.
+        await Future.delayed(const Duration(seconds: 2));
+        await redirectScreen(retryCount: retryCount + 1);
+      } else {
+        Get.offAll(const LoginScreen());
+      }
+    }
+  }
+
+  Future<void> _redirectScreen() async {
     if (await FireStoreUtils.isMaintenanceMode() == true) {
       Get.offAll(() => MaintenanceModeScreen());
       return;
