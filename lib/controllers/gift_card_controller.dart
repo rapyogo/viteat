@@ -261,7 +261,7 @@ class GiftCardController extends GetxController {
           selectedPaymentMethod.value = PaymentGateway.cashfree.name;
         }
         Stripe.publishableKey = stripeModel.value.clientpublishableKey.toString();
-        Stripe.merchantIdentifier = 'Foodie';
+        Stripe.merchantIdentifier = 'Viteat';
         Stripe.instance.applySettings();
         setRef();
 
@@ -363,7 +363,7 @@ class GiftCardController extends GetxController {
                     primary: AppThemeData.primary300,
                   ),
                 ),
-                merchantDisplayName: 'Foodie'));
+                merchantDisplayName: 'Viteat'));
         ShowToastDialog.closeLoader();
         displayStripePaymentSheet(amount: amount);
       }
@@ -731,7 +731,7 @@ class GiftCardController extends GetxController {
     var options = {
       'key': razorPayModel.value.razorpayKey,
       'amount': amount * 100,
-      'name': 'Foodie',
+      'name': 'Viteat',
       'order_id': orderId,
       "currency": "INR",
       'description': 'wallet Topup',

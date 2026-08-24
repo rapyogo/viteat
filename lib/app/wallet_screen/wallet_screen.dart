@@ -295,5 +295,6 @@ enum PaymentGateway {
   instamojo,
   foloosi,
   payMongo,
-  cashfree
+  cashfree,
+  flexPay
 }

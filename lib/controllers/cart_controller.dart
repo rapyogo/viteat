@@ -20,6 +20,7 @@ import 'package:customer/models/free_delivery_model.dart';
 import 'package:customer/models/order_model.dart';
 import 'package:customer/models/payment_model/cashfree_model.dart';
 import 'package:customer/models/payment_model/cod_setting_model.dart';
+import 'package:customer/models/payment_model/flexpay_model.dart';
 import 'package:customer/models/payment_model/flutter_wave_model.dart';
 import 'package:customer/models/payment_model/foloosi_model.dart';
 import 'package:customer/models/payment_model/instamojo_model.dart';
@@ -43,6 +44,7 @@ import 'package:customer/models/vendor_model.dart';
 import 'package:customer/models/wallet_transaction_model.dart';
 import 'package:customer/payment/MercadoPagoScreen.dart';
 import 'package:customer/payment/PayFastScreen.dart';
+import 'package:customer/payment/flexpay_payment_screen.dart';
 import 'package:customer/payment/getPaytmTxtToken.dart';
 import 'package:customer/payment/midtrans_screen.dart';
 import 'package:customer/payment/mtn_momo_payment_screen.dart';
@@ -800,6 +802,7 @@ class CartController extends GetxController {
   Rx<Foloosi> foloosiModel = Foloosi().obs;
   Rx<PayMongo> payMongoModel = PayMongo().obs;
   Rx<Cashfree> cashfreeModel = Cashfree().obs;
+  Rx<FlexPay> flexPayModel = FlexPay().obs;
   RxBool isLoading = true.obs;
 
   Future<void> getPaymentSettings() async {
@@ -823,6 +826,7 @@ class CartController extends GetxController {
         foloosiModel.value = Foloosi.fromJson(jsonDecode(Preferences.getString(Preferences.foloosiSettings)));
         payMongoModel.value = PayMongo.fromJson(jsonDecode(Preferences.getString(Preferences.payMongoSettings)));
         cashfreeModel.value = Cashfree.fromJson(jsonDecode(Preferences.getString(Preferences.cashFreeSettings)));
+        flexPayModel.value = FlexPay.fromJson(jsonDecode(Preferences.getString(Preferences.flexPaySettings, defaultValue: '{}')));
         walletSettingModel.value = WalletSettingModel.fromJson(jsonDecode(Preferences.getString(Preferences.walletSettings)));
         cashOnDeliverySettingModel.value = CodSettingModel.fromJson(jsonDecode(Preferences.getString(Preferences.codSettings)));
 
@@ -868,9 +872,11 @@ class CartController extends GetxController {
           selectedPaymentMethod.value = PaymentGateway.payMongo.name;
         } else if (cashfreeModel.value.enable == true) {
           selectedPaymentMethod.value = PaymentGateway.cashfree.name;
+        } else if (flexPayModel.value.enable == true) {
+          selectedPaymentMethod.value = PaymentGateway.flexPay.name;
         }
         Stripe.publishableKey = stripeModel.value.clientpublishableKey.toString();
-        Stripe.merchantIdentifier = 'Foodie Customer';
+        Stripe.merchantIdentifier = 'Viteat Customer';
         Stripe.instance.applySettings();
         setRef();
 
@@ -910,7 +916,7 @@ class CartController extends GetxController {
                     primary: AppThemeData.primary300,
                   ),
                 ),
-                merchantDisplayName: 'Foodie'));
+                merchantDisplayName: 'Viteat'));
         ShowToastDialog.closeLoader();
         await displayStripePaymentSheet(amount: amount);
       }
@@ -1280,7 +1286,7 @@ class CartController extends GetxController {
     var options = {
       'key': razorPayModel.value.razorpayKey,
       'amount': amount * 100,
-      'name': 'Foodie',
+      'name': 'Viteat',
       'order_id': orderId,
       "currency": "INR",
       'description': 'wallet Topup',
@@ -1554,6 +1560,21 @@ class CartController extends GetxController {
       }
     }
     return isOpen;
+  }
+
+  Future<void> flexPayMakePayment({required String amount}) async {
+    Get.to(FlexPayPaymentScreen(
+      flexPaySettings: flexPayModel.value,
+      amount: double.parse(amount),
+      currency: flexPayModel.value.currency ?? 'USD',
+    ))?.then((value) {
+      if (value == true) {
+        ShowToastDialog.showToast("Payment Successful!!");
+        placeOrder();
+      } else {
+        ShowToastDialog.showToast("Payment UnSuccessful!!");
+      }
+    });
   }
 
   Future<void> mtnMomoMakePayment({required String amount}) async {

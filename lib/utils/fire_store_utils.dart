@@ -33,6 +33,7 @@ import 'package:customer/models/payment_model/cashfree_model.dart';
 import 'package:customer/models/payment_model/cod_setting_model.dart';
 import 'package:customer/models/payment_model/flutter_wave_model.dart';
 import 'package:customer/models/payment_model/foloosi_model.dart';
+import 'package:customer/models/payment_model/flexpay_model.dart';
 import 'package:customer/models/payment_model/instamojo_model.dart';
 import 'package:customer/models/payment_model/mercado_pago_model.dart';
 import 'package:customer/models/payment_model/midtrans_model.dart';
@@ -584,6 +585,12 @@ class FireStoreUtils {
       if (value.exists) {
         Instamojo instamojo = Instamojo.fromJson(value.data()!);
         await Preferences.setString(Preferences.instamojoSettings, jsonEncode(instamojo.toJson()));
+      }
+    });
+    await fireStore.collection(CollectionName.settings).doc("flexpay_settings").get().then((value) async {
+      if (value.exists) {
+        FlexPay flexPay = FlexPay.fromJson(value.data()!);
+        await Preferences.setString(Preferences.flexPaySettings, jsonEncode(flexPay.toJson()));
       }
     });
   }

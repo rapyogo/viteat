@@ -120,7 +120,7 @@ class NotificationService {
     try {
       AndroidNotificationChannel channel = const AndroidNotificationChannel(
         '0',
-        'foodie-customer',
+        'viteat-customer',
         description: 'Show QuickLAI Notification',
         importance: Importance.max,
       );

@@ -1411,6 +1411,8 @@ class CartScreen extends StatelessWidget {
                                         controller.makeFoloosiPayment(amount: controller.totalAmount.value.toString(), paymentDesc: "Order Payment");
                                       } else if (controller.selectedPaymentMethod.value.toLowerCase() == controller.payMongoModel.value.name?.toLowerCase()) {
                                         controller.makePayMongoPayment(amount: controller.totalAmount.value.toString(), paymentDesc: "Order Payment");
+                                      } else if (controller.selectedPaymentMethod.value == PaymentGateway.flexPay.name) {
+                                        await controller.flexPayMakePayment(amount: controller.totalAmount.value.toString());
                                       } else {
                                         controller.isOrderPlaced.value = false;
                                         ShowToastDialog.showToast("Please select payment method");

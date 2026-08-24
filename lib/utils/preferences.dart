@@ -26,6 +26,7 @@ class Preferences {
   static const cashFreeSettings = "cashFreeSettings";
   static const payMongoSettings = "payMongoSettings";
   static const instamojoSettings = "instamojoSettings";
+  static const flexPaySettings = "flexPaySettings";
 
   static const isClickOnNotification = "isClickOnNotification";
 

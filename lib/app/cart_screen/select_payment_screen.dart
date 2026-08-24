@@ -202,6 +202,10 @@ class SelectPaymentScreen extends StatelessWidget {
                                   visible: controller.payMongoModel.value.enable == true,
                                   child: cardDecoration(controller, PaymentGateway.payMongo, themeChange, "assets/images/payMongo.png"),
                                 ),
+                                Visibility(
+                                  visible: controller.flexPayModel.value.enable == true,
+                                  child: cardDecoration(controller, PaymentGateway.flexPay, themeChange, "assets/images/mtnmom.png"),
+                                ),
                               ],
                             ),
                           ),

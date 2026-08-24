@@ -60,6 +60,42 @@
     },
     {
       "client_info": {
+        "mobilesdk_app_id": "1:1041336319516:android:c24c6bfacdb315813729d9",
+        "android_client_info": {
+          "package_name": "com.rapyogo.customer.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyACw_dKm9zpecUjrTWRVVb9NNuwEZam7Sg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1041336319516-5kq52e09qk8rlfgbnvq4k7gnlecc3jbd.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1041336319516-a579ope85cnvoacrkv1uj5dn2pm7onqj.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.sellerRapyogo"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:1041336319516:android:d2b86b17babe16a43729d9",
         "android_client_info": {
           "package_name": "com.rapyogo.livrheur"
