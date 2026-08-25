@@ -92,6 +92,10 @@ class FireStoreUtils {
   /// Initialize Firestore with a FirebaseApp and optional databaseId
   void init(FirebaseApp app, {String? databaseId}) {
     fireStore = FirebaseFirestore.instanceFor(app: app, databaseId: databaseId);
+    fireStore.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: 100 * 1024 * 1024, // 100 Mo — app catalogue, pas illimité
+    );
   }
 
   static String getCurrentUid() {

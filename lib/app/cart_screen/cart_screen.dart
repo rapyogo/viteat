@@ -140,19 +140,11 @@ class CartScreen extends StatelessWidget {
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemBuilder: (context, index) {
                                   CartProductModel cartProductModel = cartItem[index];
-                                  ProductModel? productModel;
-                                  FireStoreUtils.getProductById(cartProductModel.id!.split('~').first).then((value) {
-                                    productModel = value;
-                                  });
+                                  final ProductModel? productModel = controller.cartProductDetails[cartProductModel.id!.split('~').first];
                                   return InkWell(
-                                    onTap: () async {
-                                      await FireStoreUtils.getVendorById(productModel!.vendorID.toString()).then(
-                                        (value) {
-                                          if (value != null) {
-                                            Get.to(const RestaurantDetailsScreen(), arguments: {"vendorModel": value});
-                                          }
-                                        },
-                                      );
+                                    onTap: () {
+                                      if (controller.vendorModel.value.id == null) return;
+                                      Get.to(const RestaurantDetailsScreen(), arguments: {"vendorModel": controller.vendorModel.value});
                                     },
                                     child: Padding(
                                       padding: const EdgeInsets.symmetric(horizontal: 10),

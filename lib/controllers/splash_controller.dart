@@ -8,6 +8,7 @@ import 'package:customer/app/maintenance_mode_screen/maintenance_mode_screen.dar
 import 'package:customer/app/on_boarding_screen.dart';
 import 'package:customer/constant/constant.dart';
 import 'package:customer/models/user_model.dart';
+import 'package:customer/services/connectivity_service.dart';
 import 'package:customer/utils/fire_store_utils.dart';
 import 'package:customer/utils/notification_service.dart';
 import 'package:customer/utils/preferences.dart';
@@ -27,6 +28,16 @@ class SplashController extends GetxController {
       await _redirectScreen();
     } catch (e) {
       log("SplashController.redirectScreen error :: $e");
+
+      final bool offlineWithSession = Get.isRegistered<ConnectivityService>() && Get.find<ConnectivityService>().isOffline && FirebaseAuth.instance.currentUser != null;
+      if (offlineWithSession) {
+        // Hors-ligne mais déjà authentifié localement (session Firebase Auth
+        // persistée) — ne pas renvoyer vers le login pour un simple problème
+        // réseau, l'app fonctionnera en mode cache une fois sur le dashboard.
+        Get.offAll(const DashBoardScreen());
+        return;
+      }
+
       if (retryCount < 1) {
         // Transient Firestore/network failure right at startup (e.g. connectivity
         // not fully up yet) — retry once instead of leaving the splash stuck forever.
@@ -39,7 +50,16 @@ class SplashController extends GetxController {
   }
 
   Future<void> _redirectScreen() async {
-    if (await FireStoreUtils.isMaintenanceMode() == true) {
+    // isMaintenanceMode() et isLogin() sont indépendants — seule la logique de
+    // branchement ci-dessous dépend de leurs résultats, pas leur exécution.
+    final List<bool> results = await Future.wait([
+      FireStoreUtils.isMaintenanceMode(),
+      FireStoreUtils.isLogin(),
+    ]);
+    final bool maintenanceMode = results[0];
+    final bool isLoginResult = results[1];
+
+    if (maintenanceMode == true) {
       Get.offAll(() => MaintenanceModeScreen());
       return;
     } else {
@@ -47,7 +67,7 @@ class SplashController extends GetxController {
         if (Preferences.getBoolean(Preferences.isFinishOnBoardingKey) == false) {
           Get.offAll(const OnBoardingScreen());
         } else {
-          bool isLogin = await FireStoreUtils.isLogin();
+          bool isLogin = isLoginResult;
           if (isLogin == true) {
             await FireStoreUtils.getUserProfile(FireStoreUtils.getCurrentUid()).then((value) async {
               if (value != null) {

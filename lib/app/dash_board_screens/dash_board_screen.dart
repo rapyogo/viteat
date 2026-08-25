@@ -5,6 +5,7 @@ import 'package:customer/themes/app_them_data.dart';
 import 'package:customer/utils/dark_theme_provider.dart';
 import 'package:customer/utils/dynamic_traslator.dart';
 import 'package:customer/utils/translation_notifier.dart';
+import 'package:customer/widget/connectivity_banner.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
@@ -45,7 +46,14 @@ class DashBoardScreen extends StatelessWidget {
             //   }
             // },
             child: Scaffold(
-              body: controller.pageList.isEmpty ? SizedBox() : controller.pageList[controller.selectedIndex.value],
+              body: Column(
+                children: [
+                  const ConnectivityBanner(),
+                  Expanded(
+                    child: controller.pageList.isEmpty ? SizedBox() : controller.pageList[controller.selectedIndex.value],
+                  ),
+                ],
+              ),
               bottomNavigationBar: ValueListenableBuilder(
                   valueListenable: TranslationNotifier.refresh,
                   builder: (_, __, ___) {

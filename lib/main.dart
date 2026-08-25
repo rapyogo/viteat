@@ -5,6 +5,7 @@ import 'package:customer/constant/constant.dart';
 import 'package:customer/controllers/global_setting_controller.dart';
 import 'package:customer/firebase_options.dart';
 import 'package:customer/models/language_model.dart';
+import 'package:customer/services/connectivity_service.dart';
 import 'package:customer/services/database_helper.dart';
 import 'package:customer/services/localization_service.dart';
 import 'package:customer/themes/styles.dart';
@@ -42,6 +43,7 @@ void main() async {
 
   DatabaseHelper.instance;
   await Preferences.initPref();
+  Get.put(ConnectivityService(), permanent: true);
   // _initLanguage();
   runApp(
     const MyApp(),

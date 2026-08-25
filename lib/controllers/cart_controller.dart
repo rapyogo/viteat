@@ -85,6 +85,7 @@ class CartController extends GetxController {
   RxBool isEnableFreeDeliveryByAdmin = false.obs;
   Rx<DeliveryCharge> deliveryChargeModel = DeliveryCharge().obs;
   Rx<UserModel> userModel = UserModel().obs;
+  RxMap<String, ProductModel> cartProductDetails = <String, ProductModel>{}.obs;
   RxList<CouponModel> couponList = <CouponModel>[].obs;
   RxList<CouponModel> allCouponList = <CouponModel>[].obs;
   RxString selectedFoodType = "Delivery".obs;
@@ -133,26 +134,33 @@ class CartController extends GetxController {
         cartItem.addAll(event);
 
         if (cartItem.isNotEmpty) {
-          await FireStoreUtils.getVendorById(cartItem.first.vendorID.toString()).then(
-            (value) {
-              if (value != null) {
-                vendorModel.value = value;
-              }
-            },
-          );
+          await Future.wait([
+            FireStoreUtils.getVendorById(cartItem.first.vendorID.toString()).then(
+              (value) {
+                if (value != null) {
+                  vendorModel.value = value;
+                }
+              },
+            ),
+            _loadCartProductDetails(),
+          ]);
         }
         calculatePrice();
       },
     );
     selectedFoodType.value = Preferences.getString(Preferences.foodDeliveryType, defaultValue: "Delivery");
 
-    await FireStoreUtils.getUserProfile(FireStoreUtils.getCurrentUid()).then(
-      (value) {
-        if (value != null) {
-          userModel.value = value;
-        }
-      },
-    );
+    if (Constant.userModel != null) {
+      userModel.value = Constant.userModel!;
+    } else {
+      await FireStoreUtils.getUserProfile(FireStoreUtils.getCurrentUid()).then(
+        (value) {
+          if (value != null) {
+            userModel.value = value;
+          }
+        },
+      );
+    }
 
     await FireStoreUtils.getFreeDeliveryByAdminData().then(
       (value) {
@@ -182,6 +190,22 @@ class CartController extends GetxController {
         allCouponList.value = value;
       },
     );
+  }
+
+  Future<void> _loadCartProductDetails() async {
+    final List<String> missingIds = cartItem
+        .map((e) => e.id!.split('~').first)
+        .toSet()
+        .where((id) => !cartProductDetails.containsKey(id))
+        .toList();
+    if (missingIds.isEmpty) return;
+    final List<ProductModel?> results = await Future.wait(missingIds.map((id) => FireStoreUtils.getProductById(id)));
+    for (int i = 0; i < missingIds.length; i++) {
+      final ProductModel? product = results[i];
+      if (product != null) {
+        cartProductDetails[missingIds[i]] = product;
+      }
+    }
   }
 
   Future<void> calculatePrice() async {
