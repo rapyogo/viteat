@@ -1273,13 +1273,17 @@ class CartScreen extends StatelessWidget {
                                                   )
                                                 : Row(
                                                     children: [
-                                                      TranslatedText(
-                                                        Constant.paymentMethodLabel(controller.selectedPaymentMethod.value),
-                                                        textAlign: TextAlign.start,
-                                                        style: TextStyle(
-                                                          fontFamily: AppThemeData.semiBold,
-                                                          color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                                                          fontSize: 16,
+                                                      Flexible(
+                                                        child: TranslatedText(
+                                                          Constant.paymentMethodLabel(controller.selectedPaymentMethod.value),
+                                                          textAlign: TextAlign.start,
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.ellipsis,
+                                                          style: TextStyle(
+                                                            fontFamily: AppThemeData.semiBold,
+                                                            color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                                                            fontSize: 16,
+                                                          ),
                                                         ),
                                                       ),
                                                       SizedBox(width: 5),
