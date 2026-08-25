@@ -1337,6 +1337,10 @@ class CartScreen extends StatelessWidget {
                                       ShowToastDialog.showToast("The restaurant is closed at the moment. Please try placing your order later.");
                                       return;
                                     }
+                                    if (controller.selectedAddress.value.location == null) {
+                                      ShowToastDialog.showToast("Veuillez ajouter votre localisation avant de commander.");
+                                      return;
+                                    }
                                     if (controller.isOrderPlaced.value == false) {
                                       ShowToastDialog.showLoader("Please wait");
                                       bool? isZoneAvailable = await FireStoreUtils.getNearbyVendor(

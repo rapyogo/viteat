@@ -227,7 +227,10 @@ class CartController extends GetxController {
     platformFee.value = 0.0;
 
     /// ---------------- DELIVERY CHARGES ----------------
-    if (cartItem.isNotEmpty) {
+    // Localisation de livraison pas encore choisie — pas de frais de livraison
+    // calculables pour l'instant ; l'utilisateur sera invite a en ajouter une
+    // avant de pouvoir commander (cf. bouton "Pay Now" dans cart_screen.dart).
+    if (cartItem.isNotEmpty && selectedAddress.value.location != null) {
       if (selectedFoodType.value == "Delivery") {
         totalDistance.value = double.parse(Constant.getDistance(
           lat1: selectedAddress.value.location!.latitude.toString(),

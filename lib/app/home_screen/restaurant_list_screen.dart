@@ -243,12 +243,10 @@ class RestaurantListScreen extends StatelessWidget {
                                                     width: 5,
                                                   ),
                                                   TranslatedText(
-                                                    "${Constant.getDistance(
+                                                    Constant.getDistanceFromUser(
                                                       lat1: vendorModel.latitude.toString(),
                                                       lng1: vendorModel.longitude.toString(),
-                                                      lat2: Constant.selectedLocation.location!.latitude.toString(),
-                                                      lng2: Constant.selectedLocation.location!.longitude.toString(),
-                                                    )} ${Constant.distanceType}",
+                                                    ),
                                                     style: TextStyle(
                                                       fontSize: 14,
                                                       color: themeChange.getThem() ? AppThemeData.secondary300 : AppThemeData.secondary300,

@@ -689,7 +689,7 @@ class FireStoreUtils {
               .where("enabledDiveInFuture", isEqualTo: true)
           : fireStore.collection(CollectionName.vendors).where('zoneId', isEqualTo: Constant.selectedZone!.id.toString()).where('categoryID', arrayContains: categoryId);
 
-      GeoFirePoint center = Geoflutterfire().point(latitude: Constant.selectedLocation.location!.latitude ?? 0.0, longitude: Constant.selectedLocation.location!.longitude ?? 0.0);
+      GeoFirePoint center = Geoflutterfire().point(latitude: Constant.selectedLocation.location?.latitude ?? 0.0, longitude: Constant.selectedLocation.location?.longitude ?? 0.0);
       String field = 'g';
 
       Stream<List<DocumentSnapshot>> stream = Geoflutterfire().collection(collectionRef: query).within(center: center, radius: double.parse(Constant.radius), field: field, strictMode: true);

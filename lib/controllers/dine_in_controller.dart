@@ -85,7 +85,7 @@ class DineInController extends GetxController {
     await FireStoreUtils.getZone().then((value) {
       if (value != null) {
         for (int i = 0; i < value.length; i++) {
-          if (Constant.isPointInPolygon(LatLng(Constant.selectedLocation.location!.latitude ?? 0.0, Constant.selectedLocation.location!.longitude ?? 0.0), value[i].area!)) {
+          if (Constant.isPointInPolygon(LatLng(Constant.selectedLocation.location?.latitude ?? 0.0, Constant.selectedLocation.location?.longitude ?? 0.0), value[i].area!)) {
             Constant.selectedZone = value[i];
             Constant.isZoneAvailable = true;
             break;

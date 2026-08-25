@@ -46,10 +46,14 @@ class Constant {
   static String userRoleCustomer = 'customer';
   static String userRoleVendor = 'vendor';
 
-  // location non-null par defaut (0.0, 0.0) — de nombreux ecrans font
-  // `.location!` en supposant que c'est toujours resolu ; un cold start
-  // hors-ligne/sans permission GPS ne doit pas faire planter ces ecrans.
-  static ShippingAddress selectedLocation = ShippingAddress(location: UserLocation(latitude: 0.0, longitude: 0.0));
+  // location reste null tant qu'elle n'a pas ete reellement resolue (GPS,
+  // saisie manuelle, ou profil utilisateur) — ce null est significatif,
+  // il distingue "pas encore de localisation" d'une vraie coordonnee. Ne
+  // JAMAIS le remplacer par une valeur factice (0,0) : les ecrans qui en
+  // dependent doivent gerer explicitement le cas non-resolu (cf.
+  // Constant.getDistanceFromUser) plutot que de planter ou d'afficher une
+  // distance calculee depuis une fausse position.
+  static ShippingAddress selectedLocation = ShippingAddress();
   static UserModel? userModel;
   static const globalUrl = "https://foodie.siswebapp.com/";
 
@@ -336,6 +340,22 @@ class Constant {
       distance = distanceInMeters / 1000;
     }
     return distance.toStringAsFixed(2);
+  }
+
+  /// true seulement si la localisation de l'utilisateur a reellement ete
+  /// resolue (GPS, saisie manuelle, ou profil) — jamais une valeur factice.
+  static bool get hasSelectedLocation => selectedLocation.location?.latitude != null && selectedLocation.location?.longitude != null;
+
+  /// Distance entre un point donne et la localisation de l'utilisateur.
+  /// Retourne '' tant que celle-ci n'est pas resolue au lieu de planter
+  /// (`.location!`) ou de calculer depuis une position (0,0) factice —
+  /// aux ecrans d'afficher un etat "Ajouter votre localisation" a la place.
+  static String getDistanceFromUser({required String? lat1, required String? lng1}) {
+    final UserLocation? userLocation = selectedLocation.location;
+    if (lat1 == null || lng1 == null || userLocation?.latitude == null || userLocation?.longitude == null) {
+      return '';
+    }
+    return "${getDistance(lat1: lat1, lng1: lng1, lat2: userLocation!.latitude.toString(), lng2: userLocation.longitude.toString())} $distanceType";
   }
 
   bool hasValidUrl(String? value) {

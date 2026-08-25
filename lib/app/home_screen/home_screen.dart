@@ -996,12 +996,10 @@ class PopularRestaurant extends StatelessWidget {
                                     width: 5,
                                   ),
                                   TranslatedText(
-                                    "${Constant.getDistance(
+                                    Constant.getDistanceFromUser(
                                       lat1: vendorModel.latitude.toString(),
                                       lng1: vendorModel.longitude.toString(),
-                                      lat2: Constant.selectedLocation.location!.latitude.toString(),
-                                      lng2: Constant.selectedLocation.location!.longitude.toString(),
-                                    )} ${Constant.distanceType}",
+                                    ),
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: themeChange.getThem() ? AppThemeData.secondary300 : AppThemeData.secondary300,
@@ -1275,12 +1273,10 @@ class AllRestaurant extends StatelessWidget {
                                     width: 5,
                                   ),
                                   TranslatedText(
-                                    "${Constant.getDistance(
+                                    Constant.getDistanceFromUser(
                                       lat1: vendorModel.latitude.toString(),
                                       lng1: vendorModel.longitude.toString(),
-                                      lat2: Constant.selectedLocation.location!.latitude.toString(),
-                                      lng2: Constant.selectedLocation.location!.longitude.toString(),
-                                    )} ${Constant.distanceType}",
+                                    ),
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: themeChange.getThem() ? AppThemeData.secondary300 : AppThemeData.secondary300,
@@ -1524,12 +1520,10 @@ class NewArrival extends StatelessWidget {
                                 width: 4,
                               ),
                               TranslatedText(
-                                "${Constant.getDistance(
+                                Constant.getDistanceFromUser(
                                   lat1: vendorModel.latitude.toString(),
                                   lng1: vendorModel.longitude.toString(),
-                                  lat2: Constant.selectedLocation.location!.latitude.toString(),
-                                  lng2: Constant.selectedLocation.location!.longitude.toString(),
-                                )} ${Constant.distanceType}",
+                                ),
                                 textAlign: TextAlign.start,
                                 maxLines: 1,
                                 style: TextStyle(
@@ -2355,7 +2349,7 @@ class MapView extends StatelessWidget {
                 ? flutterMap.FlutterMap(
                     mapController: controller.osmMapController,
                     options: flutterMap.MapOptions(
-                      initialCenter: location.LatLng(Constant.selectedLocation.location!.latitude ?? 0.0, Constant.selectedLocation.location!.longitude ?? 0.0),
+                      initialCenter: location.LatLng(Constant.selectedLocation.location?.latitude ?? 0.0, Constant.selectedLocation.location?.longitude ?? 0.0),
                       initialZoom: 10,
                     ),
                     children: [
@@ -2382,8 +2376,8 @@ class MapView extends StatelessWidget {
                       zoom: 18,
                       target: controller.homeController.allNearestRestaurant.isEmpty
                           ? LatLng(
-                              Constant.selectedLocation.location!.latitude ?? 45.521563,
-                              Constant.selectedLocation.location!.longitude ?? -122.677433,
+                              Constant.selectedLocation.location?.latitude ?? 45.521563,
+                              Constant.selectedLocation.location?.longitude ?? -122.677433,
                             )
                           : LatLng(
                               controller.homeController.allNearestRestaurant.first.latitude ?? 45.521563,
@@ -2598,12 +2592,10 @@ class MapView extends StatelessWidget {
                                                                 width: 5,
                                                               ),
                                                               TranslatedText(
-                                                                "${Constant.getDistance(
+                                                                Constant.getDistanceFromUser(
                                                                   lat1: vendorModel.latitude.toString(),
                                                                   lng1: vendorModel.longitude.toString(),
-                                                                  lat2: Constant.selectedLocation.location!.latitude.toString(),
-                                                                  lng2: Constant.selectedLocation.location!.longitude.toString(),
-                                                                )} ${Constant.distanceType}",
+                                                                ),
                                                                 style: TextStyle(
                                                                     color: themeChange.getThem() ? AppThemeData.secondary300 : AppThemeData.secondary300,
                                                                     fontFamily: AppThemeData.semiBold,

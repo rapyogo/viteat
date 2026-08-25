@@ -1358,12 +1358,10 @@ class RestaurantView extends StatelessWidget {
                                               ),
                                             ),
                                             TranslatedText(
-                                              "${Constant.getDistance(
+                                              Constant.getDistanceFromUser(
                                                 lat1: vendorModel.latitude.toString(),
                                                 lng1: vendorModel.longitude.toString(),
-                                                lat2: Constant.selectedLocation.location!.latitude.toString(),
-                                                lng2: Constant.selectedLocation.location!.longitude.toString(),
-                                              )} ${Constant.distanceType}",
+                                              ),
                                               textAlign: TextAlign.start,
                                               maxLines: 1,
                                               style: TextStyle(

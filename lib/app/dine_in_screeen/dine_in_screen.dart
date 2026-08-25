@@ -480,12 +480,10 @@ class PopularRestaurant extends StatelessWidget {
                                       width: 5,
                                     ),
                                     TranslatedText(
-                                      "${Constant.getDistance(
+                                      Constant.getDistanceFromUser(
                                         lat1: vendorModel.latitude.toString(),
                                         lng1: vendorModel.longitude.toString(),
-                                        lat2: Constant.selectedLocation.location!.latitude.toString(),
-                                        lng2: Constant.selectedLocation.location!.longitude.toString(),
-                                      )} ${Constant.distanceType}",
+                                      ),
                                       style: TextStyle(
                                         color: themeChange.getThem() ? AppThemeData.secondary300 : AppThemeData.secondary300,
                                         fontFamily: AppThemeData.semiBold,
@@ -723,12 +721,10 @@ class AllRestaurant extends StatelessWidget {
                                       width: 5,
                                     ),
                                     TranslatedText(
-                                      "${Constant.getDistance(
+                                      Constant.getDistanceFromUser(
                                         lat1: vendorModel.latitude.toString(),
                                         lng1: vendorModel.longitude.toString(),
-                                        lat2: Constant.selectedLocation.location!.latitude.toString(),
-                                        lng2: Constant.selectedLocation.location!.longitude.toString(),
-                                      )} ${Constant.distanceType}",
+                                      ),
                                       style: TextStyle(
                                         color: themeChange.getThem() ? AppThemeData.secondary300 : AppThemeData.secondary300,
                                         fontFamily: AppThemeData.semiBold,
@@ -929,12 +925,10 @@ class NewArrival extends StatelessWidget {
                               width: 10,
                             ),
                             TranslatedText(
-                              "${Constant.getDistance(
+                              Constant.getDistanceFromUser(
                                 lat1: vendorModel.latitude.toString(),
                                 lng1: vendorModel.longitude.toString(),
-                                lat2: Constant.selectedLocation.location!.latitude.toString(),
-                                lng2: Constant.selectedLocation.location!.longitude.toString(),
-                              )} ${Constant.distanceType}",
+                              ),
                               textAlign: TextAlign.start,
                               maxLines: 1,
                               style: TextStyle(
