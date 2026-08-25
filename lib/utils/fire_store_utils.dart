@@ -291,9 +291,20 @@ class FireStoreUtils {
       await fireStore.collection(CollectionName.settings).doc("globalSettings").get().then((value) async {
         Constant.defaultCountryCode = value.data()?["defaultCountryCode"] ?? '';
         Constant.isEnableAdsFeature = value.data()?['isEnableAdsFeature'] ?? false;
-        Constant.isSelfDeliveryFeature = value.data()!['isSelfDelivery'] ?? false;
-        AppThemeData.primary300 = Color(int.parse(value.data()!['app_customer_color'].replaceFirst("#", "0xff")));
+        Constant.isSelfDeliveryFeature = value.data()?['isSelfDelivery'] ?? false;
         Constant.taxScope = value.data()?['taxScope'] ?? "";
+        // Isole le parsing de couleur : une valeur absente/mal formee cote
+        // admin (ex. champ vide, pas de "#") ne doit pas faire planter cette
+        // lecture et bloquer avec elle tous les autres reglages qui suivent
+        // dans getSettings() (ils partageaient le meme try/catch englobant).
+        final String? customerColorHex = value.data()?['app_customer_color'];
+        if (customerColorHex != null && customerColorHex.isNotEmpty) {
+          try {
+            AppThemeData.primary300 = Color(int.parse(customerColorHex.replaceFirst("#", "0xff")));
+          } catch (e) {
+            log("getSettings app_customer_color invalide ($customerColorHex) :: $e");
+          }
+        }
       });
 
       fireStore.collection(CollectionName.settings).doc("DineinForRestaurant").get().then((dineinresult) {
