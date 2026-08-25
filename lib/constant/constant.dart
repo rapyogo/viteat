@@ -46,7 +46,10 @@ class Constant {
   static String userRoleCustomer = 'customer';
   static String userRoleVendor = 'vendor';
 
-  static ShippingAddress selectedLocation = ShippingAddress();
+  // location non-null par defaut (0.0, 0.0) — de nombreux ecrans font
+  // `.location!` en supposant que c'est toujours resolu ; un cold start
+  // hors-ligne/sans permission GPS ne doit pas faire planter ces ecrans.
+  static ShippingAddress selectedLocation = ShippingAddress(location: UserLocation(latitude: 0.0, longitude: 0.0));
   static UserModel? userModel;
   static const globalUrl = "https://foodie.siswebapp.com/";
 

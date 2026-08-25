@@ -989,17 +989,33 @@ class FireStoreUtils {
 
   static Future<List<TaxModel>?> getTaxList() async {
     List<TaxModel> taxList = [];
-    List<Placemark> placeMarks = await placemarkFromCoordinates(Constant.selectedLocation.location!.latitude!, Constant.selectedLocation.location!.longitude!);
-    log("placeMarks.first.country :: ${placeMarks.first.country}");
-    await fireStore.collection(CollectionName.tax).where('country', isEqualTo: placeMarks.first.country).where('enable', isEqualTo: true).get().then((value) {
-      for (var element in value.docs) {
-        TaxModel taxModel = TaxModel.fromJson(element.data());
-        taxList.add(taxModel);
+    try {
+      final double? latitude = Constant.selectedLocation.location?.latitude;
+      final double? longitude = Constant.selectedLocation.location?.longitude;
+      // Localisation pas encore resolue (cold start hors-ligne, permission pas
+      // encore accordee...) — pas de taxe applicable pour l'instant plutot que
+      // de planter tout l'ecran d'accueil.
+      if (latitude == null || longitude == null) {
+        return taxList;
       }
-    }).catchError((error) {
-      log(error.toString());
-    });
-
+      List<Placemark> placeMarks = await placemarkFromCoordinates(latitude, longitude);
+      if (placeMarks.isEmpty) {
+        return taxList;
+      }
+      log("placeMarks.first.country :: ${placeMarks.first.country}");
+      await fireStore.collection(CollectionName.tax).where('country', isEqualTo: placeMarks.first.country).where('enable', isEqualTo: true).get().then((value) {
+        for (var element in value.docs) {
+          TaxModel taxModel = TaxModel.fromJson(element.data());
+          taxList.add(taxModel);
+        }
+      }).catchError((error) {
+        log(error.toString());
+      });
+    } catch (e) {
+      // Geocodage indisponible hors-ligne, ou toute autre erreur transitoire —
+      // degrade proprement au lieu de faire planter HomeController.getData().
+      log("getTaxList error :: $e");
+    }
     return taxList;
   }
 
