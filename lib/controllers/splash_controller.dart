@@ -29,11 +29,17 @@ class SplashController extends GetxController {
     } catch (e) {
       log("SplashController.redirectScreen error :: $e");
 
-      final bool offlineWithSession = Get.isRegistered<ConnectivityService>() && Get.find<ConnectivityService>().isOffline && FirebaseAuth.instance.currentUser != null;
-      if (offlineWithSession) {
-        // Hors-ligne mais déjà authentifié localement (session Firebase Auth
-        // persistée) — ne pas renvoyer vers le login pour un simple problème
-        // réseau, l'app fonctionnera en mode cache une fois sur le dashboard.
+      // Le device peut se croire "en ligne" (connectivity_plus voit du signal)
+      // alors que le backend Firestore est injoignable/lent (10s+ de timeout) —
+      // c'est le cas réel le plus fréquent, pas seulement le mode avion.
+      final bool deviceOffline = Get.isRegistered<ConnectivityService>() && Get.find<ConnectivityService>().isOffline;
+      final bool transientBackendError = e is FirebaseException && const {'unavailable', 'deadline-exceeded', 'network-request-failed', 'cancelled'}.contains(e.code);
+      final bool hasLocalSession = FirebaseAuth.instance.currentUser != null;
+
+      if ((deviceOffline || transientBackendError) && hasLocalSession) {
+        // Session Firebase Auth déjà persistée localement — ne pas renvoyer
+        // vers le login pour un simple problème réseau, l'app fonctionnera
+        // en mode cache une fois sur le dashboard.
         Get.offAll(const DashBoardScreen());
         return;
       }

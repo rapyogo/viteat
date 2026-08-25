@@ -276,6 +276,8 @@ class FireStoreUtils {
       fireStore.collection(CollectionName.settings).doc('restaurant').get().then((value) {
         Constant.isSubscriptionModelApplied = value.data()!['subscription_model'];
         Constant.packagingChargeEnable = value.data()!['packagingChargeEnable'];
+      }).catchError((e) {
+        log("getSettings restaurant error :: $e");
       });
 
       fireStore.collection(CollectionName.settings).doc("RestaurantNearBy").snapshots().listen((event) {
@@ -298,6 +300,8 @@ class FireStoreUtils {
         if (dineinresult.exists) {
           Constant.isDineInEnable = dineinresult.data()!["isEnabled"];
         }
+      }).catchError((e) {
+        log("getSettings DineinForRestaurant error :: $e");
       });
 
       fireStore.collection(CollectionName.settings).doc("googleMapKey").snapshots().listen((event) {
@@ -317,6 +321,8 @@ class FireStoreUtils {
         if (event.exists) {
           Constant.isCashbackActive = event.data()?["isEnable"] ?? false;
         }
+      }).catchError((e) {
+        log("getSettings cashbackOffer error :: $e");
       });
 
       fireStore.collection(CollectionName.settings).doc("DriverNearBy").get().then((event) {
@@ -324,6 +330,8 @@ class FireStoreUtils {
           Constant.selectedMapType = event.data()!["selectedMapType"];
           Constant.mapType = event.data()!["mapType"];
         }
+      }).catchError((e) {
+        log("getSettings DriverNearBy error :: $e");
       });
 
       fireStore.collection(CollectionName.settings).doc("privacyPolicy").snapshots().listen((event) {
@@ -355,32 +363,44 @@ class FireStoreUtils {
 
       fireStore.collection(CollectionName.settings).doc('story').get().then((value) {
         Constant.storyEnable = value.data()?['isEnabled'] ?? false;
+      }).catchError((e) {
+        log("getSettings story error :: $e");
       });
 
       fireStore.collection(CollectionName.settings).doc('adminSettings').get().then((value) {
         if (value.data() != null) {
           Constant.platformFeeModel = PlatformFeeModel.fromJson(value.data()!);
         }
+      }).catchError((e) {
+        log("getSettings adminSettings error :: $e");
       });
 
       fireStore.collection(CollectionName.settings).doc('referral_amount').get().then((value) {
         Constant.referralAmount = '${value.data()?['referralAmount'] ?? '0.0'}';
+      }).catchError((e) {
+        log("getSettings referral_amount error :: $e");
       });
 
       fireStore.collection(CollectionName.settings).doc('placeHolderImage').get().then((value) {
         Constant.placeholderImage = value.data()?['image'] ?? '';
+      }).catchError((e) {
+        log("getSettings placeHolderImage error :: $e");
       });
 
       fireStore.collection(CollectionName.settings).doc("emailSetting").get().then((value) {
         if (value.exists) {
           Constant.mailSettings = MailSettings.fromJson(value.data()!);
         }
+      }).catchError((e) {
+        log("getSettings emailSetting error :: $e");
       });
 
       fireStore.collection(CollectionName.settings).doc("specialDiscountOffer").get().then((dineinresult) {
         if (dineinresult.exists) {
           Constant.specialDiscountOffer = dineinresult.data()?["isEnable"] ?? false;
         }
+      }).catchError((e) {
+        log("getSettings specialDiscountOffer error :: $e");
       });
 
       await fireStore.collection(CollectionName.settings).doc("DineinForRestaurant").get().then((value) {
