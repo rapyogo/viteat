@@ -1,0 +1,10 @@
+android/app/.cxx/
+**/.cxx/
+android/.gradle/
+android/captures/
+.dart_tool/
+**/.dart_tool/
+ios/Flutter/ephemeral/
+**/mipmap-*/
+build/
+**/build/
