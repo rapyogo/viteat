@@ -681,8 +681,8 @@ class CartController extends GetxController {
     orderModel.author = userModel.value;
     orderModel.vendorID = vendorModel.value.id;
     orderModel.vendor = vendorModel.value;
-    orderModel.adminCommission = vendorModel.value.adminCommission != null ? vendorModel.value.adminCommission!.amount : Constant.adminCommission!.amount;
-    orderModel.adminCommissionType = vendorModel.value.adminCommission != null ? vendorModel.value.adminCommission!.commissionType : Constant.adminCommission!.commissionType;
+    orderModel.adminCommission = vendorModel.value.adminCommission != null ? vendorModel.value.adminCommission!.amount : Constant.adminCommission?.amount;
+    orderModel.adminCommissionType = vendorModel.value.adminCommission != null ? vendorModel.value.adminCommission!.commissionType : Constant.adminCommission?.commissionType;
     orderModel.status = Constant.orderPlaced;
     orderModel.discount = couponAmount.value;
     orderModel.couponId = selectedCouponModel.value.id;

@@ -95,7 +95,7 @@ class FireStoreUtils {
   }
 
   static String getCurrentUid() {
-    return FirebaseAuth.instance.currentUser!.uid;
+    return FirebaseAuth.instance.currentUser?.uid ?? '';
   }
 
   static Future<bool> isLogin() async {
@@ -852,14 +852,15 @@ class FireStoreUtils {
       await fireStore
           .collection(CollectionName.vendorProducts)
           .where("vendorID", isEqualTo: vendorId)
-          .where("takeawayOption", isEqualTo: false)
           .where('publish', isEqualTo: true)
           .orderBy("createdAt", descending: false)
           .get()
           .then((value) {
         for (var element in value.docs) {
           ProductModel productModel = ProductModel.fromJson(element.data());
-          list.add(productModel);
+          if (productModel.takeawayOption != true) {
+            list.add(productModel);
+          }
         }
       }).catchError((error) {
         log(error.toString());

@@ -107,17 +107,11 @@ class RestaurantDetailsController extends GetxController {
       }
     });
 
-    for (var element in productList) {
-      await FireStoreUtils.getVendorCategoryById(element.categoryID.toString()).then(
-        (value) {
-          if (value != null) {
-            vendorCategoryList.add(value);
-          }
-        },
-      );
-    }
-    var seen = <String>{};
-    vendorCategoryList.value = vendorCategoryList.where((element) => seen.add(element.id.toString())).toList();
+    final uniqueCategoryIds = productList.map((element) => element.categoryID.toString()).toSet();
+    final categories = await Future.wait(
+      uniqueCategoryIds.map((id) => FireStoreUtils.getVendorCategoryById(id)),
+    );
+    vendorCategoryList.value = categories.whereType<VendorCategoryModel>().toList();
   }
 
   void searchProduct(String name) {

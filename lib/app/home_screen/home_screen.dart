@@ -2195,6 +2195,7 @@ class CategoryView extends StatelessWidget {
                           '${vendorCategoryModel.title}',
                           textAlign: TextAlign.center,
                           maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
                             fontFamily: AppThemeData.medium,

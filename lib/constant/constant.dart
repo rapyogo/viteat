@@ -209,7 +209,7 @@ class Constant {
 
   static String productCommissionPrice(VendorModel vendorModel, String price) {
     String commission = "0";
-    if (adminCommission!.isEnabled == true) {
+    if (adminCommission?.isEnabled == true) {
       if (vendorModel.adminCommission == null) {
         if (adminCommission!.commissionType!.toLowerCase() == "Percent".toLowerCase() || adminCommission!.commissionType?.toLowerCase() == "Percentage".toLowerCase()) {
           commission = (double.parse(price) + (double.parse(price) * double.parse(adminCommission!.amount.toString()) / 100)).toString();

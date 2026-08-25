@@ -38,28 +38,25 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "com.rapyogo.customer.android"
     compileSdk = 36
-    ndkVersion = "29.0.14033849"
+    ndkVersion = "28.2.13676358"
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_11 // Use VERSION_17 for now
+        sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
         coreLibraryDesugaringEnabled true
     }
 
     kotlinOptions {
-        jvmTarget = "11" // Kotlin's maximum JVM target is 20, so use a supported version
+        jvmTarget = "11"
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.rapyogo.customer.android"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion = flutter.minSdkVersion
-        targetSdk = 36
-        versionCode = 5
-        versionName = flutterVersionName
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        minSdkVersion flutter.minSdkVersion
+        targetSdk 36
+        versionCode 5
+        versionName flutterVersionName
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
     }
 
@@ -75,8 +72,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false  // Disable minification
-            shrinkResources false  // Disable shrinking resources
+            minifyEnabled false
+            shrinkResources false
             signingConfig = signingConfigs.release
         }
     }
@@ -102,8 +99,4 @@ dependencies {
     implementation 'androidx.multidex:multidex:2.0.1'
     implementation 'com.foloosi:FoloosiSDK:2.0.24'
     implementation 'com.google.code.gson:gson:2.10.1'
-}
-
-flutter {
-    source = "../.."
 }

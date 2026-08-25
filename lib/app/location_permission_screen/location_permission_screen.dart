@@ -63,7 +63,8 @@ class LocationPermissionScreen extends StatelessWidget {
                           ShippingAddress addressModel = ShippingAddress();
                           try {
                             await Geolocator.requestPermission();
-                            Position newLocalData = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+                            Position newLocalData = await Geolocator.getCurrentPosition(
+                                locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium, timeLimit: Duration(seconds: 10)));
 
                             await placemarkFromCoordinates(newLocalData.latitude, newLocalData.longitude).then((valuePlaceMaker) {
                               Placemark placeMark = valuePlaceMaker[0];
@@ -120,7 +121,8 @@ class LocationPermissionScreen extends StatelessWidget {
                           ShippingAddress addressModel = ShippingAddress();
                           try {
                             await Geolocator.requestPermission();
-                            await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+                            await Geolocator.getCurrentPosition(
+                                locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium, timeLimit: Duration(seconds: 10)));
                             ShowToastDialog.closeLoader();
                             if (Constant.selectedMapType == 'osm') {
                               final result = await Get.to(() => MapPickerPage());

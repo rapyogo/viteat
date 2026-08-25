@@ -40,12 +40,18 @@ class NetworkImageWidget extends StatelessWidget {
       ),
       errorWidget: (context, url, error) =>
           errorWidget ??
-          Image.network(
-            Constant.placeholderImage,
-            fit: fit ?? BoxFit.fitWidth,
-            height: height ?? Responsive.height(8, context),
-            width: width ?? Responsive.width(15, context),
-          ),
+          (Constant.placeholderImage.isEmpty
+              ? Icon(
+                  Icons.image_not_supported_outlined,
+                  size: height ?? Responsive.height(8, context),
+                  color: color,
+                )
+              : Image.network(
+                  Constant.placeholderImage,
+                  fit: fit ?? BoxFit.fitWidth,
+                  height: height ?? Responsive.height(8, context),
+                  width: width ?? Responsive.width(15, context),
+                )),
     );
   }
 }

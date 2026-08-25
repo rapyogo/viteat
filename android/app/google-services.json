@@ -67,6 +67,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "1041336319516-4i6c0okrq0i6oksuct2s9oa8degpkjsf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rapyogo.customer.android",
+            "certificate_hash": "ec56561b951fcae4a3601aef1b7e22612fadb15c"
+          }
+        },
+        {
+          "client_id": "1041336319516-vtu431imdv258f273e9qkq0bsa6imtev.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rapyogo.customer.android",
+            "certificate_hash": "abac7e72d4dce65a16c422c9055ff3414a79fc10"
+          }
+        },
+        {
           "client_id": "1041336319516-9f4gk9ogt134cd6n2t12c2batp3s21dg.apps.googleusercontent.com",
           "client_type": 3
         }
