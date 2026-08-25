@@ -165,6 +165,10 @@ class PaymentListScreen extends StatelessWidget {
                                   visible: controller.payMongoModel.value.enable == true,
                                   child: cardDecoration(controller, PaymentGateway.payMongo, themeChange, "assets/images/payMongo.png"),
                                 ),
+                                Visibility(
+                                  visible: controller.flexPayModel.value.enable == true,
+                                  child: cardDecoration(controller, PaymentGateway.flexPay, themeChange, "assets/images/mtnmom.png"),
+                                ),
                               ],
                             ),
                           ),
@@ -225,6 +229,8 @@ class PaymentListScreen extends StatelessWidget {
                           controller.makeFoloosiPayment(amount: controller.topUpAmountController.value.text.toString(), paymentDesc: "Top-Up Payment");
                         } else if (controller.selectedPaymentMethod.value.toLowerCase() == PaymentGateway.payMongo.name.toLowerCase()) {
                           controller.makePayMongoPayment(amount: controller.topUpAmountController.value.text.toString(), paymentDesc: "Top-Up Payment");
+                        } else if (controller.selectedPaymentMethod.value == PaymentGateway.flexPay.name) {
+                          await controller.flexPayMakePayment(amount: controller.topUpAmountController.value.text);
                         } else if (controller.selectedPaymentMethod.value == PaymentGateway.razorpay.name) {
                           ShowToastDialog.showLoader("Please wait");
                           RazorPayController().createOrderRazorPay(amount: double.parse(controller.topUpAmountController.value.text), razorpayModel: controller.razorPayModel.value).then((value) {
@@ -282,7 +288,7 @@ class PaymentListScreen extends StatelessWidget {
               ),
               Expanded(
                 child: TranslatedText(
-                  value.name.capitalizeString(),
+                  Constant.paymentMethodLabel(value.name),
                   textAlign: TextAlign.start,
                   style: TextStyle(
                     fontFamily: AppThemeData.medium,

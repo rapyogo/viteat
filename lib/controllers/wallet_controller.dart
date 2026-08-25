@@ -12,6 +12,7 @@ import 'package:customer/controllers/mtnmomo_controller.dart';
 import 'package:customer/controllers/paymongo_controller.dart';
 import 'package:customer/models/payment_model/cashfree_model.dart';
 import 'package:customer/models/payment_model/flutter_wave_model.dart';
+import 'package:customer/models/payment_model/flexpay_model.dart';
 import 'package:customer/models/payment_model/foloosi_model.dart';
 import 'package:customer/models/payment_model/instamojo_model.dart';
 import 'package:customer/models/payment_model/mercado_pago_model.dart';
@@ -31,6 +32,7 @@ import 'package:customer/models/user_model.dart';
 import 'package:customer/models/wallet_transaction_model.dart';
 import 'package:customer/payment/MercadoPagoScreen.dart';
 import 'package:customer/payment/PayFastScreen.dart';
+import 'package:customer/payment/flexpay_payment_screen.dart';
 import 'package:customer/payment/getPaytmTxtToken.dart';
 import 'package:customer/payment/midtrans_screen.dart';
 import 'package:customer/payment/mtn_momo_payment_screen.dart';
@@ -91,6 +93,7 @@ class WalletController extends GetxController {
   Rx<Foloosi> foloosiModel = Foloosi().obs;
   Rx<PayMongo> payMongoModel = PayMongo().obs;
   Rx<Cashfree> cashfreeModel = Cashfree().obs;
+  Rx<FlexPay> flexPayModel = FlexPay().obs;
 
   Future<void> getPaymentSettings() async {
     await FireStoreUtils.getPaymentSettingsData().then(
@@ -112,6 +115,7 @@ class WalletController extends GetxController {
         foloosiModel.value = Foloosi.fromJson(jsonDecode(Preferences.getString(Preferences.foloosiSettings)));
         payMongoModel.value = PayMongo.fromJson(jsonDecode(Preferences.getString(Preferences.payMongoSettings)));
         cashfreeModel.value = Cashfree.fromJson(jsonDecode(Preferences.getString(Preferences.cashFreeSettings)));
+        flexPayModel.value = FlexPay.fromJson(jsonDecode(Preferences.getString(Preferences.flexPaySettings, defaultValue: '{}')));
         isLoadingPayment.value = false;
         Stripe.publishableKey = stripeModel.value.clientpublishableKey.toString();
         Stripe.merchantIdentifier = 'Viteat';
@@ -842,6 +846,22 @@ class WalletController extends GetxController {
       log("$e \n$s");
       ShowToastDialog.showToast("exception:$e \n$s");
     }
+  }
+
+  Future<void> flexPayMakePayment({required String amount}) async {
+    ShowToastDialog.closeLoader();
+    Get.to(FlexPayPaymentScreen(
+      flexPaySettings: flexPayModel.value,
+      amount: double.parse(amount),
+      currency: flexPayModel.value.currency ?? 'USD',
+    ))?.then((value) {
+      if (value == true) {
+        ShowToastDialog.showToast("Payment Successful!!");
+        walletTopUp();
+      } else {
+        ShowToastDialog.showToast("Payment UnSuccessful!!");
+      }
+    });
   }
 
   Future<void> cashFreeMakePayment({required BuildContext context, required String amount, required String paymentDesc}) async {

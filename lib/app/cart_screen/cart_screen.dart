@@ -1274,7 +1274,7 @@ class CartScreen extends StatelessWidget {
                                                 : Row(
                                                     children: [
                                                       TranslatedText(
-                                                        controller.selectedPaymentMethod.value,
+                                                        Constant.paymentMethodLabel(controller.selectedPaymentMethod.value),
                                                         textAlign: TextAlign.start,
                                                         style: TextStyle(
                                                           fontFamily: AppThemeData.semiBold,

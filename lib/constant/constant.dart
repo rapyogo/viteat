@@ -358,6 +358,20 @@ class Constant {
     return "${getDistance(lat1: lat1, lng1: lng1, lat2: userLocation!.latitude.toString(), lng2: userLocation.longitude.toString())} $distanceType";
   }
 
+  /// Libelle affiche pour un moyen de paiement, a partir du nom d'enum
+  /// PaymentGateway (ex. "flexPay", "cod") — un seul point de verite pour
+  /// tous les ecrans de selection de paiement (checkout, top-up wallet).
+  static String paymentMethodLabel(String gatewayName) {
+    switch (gatewayName) {
+      case 'flexPay':
+        return 'Mobile';
+      case 'cod':
+        return 'Cash';
+      default:
+        return gatewayName.capitalizeFirst ?? '';
+    }
+  }
+
   bool hasValidUrl(String? value) {
     String pattern = r'(http|https)://[\w-]+(\.[\w-]+)+([\w.,@?^=%&amp;:/~+#-]*[\w@?^=%&amp;/~+#-])?';
     RegExp regExp = RegExp(pattern);
