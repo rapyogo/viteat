@@ -296,7 +296,9 @@ class SelectPaymentScreen extends StatelessWidget {
                         )
                       : Expanded(
                           child: TranslatedText(
-                            value.name.toString().capitalizeFirst ?? '',
+                            // Le nom de l'enum Dart ("flexPay") ne doit jamais s'afficher tel quel —
+                            // on ne fait pas la pub de l'agrégateur, on affiche "Mobile Money".
+                            value.name == "flexPay" ? "Mobile Money" : (value.name.toString().capitalizeFirst ?? ''),
                             textAlign: TextAlign.start,
                             style: TextStyle(
                               fontFamily: AppThemeData.medium,

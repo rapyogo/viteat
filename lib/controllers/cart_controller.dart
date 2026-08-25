@@ -1587,6 +1587,7 @@ class CartController extends GetxController {
   }
 
   Future<void> flexPayMakePayment({required String amount}) async {
+    ShowToastDialog.closeLoader();
     Get.to(FlexPayPaymentScreen(
       flexPaySettings: flexPayModel.value,
       amount: double.parse(amount),

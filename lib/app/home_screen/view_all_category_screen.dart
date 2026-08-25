@@ -65,12 +65,13 @@ class ViewAllCategoryScreen extends StatelessWidget {
                                 ),
                               ),
                               child: Column(
+                                mainAxisSize: MainAxisSize.min,
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   SizedBox(
-                                    width: 60,
-                                    height: 60,
+                                    width: 56,
+                                    height: 56,
                                     child: ClipOval(
                                       child: NetworkImageWidget(
                                         imageUrl: vendorCategoryModel.photo.toString(),
@@ -79,7 +80,7 @@ class ViewAllCategoryScreen extends StatelessWidget {
                                     ),
                                   ),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                     child: TranslatedText(
                                       '${vendorCategoryModel.title}',
                                       textAlign: TextAlign.center,
