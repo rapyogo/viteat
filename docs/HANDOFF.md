@@ -1,6 +1,6 @@
 # HANDOFF — customer (app Flutter de livraison de repas)
 
-Dernière mise à jour : 2026-08-24
+Dernière mise à jour : 2026-08-25
 
 ## Contexte projet
 - App Flutter cliente d'une plateforme de livraison de repas multi-vendeurs, marque "Rapyogo" (package Android `com.rapyogo.client`).
@@ -75,13 +75,60 @@ Objectif de la session : ajouter Mobile Money (Airtel Money, Orange Money, M-Pes
 ### 9. Build Android bloqué en fin de session — cause non résolue
 Trois causes d'échec de build diagnostiquées et corrigées cette session (disque plein, ProtonVPN, daemons Gradle zombies — voir mémoire `android-build-gotchas` mise à jour), mais la session s'est terminée avec un **second VPN actif** (activé par l'utilisateur après avoir coupé ProtonVPN) qui casse la résolution DNS vers `dl.google.com` / `repo.maven.apache.org` (`Hôte inconnu`). L'app n'a **pas encore été validée manuellement sur l'écran de paiement Mobile Money** — bloqué sur ce problème de build, pas un bug de code. Prochaine session : désactiver ce second VPN (ou le reconfigurer pour ne pas intercepter le DNS) avant de relancer `flutter run -d <device>`.
 
-## Pistes ouvertes / à traiter
-- **Relancer le build Android** une fois le second VPN désactivé/corrigé, puis valider manuellement l'écran de paiement Mobile Money de bout en bout (vrai numéro, vraie confirmation push).
+## Pistes ouvertes / à traiter (état au 2026-08-24, non revérifiées le 25)
 - Décider si `settings/flexpay_settings.enable` doit rester `true` (live) ou repasser à `false` en attendant la validation manuelle complète.
 - Clarifier le sens des IPs FlexPay fournies (156.0.198.27/.19) et éventuellement ajouter une whitelist IP en plus du jeton sur `flexPayCallback`.
 - Remplacer l'icône temporaire Mobile Money (actuellement `mtnmom.png` réutilisé) par un vrai logo.
 - Revérifier le nom de package Android réellement actif (`com.rapyogo.customer.android` vs `com.rapyogo.client` — voir section 7).
 - Investiguer le doublon potentiel `sendNewOrderNotification` vs `deliveryDispatch`.
-- Corriger `NetworkImage("")` + overflow sur l'écran post-splash.
 - `firebase.json` / `firebase_options.dart` (section iOS) référencent encore un projet obsolète `foodies-3c1d9` — config iOS jamais terminée (`YOUR_IOS_PROJECT_ID` en placeholder). Non bloquant pour Android.
 - `npm audit fix` à envisager sur `Order Tracking Firebase Function/functions` (22 vulnérabilités, 1 critique).
+
+---
+
+## Session 2026-08-25 — corrections de bugs via test réel sur device + import de données de démo
+
+### 1. Environnement de build (machine locale, pas des bugs de code)
+- Cache Gradle (`~/.gradle/caches`, 7.3 Go) vidé à la demande de l'utilisateur → a cassé le build suivant (transform Gradle corrompu, fichiers `.jar` verrouillés par Android Studio en cours d'exécution). Résolu en supprimant le reste du cache et en laissant Gradle tout retélécharger.
+- Le NDK `27.0.12077973` était mal téléchargé (dossier vide, `[CXX1101] did not have a source.properties file`) → supprimé pour retéléchargement propre.
+- **Disque C: passé à 1,6 Go libres** après le rebuild complet du cache Gradle (9 Go) + re-téléchargement NDK. Cause identifiée : **4 versions de NDK installées** (27.x, 28.2.13676358, deux 29.x — 9,1 Go), alors qu'une seule est utilisée. Suppression des 3 inutiles → 9,4 Go libérés. Voir mémoire `android-build-gotchas` (mise à jour).
+- `android/app/build.gradle` ne fixait pas `ndkVersion` → conflit avec les plugins `jni`/`speech_to_text` qui exigent `28.2.13676358`. Fixé explicitement (voir commit du jour).
+- Suppression de `android/build.gradle.kts`, `android/app/build.gradle.kts`, `android/settings.gradle.kts` : reliquats du scaffold Flutter d'origine (package `com.foodies.customer.customer`, jamais utilisés par Gradle qui préfère les `.gradle` Groovy présents en parallèle) — Gradle signalait explicitement "likely a mistake".
+
+### 2. Bugs applicatifs trouvés et corrigés en faisant tourner l'app sur device réel (Infinix X693, wifi adb)
+Tous confirmés en conditions réelles (device physique, pas juste en lecture de code) :
+- **`FireStoreUtils.getCurrentUid()`** (`fire_store_utils.dart:98`) plantait (`Null check operator used on a null value`) pour tout visiteur non connecté — appelé dans 97 endroits/28 fichiers. Corrigé pour retourner `''` au lieu de `!`.
+- **Plats invisibles bien qu'en base** : `getProductByVendorId()` filtrait `where("takeawayOption", isEqualTo: false)` côté Firestore — exclut les documents où le champ n'existe pas du tout (vieux plats jamais mis à jour avec ce champ). Filtre déplacé côté client (`null`/absent traité comme disponible).
+- **`Constant.adminCommission!`** (`constant.dart:212`) plantait l'affichage du prix de **tout** plat dès que ce document de settings n'était pas configuré — confirmé en direct via capture d'écran (erreur rouge Flutter à l'ouverture d'une catégorie de menu). Même correctif appliqué dans `cart_controller.dart` (aurait fait planter la création de commande).
+- **Chargement de restaurant lent** : `getProduct()` faisait un appel Firestore séquentiel par plat pour récupérer sa catégorie (30 plats = 30 aller-retours l'un après l'autre). Remplacé par une résolution parallèle et dédupliquée des catégories uniques.
+- **Nom de catégorie tronqué** sur l'écran d'accueil (`home_screen.dart`, liste horizontale de catégories) : `TranslatedText` sans `overflow: TextOverflow.ellipsis` dans une largeur fixe de 78px. Corrigé.
+- **Géolocalisation bloquée indéfiniment après autorisation** : `Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high)` sans `timeLimit` — attente GPS haute précision pouvant ne jamais aboutir en intérieur. Passé à `LocationAccuracy.medium` + `timeLimit: Duration(seconds: 10)` via `LocationSettings` (API non dépréciée). Confirmé : résolution en ~7s sur le device de test après correctif.
+- **Placeholder image vide** (`Constant.placeholderImage = ""`) : le fallback d'erreur de `NetworkImageWidget` appelait `Image.network("")` en boucle, spammant `No host specified in URI file:///`. Remplacé par une icône locale (`Icons.image_not_supported_outlined`) quand le placeholder est vide.
+
+**Non revérifié sur device** : la connexion adb sans-fil s'est coupée avant de pouvoir confirmer visuellement le correctif `adminCommission` + les autres correctifs de cette liste ensemble sur l'app relancée. À revérifier en priorité en prochaine session (reconnecter le débogage sans fil, relancer `flutter run`, retester l'ouverture d'une catégorie de menu jusqu'à la commande).
+
+**Demandes UX non traitées** (mentionnées par l'utilisateur, pas encore scopées) :
+- Messages de chargement interactifs/dynamiques pendant les opérations longues (ex. "Nous calculons votre position...") au lieu d'un loader générique "Please wait" (`ShowToastDialog.showLoader`).
+- Écrans squelettes (skeleton loading) — périmètre à définir (quels écrans en priorité) avant de commencer.
+- "Offline first" — changement d'architecture (cache local), pas un correctif ponctuel. Non scopé.
+
+### 3. Import de données de démonstration dans Firestore (rapyogo-2bccd) — ⚠️ à lire avant toute prochaine action sur ce projet
+**Revirement de décision** : la session du 2026-08-21 avait explicitement choisi de ne PAS importer les données de démo du template dans `rapyogo-2bccd` (projet de production, pas un sandbox). Le 2026-08-25, l'utilisateur a demandé l'import pour faciliter les tests — confirmé explicitement après relecture de cette décision passée.
+
+**Ce qui a été fait :**
+- `Firebase Import Export Collections/collections.json` importé via `npx node-firestore-import-export firestore-import -y` (43 collections, ~4.8 Mo) — **sans sauvegarde préalable** (erreur de ma part, à ne pas reproduire : toujours `firestore-export` un backup avant un import avec `-y`).
+- `Firestore Demo Authentication User Import/import-user.js` : import des 5 comptes Auth de démo — **arrêté après le 1er compte** (`FirebaseAuthError: uid-already-exists`), voir découverte ci-dessous.
+
+**Découverte importante** : `rapyogo-2bccd` n'est pas un projet vierge. Il contient **58 comptes Auth réels** (emails perso + `@rapyogo.com`, dont celui de l'utilisateur), et 5 comptes `@gromart.com` créés le même jour (01/09/2024) avec les UID exacts codés en dur dans `import-user.js` — reliquat d'un import de démo déjà fait une fois sur ce projet, sous une marque antérieure "Gromart", avant le renommage en Rapyogo/Viteat. **Confirmé par l'utilisateur : ce sont bien de vieux reliquats, à nettoyer** — mais le nettoyage n'a **pas encore été fait** (voir pistes ouvertes).
+
+**Risque identifié** : l'import Firestore avec `-y` écrit un document par ID présent dans `collections.json`. Les documents de settings *personnalisés uniquement par l'utilisateur* (absents du jeu de démo stock, ex. `settings/flexpay_settings`) ont été épargnés — confirmé (`merchantCode: RAPYOGO_SARL` et `welcome_message: "Bienvenue sur Rapyogo !"` intacts après import). Mais les documents de settings **communs à toute installation du template** (`globalSettings`, `ContactUs`, `Version`, etc.) ont très probablement été écrasés par les valeurs génériques du template (`globalSettings.applicationName` affiche "Foodie" après import — incohérent avec tout le travail de renommage documenté dans ce fichier). **Non corrigé, pas de sauvegarde disponible pour restaurer les anciennes valeurs.**
+
+**Vérification structurelle faite (rassurante)** : les 35 collections utilisées par le code Dart (`CollectionName`), les 7 Cloud Functions (dont tout le module FlexPay), et les index Firestore composites sont tous présents et intacts après l'import — l'import n'a rien cassé de structurel, seulement potentiellement des valeurs de config partagées.
+
+**Sécurité** : une vraie clé de compte de service Firebase (`firebase-adminsdk-qn3oh@rapyogo-2bccd`) a été collée directement dans le chat par l'utilisateur pour débloquer l'import, utilisée une fois, puis supprimée du disque. **Cette clé doit être révoquée et régénérée** depuis la console Firebase (Paramètres du projet → Comptes de service) — jamais fait à ce jour.
+
+**Pistes ouvertes issues de cet import :**
+- Vérifier le panel admin web : `globalSettings` (nom d'app, logo, contact, couleurs) affiche-t-il des valeurs génériques "Foodie" au lieu de "Rapyogo"/"Viteat" ? Si oui, les reconfigurer manuellement (pas de backup pour restaurer automatiquement).
+- Nettoyer les 5 comptes `@gromart.com` restants (Auth + toute donnée Firestore associée à leurs UID) — confirmé "reliquat" par l'utilisateur mais nettoyage pas encore exécuté.
+- Réessayer l'import des comptes de démo (`import-user.js`) seulement après avoir libéré/choisi d'autres UID (les 5 UID cibles du script sont pris par les comptes Gromart).
+- **Révoquer la clé de compte de service exposée dans le chat** et en générer une nouvelle si besoin futur.
