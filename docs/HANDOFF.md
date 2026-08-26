@@ -1,6 +1,6 @@
 # HANDOFF — customer (app Flutter de livraison de repas)
 
-Dernière mise à jour : 2026-08-25
+Dernière mise à jour : 2026-08-26
 
 ## Contexte projet
 - App Flutter cliente d'une plateforme de livraison de repas multi-vendeurs, marque "Rapyogo" (package Android `com.rapyogo.client`).
@@ -132,3 +132,57 @@ Tous confirmés en conditions réelles (device physique, pas juste en lecture de
 - Nettoyer les 5 comptes `@gromart.com` restants (Auth + toute donnée Firestore associée à leurs UID) — confirmé "reliquat" par l'utilisateur mais nettoyage pas encore exécuté.
 - Réessayer l'import des comptes de démo (`import-user.js`) seulement après avoir libéré/choisi d'autres UID (les 5 UID cibles du script sont pris par les comptes Gromart).
 - **Révoquer la clé de compte de service exposée dans le chat** et en générer une nouvelle si besoin futur.
+
+---
+
+## Session 2026-08-26 — Offline-first Phase 1 (P0) + corrections en marge
+
+Branche `offline-first-perf-ux`. Plan complet écrit en amont (mode plan) : `C:\Users\RAPYOGO\.claude\plans\tu-es-un-lead-synthetic-brooks.md`. Périmètre validé avec l'utilisateur : **Phase 1 uniquement** (offline-first + performance + UX + recherche structurée classique + profil enrichi) — l'agent IA conversationnel (recherche en langage naturel, voix comprise) est documenté comme roadmap Phase 2 dans ce même plan, **non implémenté** (nécessite une clé Anthropic + touche le dossier Cloud Functions hors de ce repo, jamais validé budget par l'utilisateur).
+
+### 1. P0 livré (offline-first + résilience réseau)
+- `fire_store_utils.dart` : `Settings(persistenceEnabled: true, cacheSizeBytes: 100 Mo)` explicite sur l'instance Firestore — fallback cache automatique pour tous les `.get()` existants sans toucher un site d'appel.
+- Nouveau `lib/services/connectivity_service.dart` (`connectivity_plus`) + `lib/widget/connectivity_banner.dart` — bannière non bloquante (offline/syncing/échec), posée dans `main.dart` avant `runApp`, affichée dans `dash_board_screen.dart`.
+- `cart_controller.dart`/`cart_screen.dart` : fix race condition sur `productModel` (assigné async, lu sync) dans la liste du panier ; `getUserProfile()` n'est plus rappelé si `Constant.userModel` est déjà peuplé.
+- `splash_controller.dart` : route un utilisateur hors-ligne mais déjà authentifié directement vers le dashboard au lieu du login ; parallélise `isMaintenanceMode()`/`isLogin()`.
+
+### 2. Bug critique trouvé en testant le P0 sur device réel : réseau lent ≠ réseau absent
+Le premier fallback offline (ci-dessus) ne se basait que sur l'état "hors ligne" détecté par `connectivity_plus` (signal radio absent). Sur le terrain, le cas réel est différent : réseau présent mais **backend Firestore injoignable** (`Could not reach Cloud Firestore backend. Backend didn't respond within 10 seconds`) — que `connectivity_plus` classe "en ligne". Le fallback détecte maintenant aussi les erreurs Firestore transitoires (`unavailable`, `deadline-exceeded`, `network-request-failed`, `cancelled`).
+
+En creusant ce même symptôme ("l'appli se vide mais la nav reste visible"), root cause trouvée dans `FireStoreUtils.getSettings()` : ~10 lectures Firestore y sont lancées via `.then()` **jamais `await`-ées**. Sur réseau dégradé, une exception dans un de ces callbacks échappe au `try/catch` englobant (déjà terminé au moment où l'erreur arrive) et devient non gérée — plusieurs `Constant.*` (thème, wallet, images, clé carte...) restaient jamais peuplés. Les 10 lectures ont reçu un `.catchError()` local.
+
+### 3. Crash bloquant au cold start sans localisation ni réseau
+`FireStoreUtils.getTaxList()` faisait `Constant.selectedLocation.location!.latitude!` sans garde — plantait toute la construction de `HomeController` (et `FavouriteScreen`, et 26 autres sites dans ~15 fichiers utilisant le même pattern `.location!`) dès que la localisation n'était pas encore résolue.
+
+**Décision importante, corrigée en cours de session sur demande explicite de l'utilisateur** : la première tentative de fix donnait une valeur par défaut factice `(0.0, 0.0)` à `Constant.selectedLocation.location`. **L'utilisateur a explicitement rejeté cette approche** : le `null` de `location` est une donnée significative pour le système ("localisation non définie" doit rester détectable, pas être remplacée par une fausse coordonnée qui fausserait silencieusement les calculs de distance/zone). Revenu à `location: null` par défaut. Fix propre :
+- `Constant.getDistanceFromUser({lat1, lng1})` (nouveau, `constant.dart`) — retourne `''` tant que la localisation n'est pas résolue, utilisé dans 11 sites d'affichage de distance (home_screen.dart x4, dine_in_screen.dart x3, search_screen.dart, favourite_screen.dart, category_restaurant_screen.dart, restaurant_list_screen.dart, dine_in_restaurant_list_screen.dart, home_screen_two.dart).
+- 3 sites de requête (zone/proximité) passés de `.location!` à `.location?` avec fallback `?? 0.0` déjà existant pour la valeur.
+- Checkout (`cart_screen.dart`, bouton "Pay Now") : bloque désormais avec le message "Veuillez ajouter votre localisation avant de commander." si aucune localisation n'est définie, au lieu de planter au moment de vérifier la zone de livraison.
+
+**Piste ouverte** : ce pattern `.location!` répété dans ~15 fichiers est un signal que la Phase 1 (section "Localisation" du plan, `LocationService` unifié + persistance locale) reste à faire — ce correctif traite les symptômes, pas l'architecture sous-jacente (localisation encore stockée en static en mémoire, jamais persistée localement).
+
+### 4. Bugs Mobile Money / FlexPay signalés par l'utilisateur, tous corrigés
+- Loader "Please wait" jamais fermé avant navigation vers l'écran FlexPay (`cart_controller.dart` + `wallet_controller.dart`, ce dernier nouvellement câblé).
+- Libellé "FlexPay" (nom brut de l'enum Dart) affiché après sélection du moyen de paiement → nouveau `Constant.paymentMethodLabel()` : "flexPay" → **"Mobile"**, "cod" → **"Cash"**, appliqué dans `select_payment_screen.dart`, `cart_screen.dart` (résumé compact), `payment_list_screen.dart`.
+- **Mobile Money ajouté au top-up wallet** (`wallet_controller.dart` : `flexPayModel` + `flexPayMakePayment()` ; `payment_list_screen.dart` : option + dispatch bouton "Top-up") — n'existait qu'au checkout jusqu'ici.
+- `RenderFlex overflow` sur les cartes catégories (`view_all_category_screen.dart`) — image 60→56px, padding vertical réduit.
+- `RenderFlex overflow` sur le résumé "Pay Via [Wallet] (Change)" (`cart_screen.dart`) — libellé sans `Flexible`, dépassait dès qu'il était un peu long ("Wallet" vs "Cash"). Fix : `Flexible` + ellipsis.
+- **Redesign complet de `flexpay_payment_screen.dart`** : ne respectait pas le design system (couleurs codées en dur, pas de thème sombre) → migré vers `AppThemeData` + `DarkThemeProvider`. Messages d'erreur différenciés par code (`_friendlyErrorMessage`) au lieu d'un message générique. Nom de l'app ("Viteat") + footer avec liens Confidentialité/CGU (réutilise `TermsAndConditionScreen` existant). Le loading au clic sur "Continuer" existait déjà.
+
+### 5. Backend FlexPay optimisé et déployé (hors repo git)
+`Order Tracking Firebase Function/functions/products/flexpay.js` — les 3 fonctions (`initiateMobileMoneyPayment`, `checkMobileMoneyStatus`, `flexPayCallback`) enchaînaient des appels Firestore indépendants en séquentiel avant de répondre à l'app (latence perçue élevée, signalée par l'utilisateur). Restructuré avec `Promise.all` partout où c'était sûr (lecture réglages + création doc en parallèle ; log d'audit + mise à jour du statut en parallèle). Comportement inchangé, ~300-500ms gagnés sur notre propre overhead (le délai FlexPay/opérateur lui-même n'est pas compressible). **Déployé en production** sur `rapyogo-2bccd` avec l'accord explicite de l'utilisateur (gateway LIVE, marchand `RAPYOGO_SARL`). Un déploiement a échoué une fois sur une erreur transitoire GCP (Cloud Run 500) sur `checkMobileMoneyStatus` seul — redéployé avec succès au second essai.
+
+### 6. Bug identifié mais NON corrigé (refusé explicitement par l'utilisateur pour cette session)
+**Admin Panel** (`resources/views/settings/app/global.blade.php`, PHP/Blade, pas un dépôt git) : les 6 sélecteurs `<input type="color">` (`customer_app_color`, `driver_app_color`, `restaurant_app_color`, `admin_color`, `store_color`, `website_color`) n'ont pas de `value` par défaut → le navigateur les initialise à `#000000` tant que le chargement Firestore asynchrone qui doit les remplir n'est pas terminé. Le handler "Enregistrer" lit `.val()` sur ces inputs indépendamment, sans attendre ce chargement. **Si l'admin enregistre la page (même pour un tout autre champ) avant la fin du chargement, la vraie couleur est silencieusement écrasée par du noir dans Firestore.** C'est la cause du signalement "la couleur ne suit plus". Fix proposé (bloquer le bouton Enregistrer tant que le chargement n'est pas terminé) — **refusé pour cette session**, à reprendre plus tard si demandé. Note : le fix côté Flutter (`fire_store_utils.dart`, section suivante) protège contre le crash/cascade que cette valeur invalide pouvait provoquer, mais ne corrige pas la couleur déjà écrasée en base — à reconfigurer manuellement une fois l'Admin Panel corrigé.
+
+En lien : `fire_store_utils.dart` — le parsing de `app_customer_color` (`int.parse(...)`) n'était pas protégé et pouvait, à lui seul, planter et faire échouer silencieusement le chargement d'une quinzaine d'autres réglages qui le suivent dans le même bloc `try` de `getSettings()` (DineinForRestaurant, googleMapKey, walletSettings, Version, story, adminSettings, AdminCommission...). Isolé dans son propre `try/catch` local.
+
+### 7. Gotchas machine (voir mémoire `android-build-gotchas`, mise à jour)
+- Nouveau record de vide sur C: pendant la session (144 Mo libres, 100% plein) — `.gradle/caches` vidé deux fois (la deuxième fois après un daemon Gradle zombie ayant corrompu `metadata.bin` lors d'un build tué en plein milieu — `gradlew --stop` avant de reclean).
+- `INSTALL_FAILED_INSUFFICIENT_STORAGE` lors d'un `adb install` peut venir du **téléphone**, pas du PC — confirmé sur l'Infinix X693 de test (~852 Mo libres / 113 Go, 100% plein), séparément du problème PC. Ne pas gérer le stockage du téléphone automatiquement (photos/apps personnelles) — toujours demander à l'utilisateur.
+
+### État en fin de session
+- Tous les commits ci-dessus sont sur `offline-first-perf-ux`, `flutter analyze` propre (0 erreur) à chaque étape.
+- L'utilisateur était en train de retester `flutter run` après le dernier nettoyage de cache — **résultat non confirmé** au moment du "fin" (dernier message reçu : le build avait échoué sur cache corrompu, cache re-nettoyé, pas encore reconfirmé bon après ce nettoyage).
+- **P1 du plan offline-first non commencé** : cache Firestore Tier A (`shared_preferences`)/Tier B (`sqflite`, nouvelles tables `cached_vendors`/`cached_products`), `LocationService` unifié + persistance locale (unifierait la piste ouverte de la section 3 ci-dessus), refonte recherche (debounce + requêtes structurées). Voir le plan complet pour le détail des sections 3, 5, 6.
+- **P2 non commencé** : profil `DietaryPreferences`, skeleton loading.
+- Backend FlexPay (hors repo) : code optimisé et déployé, comportement à confirmer par l'utilisateur en conditions réelles.
