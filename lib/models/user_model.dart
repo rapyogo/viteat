@@ -219,8 +219,12 @@ class ShippingAddress {
     return data;
   }
 
+  /// locality n'etait pas garde : sur une adresse vide, l'interpolation
+  /// produisait litteralement " null ", affiche tel quel dans le header
+  /// d'accueil. Rend maintenant '' — aux appelants d'afficher un etat
+  /// explicite (cf. LocationService.displayLabel).
   String getFullAddress() {
-    return '${address == null || address!.isEmpty ? "" : address} $locality ${landmark == null || landmark!.isEmpty ? "" : landmark.toString()}';
+    return [address, locality, landmark].where((part) => part != null && part.trim().isNotEmpty).join(' ');
   }
 }
 

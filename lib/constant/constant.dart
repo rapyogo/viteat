@@ -335,13 +335,27 @@ class Constant {
     }
   }
 
+  /// Rend '' si l'une des quatre coordonnees est inexploitable.
+  ///
+  /// Les appelants passent `vendorModel.latitude.toString()` : quand la
+  /// latitude du vendeur est null, la chaine vaut "null" — non-null, donc
+  /// aucune garde amont ne l'attrape — et double.parse levait une
+  /// FormatException en plein build. ATTENTION : tout appelant qui parse le
+  /// retour doit desormais traiter la chaine vide (cf. cart_controller).
   static String getDistance({required String lat1, required String lng1, required String lat2, required String lng2}) {
+    final double? parsedLat1 = double.tryParse(lat1);
+    final double? parsedLng1 = double.tryParse(lng1);
+    final double? parsedLat2 = double.tryParse(lat2);
+    final double? parsedLng2 = double.tryParse(lng2);
+    if (parsedLat1 == null || parsedLng1 == null || parsedLat2 == null || parsedLng2 == null) {
+      return '';
+    }
     double distance;
     double distanceInMeters = Geolocator.distanceBetween(
-      double.parse(lat1),
-      double.parse(lng1),
-      double.parse(lat2),
-      double.parse(lng2),
+      parsedLat1,
+      parsedLng1,
+      parsedLat2,
+      parsedLng2,
     );
     if (distanceType == "miles") {
       distance = distanceInMeters / 1609;
@@ -364,7 +378,10 @@ class Constant {
     if (lat1 == null || lng1 == null || userLocation?.latitude == null || userLocation?.longitude == null) {
       return '';
     }
-    return "${getDistance(lat1: lat1, lng1: lng1, lat2: userLocation!.latitude.toString(), lng2: userLocation.longitude.toString())} $distanceType";
+    final String distance = getDistance(lat1: lat1, lng1: lng1, lat2: userLocation!.latitude.toString(), lng2: userLocation.longitude.toString());
+    // Coordonnee du vendeur inexploitable : mieux vaut ne rien afficher qu'un
+    // " km" orphelin.
+    return distance.isEmpty ? '' : "$distance $distanceType";
   }
 
   /// Libelle affiche pour un moyen de paiement, a partir du nom d'enum

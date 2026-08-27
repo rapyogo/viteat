@@ -37,11 +37,14 @@ class AddressListController extends GetxController {
 
   setData(ShippingAddress shippingAddress) {
     shippingModel.value = shippingAddress;
-    houseBuildingTextEditingController.value.text = shippingAddress.address.toString();
-    localityEditingController.value.text = shippingAddress.locality.toString();
-    landmarkEditingController.value.text = shippingAddress.landmark.toString();
-    selectedSaveAs.value = shippingAddress.addressAs.toString();
-    location.value = shippingAddress.location!;
+    // .toString() sur un String? null ecrivait litteralement "null" dans les
+    // champs de saisie, et location! plantait a l'edition d'une adresse
+    // enregistree sans coordonnees.
+    houseBuildingTextEditingController.value.text = shippingAddress.address ?? '';
+    localityEditingController.value.text = shippingAddress.locality ?? '';
+    landmarkEditingController.value.text = shippingAddress.landmark ?? '';
+    selectedSaveAs.value = shippingAddress.addressAs ?? "Home";
+    location.value = shippingAddress.location ?? UserLocation();
   }
 
   getUser() async {

@@ -232,14 +232,21 @@ class CartController extends GetxController {
     // avant de pouvoir commander (cf. bouton "Pay Now" dans cart_screen.dart).
     if (cartItem.isNotEmpty && selectedAddress.value.location != null) {
       if (selectedFoodType.value == "Delivery") {
-        totalDistance.value = double.parse(Constant.getDistance(
+        // La garde ci-dessus ne couvrait que l'adresse client : un vendeur sans
+        // coordonnees produisait double.parse("null") et une FormatException en
+        // plein checkout. getDistance rend maintenant '' dans ce cas — sans
+        // distance, pas de frais de livraison calculables, ils restent a 0.
+        final String distance = Constant.getDistance(
           lat1: selectedAddress.value.location!.latitude.toString(),
           lng1: selectedAddress.value.location!.longitude.toString(),
-          lat2: vendorModel.value.latitude.toString(),
-          lng2: vendorModel.value.longitude.toString(),
-        ));
+          lat2: vendorModel.value.latitude?.toString() ?? '',
+          lng2: vendorModel.value.longitude?.toString() ?? '',
+        );
+        totalDistance.value = distance.isEmpty ? 0.0 : double.parse(distance);
 
-        if (vendorModel.value.isSelfDelivery == true && Constant.isSelfDeliveryFeature == true) {
+        if (distance.isEmpty) {
+          deliveryCharges.value = 0.0;
+        } else if (vendorModel.value.isSelfDelivery == true && Constant.isSelfDeliveryFeature == true) {
           deliveryCharges.value = 0.0;
         } else if (deliveryChargeModel.value.vendorCanModify == false) {
           deliveryCharges.value = totalDistance.value > deliveryChargeModel.value.minimumDeliveryChargesWithinKm!
