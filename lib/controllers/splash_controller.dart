@@ -113,6 +113,13 @@ class SplashController extends GetxController {
                         Constant.selectedLocation = userModel.shippingAddress!.first;
                       }
                       Get.offAll(const DashBoardScreen());
+                    } else if (LocationService.isResolved) {
+                      // Aucune adresse enregistree au profil, mais une
+                      // localisation restauree depuis le cache local : c'est le
+                      // cas de tous ceux qui n'utilisent que le GPS, qui
+                      // repassaient sinon par l'ecran de permission a CHAQUE
+                      // lancement alors qu'on connait deja leur position.
+                      Get.offAll(const DashBoardScreen());
                     } else {
                       Get.offAll(const LocationPermissionScreen());
                     }
