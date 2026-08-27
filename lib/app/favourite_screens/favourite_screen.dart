@@ -486,39 +486,24 @@ class FavouriteScreen extends StatelessWidget {
                                                     padding: EdgeInsets.zero,
                                                     itemBuilder: (context, index) {
                                                       ProductModel productModel = controller.favouriteFoodList[index];
-                                                      return FutureBuilder(
-                                                        future: getPrice(productModel),
-                                                        builder: (context, snapshot) {
-                                                          if (snapshot.connectionState == ConnectionState.waiting) {
-                                                            return Constant.loader();
-                                                          } else {
-                                                            if (snapshot.hasError) {
-                                                              return Center(child: TranslatedText('Error: ${snapshot.error}'));
-                                                            } else if (snapshot.data == null) {
-                                                              return const SizedBox();
-                                                            } else {
-                                                              Map<String, dynamic> map = snapshot.data!;
-                                                              String price = map['price'];
-                                                              String disPrice = map['disPrice'];
-                                                              return InkWell(
-                                                                onTap: () async {
-                                                                  await FireStoreUtils.getVendorById(productModel.vendorID.toString()).then(
-                                                                    (value) {
-                                                                      if (value != null) {
-                                                                        if (value.zoneId == Constant.selectedZone!.id) {
-                                                                          ShowToastDialog.closeLoader();
-                                                                          Get.to(const RestaurantDetailsScreen(), arguments: {"vendorModel": value})?.then((value) {
-                                                                            controller.getData();
-                                                                          });
-                                                                        } else {
-                                                                          ShowToastDialog.closeLoader();
-                                                                          ShowToastDialog.showToast("Sorry, The Zone is not available in your area. change the other location first.");
-                                                                        }
-
-                                                                        // Get.to(const RestaurantDetailsScreen(), arguments: {"vendorModel": value});
-                                                                      }
-                                                                    },
-                                                                  );
+                                                      final VendorModel? cachedVendorModel = controller.foodVendorCache[productModel.vendorID];
+                                                      if (cachedVendorModel == null) {
+                                                        return const SizedBox();
+                                                      }
+                                                      final Map<String, dynamic> map = getPrice(productModel, cachedVendorModel);
+                                                      final String price = map['price'];
+                                                      final String disPrice = map['disPrice'];
+                                                      return InkWell(
+                                                                onTap: () {
+                                                                  if (cachedVendorModel.zoneId == Constant.selectedZone!.id) {
+                                                                    ShowToastDialog.closeLoader();
+                                                                    Get.to(const RestaurantDetailsScreen(), arguments: {"vendorModel": cachedVendorModel})?.then((value) {
+                                                                      controller.getData();
+                                                                    });
+                                                                  } else {
+                                                                    ShowToastDialog.closeLoader();
+                                                                    ShowToastDialog.showToast("Sorry, The Zone is not available in your area. change the other location first.");
+                                                                  }
                                                                 },
                                                                 child: Padding(
                                                                   padding: const EdgeInsets.symmetric(vertical: 5),
@@ -699,10 +684,6 @@ class FavouriteScreen extends StatelessWidget {
                                                                   ),
                                                                 ),
                                                               );
-                                                            }
-                                                          }
-                                                        },
-                                                      );
                                                     },
                                                   ),
                                       ),
@@ -717,18 +698,15 @@ class FavouriteScreen extends StatelessWidget {
         });
   }
 
-  Future<Map<String, dynamic>> getPrice(ProductModel productModel) async {
+  // Le vendeur est déjà résolu via controller.foodVendorCache (précaché) —
+  // recherche synchrone, plus d'aller-retour Firestore par item.
+  Map<String, dynamic> getPrice(ProductModel productModel, VendorModel vendorModel) {
     String price = "0.0";
     String disPrice = "0.0";
     List<String> selectedVariants = [];
     List<String> selectedIndexVariants = [];
     List<String> selectedIndexArray = [];
 
-    print("=======>");
-    print(productModel.price);
-    print(productModel.disPrice);
-
-    VendorModel? vendorModel = await FireStoreUtils.getVendorById(productModel.vendorID.toString());
     if (productModel.itemAttribute != null) {
       if (productModel.itemAttribute!.attributes!.isNotEmpty) {
         for (var element in productModel.itemAttribute!.attributes!) {
@@ -740,11 +718,11 @@ class FavouriteScreen extends StatelessWidget {
         }
       }
       if (productModel.itemAttribute!.variants!.where((element) => element.variantSku == selectedVariants.join('-')).isNotEmpty) {
-        price = Constant.productCommissionPrice(vendorModel!, productModel.itemAttribute!.variants!.where((element) => element.variantSku == selectedVariants.join('-')).first.variantPrice ?? '0');
+        price = Constant.productCommissionPrice(vendorModel, productModel.itemAttribute!.variants!.where((element) => element.variantSku == selectedVariants.join('-')).first.variantPrice ?? '0');
         disPrice = Constant.productCommissionPrice(vendorModel, '0');
       }
     } else {
-      price = Constant.productCommissionPrice(vendorModel!, productModel.price.toString());
+      price = Constant.productCommissionPrice(vendorModel, productModel.price.toString());
       disPrice = Constant.productCommissionPrice(vendorModel, productModel.disPrice.toString());
     }
 

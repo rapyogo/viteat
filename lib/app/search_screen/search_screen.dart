@@ -7,7 +7,6 @@ import 'package:customer/themes/app_them_data.dart';
 import 'package:customer/themes/responsive.dart';
 import 'package:customer/themes/text_field_widget.dart';
 import 'package:customer/utils/dark_theme_provider.dart';
-import 'package:customer/utils/fire_store_utils.dart';
 import 'package:customer/utils/network_image_widget.dart';
 import 'package:customer/widget/restaurant_image_view.dart';
 import 'package:flutter/material.dart';
@@ -67,7 +66,10 @@ class SearchScreen extends StatelessWidget {
                 ),
               ),
             ),
-            body: controller.isLoading.value
+            // Obx isolé sur le body : le changement des résultats de recherche
+            // (à chaque frappe) ne doit pas reconstruire l'AppBar/le champ de
+            // recherche au-dessus.
+            body: Obx(() => controller.isLoading.value
                 ? Constant.loader()
                 : controller.vendorSearchList.isEmpty && controller.productSearchList.isEmpty
                     ? Center(child: Constant.showEmptyView(message: "Not Found"))
@@ -379,29 +381,15 @@ class SearchScreen extends StatelessWidget {
                                 itemCount: controller.productSearchList.length,
                                 itemBuilder: (context, index) {
                                   ProductModel productModel = controller.productSearchList[index];
-                                  return FutureBuilder(
-                                      future: getPrice(productModel),
-                                      builder: (context, snapshot) {
-                                        if (snapshot.connectionState == ConnectionState.waiting) {
-                                          return Constant.loader();
-                                        } else {
-                                          if (snapshot.hasError) {
-                                            return Center(child: TranslatedText('Error: ${snapshot.error}'));
-                                          } else if (snapshot.data == null) {
-                                            return const SizedBox();
-                                          } else {
-                                            Map<String, dynamic> map = snapshot.data!;
-                                            String price = map['price'];
-                                            String disPrice = map['disPrice'];
-                                            return InkWell(
-                                              onTap: () async {
-                                                await FireStoreUtils.getVendorById(productModel.vendorID.toString()).then(
-                                                  (value) {
-                                                    if (value != null) {
-                                                      Get.to(const RestaurantDetailsScreen(), arguments: {"vendorModel": value});
-                                                    }
-                                                  },
-                                                );
+                                  final Map<String, dynamic> map = getPrice(productModel, controller.vendorList);
+                                  final String price = map['price'];
+                                  final String disPrice = map['disPrice'];
+                                  return InkWell(
+                                              onTap: () {
+                                                final VendorModel? vendorModel = controller.vendorList.firstWhereOrNull((v) => v.id == productModel.vendorID);
+                                                if (vendorModel != null) {
+                                                  Get.to(const RestaurantDetailsScreen(), arguments: {"vendorModel": vendorModel});
+                                                }
                                               },
                                               child: Padding(
                                                 padding: const EdgeInsets.only(bottom: 20),
@@ -539,31 +527,28 @@ class SearchScreen extends StatelessWidget {
                                                 ),
                                               ),
                                             );
-                                          }
-                                        }
-                                      });
                                 },
                               )
                             ],
                           ),
                         ),
                       ),
+            ),
           );
         });
   }
 
-  Future<Map<String, dynamic>> getPrice(ProductModel productModel) async {
+  // vendorList est déjà en mémoire (les produits de la liste en proviennent) —
+  // recherche synchrone au lieu d'un aller-retour Firestore par item à chaque
+  // rebuild.
+  Map<String, dynamic> getPrice(ProductModel productModel, List<VendorModel> vendorList) {
     String price = "0.0";
     String disPrice = "0.0";
     List<String> selectedVariants = [];
     List<String> selectedIndexVariants = [];
     List<String> selectedIndexArray = [];
 
-    print("=======>");
-    print(productModel.price);
-    print(productModel.disPrice);
-
-    VendorModel? vendorModel = await FireStoreUtils.getVendorById(productModel.vendorID.toString());
+    VendorModel? vendorModel = vendorList.firstWhereOrNull((v) => v.id == productModel.vendorID);
     if (productModel.itemAttribute != null) {
       if (productModel.itemAttribute!.attributes!.isNotEmpty) {
         for (var element in productModel.itemAttribute!.attributes!) {

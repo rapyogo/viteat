@@ -832,6 +832,30 @@ class CartController extends GetxController {
   Rx<FlexPay> flexPayModel = FlexPay().obs;
   RxBool isLoading = true.obs;
 
+  bool _isPaymentGatewayEnabled(String gatewayName) {
+    if (gatewayName == PaymentGateway.wallet.name) return walletSettingModel.value.isEnabled == true;
+    if (gatewayName == PaymentGateway.cod.name) return cashOnDeliverySettingModel.value.isEnabled == true;
+    if (gatewayName == PaymentGateway.stripe.name) return stripeModel.value.isEnabled == true;
+    if (gatewayName == PaymentGateway.paypal.name) return payPalModel.value.isEnabled == true;
+    if (gatewayName == PaymentGateway.payStack.name) return payStackModel.value.isEnable == true;
+    if (gatewayName == PaymentGateway.mercadoPago.name) return mercadoPagoModel.value.isEnabled == true;
+    if (gatewayName == PaymentGateway.flutterWave.name) return flutterWaveModel.value.isEnable == true;
+    if (gatewayName == PaymentGateway.paytm.name) return paytmModel.value.isEnabled == true;
+    if (gatewayName == PaymentGateway.payFast.name) return payFastModel.value.isEnable == true;
+    if (gatewayName == PaymentGateway.razorpay.name) return razorPayModel.value.isEnabled == true;
+    if (gatewayName == PaymentGateway.midTrans.name) return midTransModel.value.enable == true;
+    if (gatewayName == PaymentGateway.orangeMoney.name) return orangeMoneyModel.value.enable == true;
+    if (gatewayName == PaymentGateway.xendit.name) return xenditModel.value.enable == true;
+    if (gatewayName == PaymentGateway.mtnMomo.name) return mtnMomoModel.value.enable == true;
+    if (gatewayName == PaymentGateway.phonePe.name) return phonePeModel.value.enable == true;
+    if (gatewayName == PaymentGateway.instamojo.name) return instamojoModel.value.enable == true;
+    if (gatewayName == PaymentGateway.foloosi.name) return foloosiModel.value.enable == true;
+    if (gatewayName == PaymentGateway.payMongo.name) return payMongoModel.value.enable == true;
+    if (gatewayName == PaymentGateway.cashfree.name) return cashfreeModel.value.enable == true;
+    if (gatewayName == PaymentGateway.flexPay.name) return flexPayModel.value.enable == true;
+    return false;
+  }
+
   Future<void> getPaymentSettings() async {
     await FireStoreUtils.getPaymentSettingsData().then(
       (value) async {
@@ -857,7 +881,10 @@ class CartController extends GetxController {
         walletSettingModel.value = WalletSettingModel.fromJson(jsonDecode(Preferences.getString(Preferences.walletSettings)));
         cashOnDeliverySettingModel.value = CodSettingModel.fromJson(jsonDecode(Preferences.getString(Preferences.codSettings)));
 
-        if (walletSettingModel.value.isEnabled == true) {
+        final String savedPaymentMethod = Preferences.getString(Preferences.selectedPaymentMethod);
+        if (savedPaymentMethod.isNotEmpty && _isPaymentGatewayEnabled(savedPaymentMethod)) {
+          selectedPaymentMethod.value = savedPaymentMethod;
+        } else if (walletSettingModel.value.isEnabled == true) {
           selectedPaymentMethod.value = PaymentGateway.wallet.name;
         } else if (cashOnDeliverySettingModel.value.isEnabled == true) {
           selectedPaymentMethod.value = PaymentGateway.cod.name;
@@ -902,9 +929,14 @@ class CartController extends GetxController {
         } else if (flexPayModel.value.enable == true) {
           selectedPaymentMethod.value = PaymentGateway.flexPay.name;
         }
-        Stripe.publishableKey = stripeModel.value.clientpublishableKey.toString();
-        Stripe.merchantIdentifier = 'Viteat Customer';
-        Stripe.instance.applySettings();
+        // Sans ce garde, une clé Stripe absente/vide (gateway désactivée pour
+        // ce déploiement) faisait planter le SDK natif Stripe à chaque
+        // initialisation du panier ("Invalid Publishable Key").
+        if (stripeModel.value.isEnabled == true && (stripeModel.value.clientpublishableKey ?? '').isNotEmpty) {
+          Stripe.publishableKey = stripeModel.value.clientpublishableKey!;
+          Stripe.merchantIdentifier = 'Viteat Customer';
+          Stripe.instance.applySettings();
+        }
         setRef();
 
         razorPay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccess);
@@ -1300,7 +1332,7 @@ class CartController extends GetxController {
     log(response.body);
     final data = jsonDecode(response.body);
     if (data["body"]["txnToken"] == null || data["body"]["txnToken"].toString().isEmpty) {
-      ShowToastDialog.showToast("something went wrong, please contact admin.");
+      ShowToastDialog.showToast("Something went wrong, please contact admin.");
       return null;
     }
     return GetPaymentTxtTokenModel.fromJson(data);
@@ -1398,7 +1430,7 @@ class CartController extends GetxController {
       final responseData = jsonDecode(response.body);
       return responseData['payment_url'];
     } else {
-      ShowToastDialog.showToast("something went wrong, please contact admin.");
+      ShowToastDialog.showToast("Something went wrong, please contact admin.");
       return '';
     }
   }

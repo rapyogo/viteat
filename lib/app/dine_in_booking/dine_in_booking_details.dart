@@ -47,7 +47,7 @@ class DineInBookingDetails extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   TranslatedText(
-                                    "${'Order'} ${Constant.orderId(orderId: controller.bookingModel.value.id.toString())}",
+                                    "${'Order'.tr} ${Constant.orderId(orderId: controller.bookingModel.value.id.toString())}",
                                     style: TextStyle(
                                       fontSize: 18,
                                       color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
@@ -56,7 +56,7 @@ class DineInBookingDetails extends StatelessWidget {
                                     ),
                                   ),
                                   TranslatedText(
-                                    "${controller.bookingModel.value.totalGuest} ${'Peoples'}",
+                                    "${controller.bookingModel.value.totalGuest} ${'Peoples'.tr}",
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,

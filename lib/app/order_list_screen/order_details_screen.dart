@@ -67,7 +67,7 @@ class OrderDetailsScreen extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     TranslatedText(
-                                      "${'Order'} ${Constant.orderId(orderId: controller.orderModel.value.id.toString())}",
+                                      "${'Order'.tr} ${Constant.orderId(orderId: controller.orderModel.value.id.toString())}",
                                       textAlign: TextAlign.start,
                                       style: TextStyle(
                                         fontFamily: AppThemeData.semiBold,
@@ -445,7 +445,7 @@ class OrderDetailsScreen extends StatelessWidget {
                                                                     ),
                                                                     Expanded(
                                                                       child: TranslatedText(
-                                                                        "${'Your Order has been Preparing and assign to the driver'}\n${'Preparation Time'} ${controller.orderModel.value.estimatedTimeToPrepare}",
+                                                                        "${'Your Order has been Preparing and assign to the driver'.tr}\n${'Preparation Time'.tr} ${controller.orderModel.value.estimatedTimeToPrepare}",
                                                                         textAlign: TextAlign.start,
                                                                         style: TextStyle(
                                                                           color: themeChange.getThem() ? AppThemeData.warning400 : AppThemeData.warning400,
@@ -708,7 +708,7 @@ class OrderDetailsScreen extends StatelessWidget {
                                                   cartProductModel.taxSetting?.isEmpty == true
                                                       ? SizedBox()
                                                       : TranslatedText(
-                                                          "${'Tax:'} ${Constant.getTaxDisplayText(cartProductModel.taxSetting)}",
+                                                          "${'Tax:'.tr} ${Constant.getTaxDisplayText(cartProductModel.taxSetting)}",
                                                           maxLines: 2,
                                                           overflow: TextOverflow.ellipsis,
                                                           style: TextStyle(
@@ -1332,19 +1332,12 @@ class OrderDetailsScreen extends StatelessWidget {
                                         if (snapshot.data == false) {
                                           return const SizedBox();
                                         } else {
-                                          return FutureBuilder(
-                                              future: FireStoreUtils.getVendorById(controller.orderModel.value.vendorID!),
-                                              builder: (context, snapshot) {
-                                                if (snapshot.connectionState == ConnectionState.waiting) {
-                                                  return const SizedBox();
-                                                } else {
-                                                  if (snapshot.hasError) {
-                                                    return const SizedBox();
-                                                  } else if (snapshot.data == null) {
-                                                    return const SizedBox();
-                                                  } else {
-                                                    VendorModel vendorModel = snapshot.data!;
-                                                    if ((Constant.isSubscriptionModelApplied == true || Constant.adminCommission?.isEnabled == true) && vendorModel.subscriptionPlan != null) {
+                                          return Builder(builder: (context) {
+                                            final VendorModel? vendorModel = controller.reorderVendor.value;
+                                            if (vendorModel == null) {
+                                              return const SizedBox();
+                                            } else {
+                                              if ((Constant.isSubscriptionModelApplied == true || Constant.adminCommission?.isEnabled == true) && vendorModel.subscriptionPlan != null) {
                                                       if (vendorModel.subscriptionTotalOrders == "-1") {
                                                         return RoundedButtonFill(
                                                           title: "Reorder",
@@ -1397,7 +1390,7 @@ class OrderDetailsScreen extends StatelessWidget {
                                                     }
                                                   }
                                                 }
-                                              });
+                                              );
                                         }
                                       }
                                     }

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:cloud_firestore/cloud_firestore.dart' hide Constant;
 import 'package:customer/constant/collection_name.dart';
 import 'package:customer/constant/constant.dart';
 import 'package:customer/models/order_model.dart';
@@ -34,8 +35,16 @@ class LiveTrackingController extends GetxController {
     mapController = null;
     _cancelGoogleAnim();
     _cancelOsmAnim();
+    _orderSubscription?.cancel();
+    _driverSubscription?.cancel();
     super.onClose();
   }
+
+  // Stored so getArgument() can cancel/replace them instead of leaking a new
+  // listener every time the order doc emits (driver listener was previously
+  // re-attached on every order update without cancelling the old one).
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _orderSubscription;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _driverSubscription;
 
   // ---------- existing reactive fields ----------
   Rx<OrderModel> orderModel = OrderModel().obs;
@@ -71,14 +80,18 @@ class LiveTrackingController extends GetxController {
     if (argumentData != null) {
       orderModel.value = argumentData['orderModel'];
       // listen to order doc
-      FireStoreUtils.fireStore.collection(CollectionName.restaurantOrders).doc(orderModel.value.id).snapshots().listen((event) {
+      _orderSubscription = FireStoreUtils.fireStore.collection(CollectionName.restaurantOrders).doc(orderModel.value.id).snapshots().listen((event) {
         if (event.data() != null) {
           OrderModel orderModelStream = OrderModel.fromJson(event.data()!);
           orderModel.value = orderModelStream;
 
           // listen to driver doc inside order listener
           if (orderModel.value.driverID != null && orderModel.value.driverID!.isNotEmpty) {
-            FireStoreUtils.fireStore.collection(CollectionName.users).doc(orderModel.value.driverID).snapshots().listen((event) {
+            // Cancel the previous driver listener before attaching a new one —
+            // the order doc can emit multiple times per session, and without
+            // this each emission stacked another live driver-location listener.
+            _driverSubscription?.cancel();
+            _driverSubscription = FireStoreUtils.fireStore.collection(CollectionName.users).doc(orderModel.value.driverID).snapshots().listen((event) {
               if (event.data() != null) {
                 driverUserModel.value = UserModel.fromJson(event.data()!);
 

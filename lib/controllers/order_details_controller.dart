@@ -1,6 +1,7 @@
 import 'package:customer/constant/constant.dart';
 import 'package:customer/models/cart_product_model.dart';
 import 'package:customer/models/order_model.dart';
+import 'package:customer/models/vendor_model.dart';
 import 'package:customer/services/cart_provider.dart';
 import 'package:customer/utils/fire_store_utils.dart';
 import 'package:get/get.dart';
@@ -17,6 +18,11 @@ class OrderDetailsController extends GetxController {
 
   Rx<OrderModel> orderModel = OrderModel().obs;
 
+  // Statut d'abonnement vendeur en direct pour le bouton "Reorder" (pas le
+  // vendor embarqué dans la commande, potentiellement perime) — charge une
+  // seule fois au lieu d'un FutureBuilder qui refetch a chaque rebuild.
+  Rx<VendorModel?> reorderVendor = Rx<VendorModel?>(null);
+
   Future<void> getArgument() async {
     dynamic argumentData = Get.arguments;
     if (argumentData != null) {
@@ -24,6 +30,9 @@ class OrderDetailsController extends GetxController {
     }
     calculatePrice();
     update();
+    if (orderModel.value.vendorID != null) {
+      reorderVendor.value = await FireStoreUtils.getVendorById(orderModel.value.vendorID!);
+    }
   }
 
   RxDouble totalDistance = 0.0.obs;
@@ -188,12 +197,8 @@ class OrderDetailsController extends GetxController {
 
   Future<bool> hasAnyPublishedProduct(List<CartProductModel>? products) async {
     if (products == null || products.isEmpty) return false;
-    for (final item in products) {
-      final product = await FireStoreUtils.getProductById(item.id ?? '');
-      if (product == null || product.publish == false) {
-        return false;
-      }
-    }
-    return true;
+    // Un getProductById() par article, lancés en parallèle plutôt qu'en séquence.
+    final results = await Future.wait(products.map((item) => FireStoreUtils.getProductById(item.id ?? '')));
+    return results.every((product) => product != null && product.publish != false);
   }
 }

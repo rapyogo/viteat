@@ -260,9 +260,13 @@ class GiftCardController extends GetxController {
         } else if (cashfreeModel.value.enable == true) {
           selectedPaymentMethod.value = PaymentGateway.cashfree.name;
         }
-        Stripe.publishableKey = stripeModel.value.clientpublishableKey.toString();
-        Stripe.merchantIdentifier = 'Viteat';
-        Stripe.instance.applySettings();
+        // Même garde que cart_controller.dart : une clé Stripe absente/vide
+        // faisait planter le SDK natif à chaque initialisation.
+        if (stripeModel.value.isEnabled == true && (stripeModel.value.clientpublishableKey ?? '').isNotEmpty) {
+          Stripe.publishableKey = stripeModel.value.clientpublishableKey!;
+          Stripe.merchantIdentifier = 'Viteat';
+          Stripe.instance.applySettings();
+        }
         setRef();
 
         razorPay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccess);
@@ -718,7 +722,7 @@ class GiftCardController extends GetxController {
     final data = jsonDecode(response.body);
     if (data["body"]["txnToken"] == null || data["body"]["txnToken"].toString().isEmpty) {
       Get.back();
-      ShowToastDialog.showToast("something went wrong, please contact admin.");
+      ShowToastDialog.showToast("Something went wrong, please contact admin.");
       return null;
     }
     return GetPaymentTxtTokenModel.fromJson(data);
@@ -811,7 +815,7 @@ class GiftCardController extends GetxController {
       final responseData = jsonDecode(response.body);
       return responseData['payment_url'];
     } else {
-      ShowToastDialog.showToast("something went wrong, please contact admin.");
+      ShowToastDialog.showToast("Something went wrong, please contact admin.");
       return '';
     }
   }

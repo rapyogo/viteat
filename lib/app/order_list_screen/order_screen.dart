@@ -12,7 +12,6 @@ import 'package:customer/themes/responsive.dart';
 import 'package:customer/themes/round_button_fill.dart';
 import 'package:customer/utils/dark_theme_provider.dart';
 import 'package:customer/utils/dynamic_traslator.dart';
-import 'package:customer/utils/fire_store_utils.dart';
 import 'package:customer/utils/network_image_widget.dart';
 import 'package:customer/utils/translation_notifier.dart';
 import 'package:customer/widget/my_separator.dart';
@@ -396,19 +395,16 @@ class OrderScreen extends StatelessWidget {
                                 if (snapshot.data == false) {
                                   return const SizedBox();
                                 } else {
-                                  return FutureBuilder(
-                                      future: FireStoreUtils.getVendorById(orderModel.vendorID!),
-                                      builder: (context, snapshot) {
-                                        if (snapshot.connectionState == ConnectionState.waiting) {
-                                          return const SizedBox();
-                                        } else {
-                                          if (snapshot.hasError) {
-                                            return const SizedBox();
-                                          } else if (snapshot.data == null) {
-                                            return const SizedBox();
-                                          } else {
-                                            VendorModel vendorModel = snapshot.data!;
-                                            if ((Constant.isSubscriptionModelApplied == true || Constant.adminCommission?.isEnabled == true) && vendorModel.subscriptionPlan != null) {
+                                  // Le vendeur est prechargé une seule fois par OrderController._loadVendorCache()
+                                  // (verification en direct du statut d'abonnement, pas un simple affichage —
+                                  // on ne peut pas se contenter du vendor embarqué dans la commande, potentiellement
+                                  // perime) au lieu d'un FutureBuilder qui refetch a chaque rebuild de la liste.
+                                  return Builder(builder: (context) {
+                                    final VendorModel? vendorModel = controller.vendorCache[orderModel.vendorID];
+                                    if (vendorModel == null) {
+                                      return const SizedBox();
+                                    } else {
+                                      if ((Constant.isSubscriptionModelApplied == true || Constant.adminCommission?.isEnabled == true) && vendorModel.subscriptionPlan != null) {
                                               if (vendorModel.subscriptionTotalOrders == "-1") {
                                                 return Expanded(
                                                   child: InkWell(
@@ -481,7 +477,6 @@ class OrderScreen extends StatelessWidget {
                                               );
                                             }
                                           }
-                                        }
                                       });
                                 }
                               }

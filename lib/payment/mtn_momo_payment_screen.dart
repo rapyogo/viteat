@@ -156,7 +156,7 @@ class _MtnPaymentScreenState extends State<MtnPaymentScreen> {
                                     });
                                     await MtnMomoController.requesttopayAPI(partyId: email.value.text, amount: widget.amount.toString()).then((v) {
                                       if (v == false) {
-                                        ShowToastDialog.showToast("Please Enter Valid Momo Money Number".tr);
+                                        ShowToastDialog.showToast("Please Enter Valid Momo Money Number");
                                         setState(() {
                                           isLoading = false;
                                         });

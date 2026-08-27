@@ -103,13 +103,13 @@ class FireStoreUtils {
   }
 
   static Future<bool> isLogin() async {
-    bool isLogin = false;
-    if (FirebaseAuth.instance.currentUser != null) {
-      isLogin = await userExistOrNot(FirebaseAuth.instance.currentUser!.uid);
-    } else {
-      isLogin = false;
-    }
-    return isLogin;
+    if (FirebaseAuth.instance.currentUser == null) return false;
+    // Ne pas passer par userExistOrNot() ici : celui-ci avale les erreurs réseau
+    // et renvoie false, ce qui déconnecterait un utilisateur simplement hors-ligne
+    // (pas de cache local) au démarrage. On laisse l'erreur remonter pour que
+    // SplashController.redirectScreen() applique son fallback offline-aware.
+    final value = await fireStore.collection(CollectionName.users).doc(FirebaseAuth.instance.currentUser!.uid).get();
+    return value.exists;
   }
 
   static Future<bool> isMaintenanceMode() async {
@@ -735,7 +735,7 @@ class FireStoreUtils {
 
   static Future<List<StoryModel>> getStory() async {
     List<StoryModel> storyList = [];
-    await fireStore.collection(CollectionName.story).get().then((value) {
+    await fireStore.collection(CollectionName.story).limit(50).get().then((value) {
       for (var element in value.docs) {
         StoryModel walletTransactionModel = StoryModel.fromJson(element.data());
         storyList.add(walletTransactionModel);
@@ -1118,7 +1118,10 @@ class FireStoreUtils {
   static Future<List<OrderModel>> getAllOrder() async {
     List<OrderModel> list = [];
 
-    await fireStore.collection(CollectionName.restaurantOrders).where("authorID", isEqualTo: FireStoreUtils.getCurrentUid()).orderBy("createdAt", descending: true).get().then((value) {
+    // Limite large (200) : protège contre une croissance illimitée pour un client
+    // très fidèle sans affecter l'historique visible d'un utilisateur normal.
+    // Une vraie pagination serait nécessaire pour aller au-delà proprement.
+    await fireStore.collection(CollectionName.restaurantOrders).where("authorID", isEqualTo: FireStoreUtils.getCurrentUid()).orderBy("createdAt", descending: true).limit(200).get().then((value) {
       log("FireStoreUtils.getCurrentUid() :: ${FireStoreUtils.getCurrentUid()}");
       for (var element in value.docs) {
         OrderModel taxModel = OrderModel.fromJson(element.data());
@@ -1267,20 +1270,33 @@ class FireStoreUtils {
 
   static Future<List> getVendorCuisines(String id) async {
     List tagList = [];
-    List prodTagList = [];
     QuerySnapshot<Map<String, dynamic>> productsQuery = await fireStore.collection(CollectionName.vendorProducts).where('vendorID', isEqualTo: id).get();
-    await Future.forEach(productsQuery.docs, (QueryDocumentSnapshot<Map<String, dynamic>> document) {
-      if (document.data().containsKey("categoryID") && document.data()['categoryID'].toString().isNotEmpty) {
-        prodTagList.add(document.data()['categoryID']);
+    final Set<String> categoryIds = {};
+    for (var document in productsQuery.docs) {
+      final data = document.data();
+      if (data.containsKey("categoryID") && data['categoryID'].toString().isNotEmpty) {
+        categoryIds.add(data['categoryID'].toString());
       }
-    });
-    QuerySnapshot<Map<String, dynamic>> catQuery = await fireStore.collection(CollectionName.vendorCategories).where('publish', isEqualTo: true).get();
-    await Future.forEach(catQuery.docs, (QueryDocumentSnapshot<Map<String, dynamic>> document) {
-      Map<String, dynamic> catDoc = document.data();
-      if (catDoc.containsKey("id") && catDoc['id'].toString().isNotEmpty && catDoc.containsKey("title") && catDoc['title'].toString().isNotEmpty && prodTagList.contains(catDoc['id'])) {
-        tagList.add(catDoc['title']);
+    }
+    if (categoryIds.isEmpty) return tagList;
+
+    // Avant : on tirait TOUTE la collection vendorCategories (publish==true) puis
+    // on filtrait côté client sur les IDs du menu de ce vendeur. Désormais on ne
+    // demande que les catégories réellement utilisées par ses produits, par lots
+    // de 30 (limite de whereIn) — un seul .where('id', ...) reste indexable
+    // simplement, le filtre publish se fait ensuite sur ce petit lot.
+    final List<String> idList = categoryIds.toList();
+    for (int i = 0; i < idList.length; i += 30) {
+      final int end = i + 30 > idList.length ? idList.length : i + 30;
+      final List<String> chunk = idList.sublist(i, end);
+      QuerySnapshot<Map<String, dynamic>> catQuery = await fireStore.collection(CollectionName.vendorCategories).where('id', whereIn: chunk).get();
+      for (var document in catQuery.docs) {
+        Map<String, dynamic> catDoc = document.data();
+        if (catDoc['publish'] == true && catDoc.containsKey("title") && catDoc['title'].toString().isNotEmpty) {
+          tagList.add(catDoc['title']);
+        }
       }
-    });
+    }
     return tagList;
   }
 
@@ -1412,7 +1428,7 @@ class FireStoreUtils {
 
   static Future<List<RatingModel>> getVendorReviews(String vendorId) async {
     List<RatingModel> ratingList = [];
-    await fireStore.collection(CollectionName.foodsReview).where('VendorId', isEqualTo: vendorId).get().then((value) {
+    await fireStore.collection(CollectionName.foodsReview).where('VendorId', isEqualTo: vendorId).limit(100).get().then((value) {
       for (var element in value.docs) {
         RatingModel giftCardsOrderModel = RatingModel.fromJson(element.data());
         ratingList.add(giftCardsOrderModel);
@@ -1516,7 +1532,7 @@ class FireStoreUtils {
 
   static Future<List<CashbackModel>> getAllCashbak() async {
     List<CashbackModel> cashbackList = [];
-    await fireStore.collection(CollectionName.cashback).get().then((value) {
+    await fireStore.collection(CollectionName.cashback).limit(100).get().then((value) {
       cashbackList = value.docs.map((doc) {
         return CashbackModel.fromJson(doc.data());
       }).toList();

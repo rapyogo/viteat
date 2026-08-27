@@ -254,7 +254,7 @@ class DineInDetailsScreen extends StatelessWidget {
                                               Get.to(const ReviewListScreen(), arguments: {"vendorModel": controller.vendorModel.value});
                                             },
                                             child: TranslatedText(
-                                              "${controller.vendorModel.value.reviewsCount} ${'Ratings'}",
+                                              "${controller.vendorModel.value.reviewsCount} ${'Ratings'.tr}",
                                               style: TextStyle(
                                                 decoration: TextDecoration.underline,
                                                 color: themeChange.getThem() ? AppThemeData.grey200 : AppThemeData.grey700,
@@ -316,7 +316,7 @@ class DineInDetailsScreen extends StatelessWidget {
                                         ),
                                       ),
                                       TranslatedText(
-                                        "${Constant.amountShow(amount: controller.vendorModel.value.restaurantCost)} ${'for two'}",
+                                        "${Constant.amountShow(amount: controller.vendorModel.value.restaurantCost)} ${'for two'.tr}",
                                         textAlign: TextAlign.start,
                                         maxLines: 1,
                                         style: TextStyle(

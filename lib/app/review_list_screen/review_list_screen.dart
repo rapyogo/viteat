@@ -1,14 +1,10 @@
 import 'package:customer/app/chat_screens/full_screen_image_viewer.dart';
-import 'package:customer/constant/collection_name.dart';
 import 'package:customer/constant/constant.dart';
 import 'package:customer/controllers/review_list_controller.dart';
-import 'package:customer/models/product_model.dart';
 import 'package:customer/models/rating_model.dart';
-import 'package:customer/models/review_attribute_model.dart';
 import 'package:customer/themes/app_them_data.dart';
 import 'package:customer/themes/responsive.dart';
 import 'package:customer/utils/dark_theme_provider.dart';
-import 'package:customer/utils/fire_store_utils.dart';
 import 'package:customer/utils/network_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:customer/widget/translated_text.dart';
@@ -73,27 +69,14 @@ class ReviewListScreen extends StatelessWidget {
                                       ),
                                       Visibility(
                                         visible: ratingModel.productId != null,
-                                        child: FutureBuilder(
-                                            future: FireStoreUtils.fireStore.collection(CollectionName.vendorProducts).doc(ratingModel.productId?.split('~').first).get(),
-                                            builder: (context, snapshot) {
-                                              if (snapshot.connectionState == ConnectionState.waiting) {
-                                                return const TranslatedText('');
-                                              } else {
-                                                if (snapshot.hasError) {
-                                                  return const TranslatedText('');
-                                                } else if (snapshot.data == null) {
-                                                  return const TranslatedText('');
-                                                } else if (snapshot.data != null) {
-                                                  ProductModel model = ProductModel.fromJson(snapshot.data!.data()!);
-                                                  return TranslatedText(
-                                                    '${'Rate for'} - ${model.name ?? ''}',
-                                                    style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900, fontSize: 14, fontFamily: AppThemeData.semiBold),
-                                                  );
-                                                } else {
-                                                  return const TranslatedText('');
-                                                }
-                                              }
-                                            }),
+                                        child: Builder(builder: (context) {
+                                          final String? name = controller.productNameCache[ratingModel.productId?.split('~').first];
+                                          if (name == null) return const TranslatedText('');
+                                          return TranslatedText(
+                                            '${'Rate for'.tr} - $name',
+                                            style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900, fontSize: 14, fontFamily: AppThemeData.semiBold),
+                                          );
+                                        }),
                                       ),
                                       const SizedBox(
                                         height: 5,
@@ -139,31 +122,20 @@ class ReviewListScreen extends StatelessWidget {
                                               padding: const EdgeInsets.symmetric(vertical: 2),
                                               child: Row(
                                                 children: [
-                                                  FutureBuilder(
-                                                      future: FireStoreUtils.fireStore.collection(CollectionName.reviewAttributes).doc(key).get(),
-                                                      builder: (context, snapshot) {
-                                                        if (snapshot.connectionState == ConnectionState.waiting) {
-                                                          return const TranslatedText('');
-                                                        } else {
-                                                          if (snapshot.hasError) {
-                                                            return const TranslatedText('');
-                                                          } else if (snapshot.data == null) {
-                                                            return const TranslatedText('');
-                                                          } else {
-                                                            ReviewAttributeModel model = ReviewAttributeModel.fromJson(snapshot.data!.data()!);
-                                                            return Expanded(
-                                                              child: TranslatedText(
-                                                                model.title.toString(),
-                                                                style: TextStyle(
-                                                                  color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                                                                  fontSize: 16,
-                                                                  fontFamily: AppThemeData.semiBold,
-                                                                ),
-                                                              ),
-                                                            );
-                                                          }
-                                                        }
-                                                      }),
+                                                  Builder(builder: (context) {
+                                                    final String? title = controller.reviewAttributeTitleCache[key];
+                                                    if (title == null) return const TranslatedText('');
+                                                    return Expanded(
+                                                      child: TranslatedText(
+                                                        title,
+                                                        style: TextStyle(
+                                                          color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                                                          fontSize: 16,
+                                                          fontFamily: AppThemeData.semiBold,
+                                                        ),
+                                                      ),
+                                                    );
+                                                  }),
                                                   RatingBar.builder(
                                                     ignoreGestures: true,
                                                     initialRating: value == null ? 0.0 : double.parse(value.toString()),

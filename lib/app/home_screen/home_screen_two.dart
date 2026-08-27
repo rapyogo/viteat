@@ -1024,18 +1024,11 @@ class StoryView extends StatelessWidget {
                               ),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
-                                child: FutureBuilder(
-                                    future: FireStoreUtils.getVendorById(storyModel.vendorID.toString()),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState == ConnectionState.waiting) {
-                                        return Constant.loader();
-                                      } else {
-                                        if (snapshot.hasError) {
-                                          return Center(child: TranslatedText('Error: ${snapshot.error}'));
-                                        } else if (snapshot.data == null) {
-                                          return const SizedBox();
-                                        } else {
-                                          VendorModel vendorModel = snapshot.data!;
+                                child: Builder(builder: (context) {
+                                  final VendorModel? vendorModel = controller.vendorById(storyModel.vendorID.toString());
+                                  if (vendorModel == null) {
+                                    return const SizedBox();
+                                  } else {
                                           return Row(
                                             mainAxisAlignment: MainAxisAlignment.start,
                                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1092,7 +1085,6 @@ class StoryView extends StatelessWidget {
                                             ],
                                           );
                                         }
-                                      }
                                     }),
                               ),
                             ],

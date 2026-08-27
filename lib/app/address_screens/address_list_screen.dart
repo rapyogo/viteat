@@ -51,7 +51,7 @@ class AddressListScreen extends StatelessWidget {
                 children: [
                   InkWell(
                     onTap: () async {
-                      ShowToastDialog.showLoader("Please wait");
+                      ShowToastDialog.showLoader("Please wait".tr);
                       ShippingAddress addressModel = ShippingAddress();
                       try {
                         await Geolocator.requestPermission();
@@ -87,7 +87,7 @@ class AddressListScreen extends StatelessWidget {
                           width: 10,
                         ),
                         TranslatedText(
-                          "Use my current location",
+                          "Use my current location".tr,
                           style: TextStyle(
                             fontSize: 16,
                             color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
@@ -113,7 +113,7 @@ class AddressListScreen extends StatelessWidget {
                           width: 10,
                         ),
                         TranslatedText(
-                          "Add Location",
+                          "Add Location".tr,
                           style: TextStyle(
                             fontSize: 16,
                             color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
@@ -128,7 +128,7 @@ class AddressListScreen extends StatelessWidget {
                     height: 32,
                   ),
                   TranslatedText(
-                    "Saved Addresses",
+                    "Saved Addresses".tr,
                     style: TextStyle(
                       fontSize: 16,
                       color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
@@ -141,7 +141,7 @@ class AddressListScreen extends StatelessWidget {
                   ),
                   Expanded(
                     child: controller.shippingAddressList.isEmpty
-                        ? Constant.showEmptyView(message: "Saved addresses not found")
+                        ? Constant.showEmptyView(message: "Saved addresses not found".tr)
                         : ListView.builder(
                             shrinkWrap: true,
                             itemCount: controller.shippingAddressList.length,
@@ -197,7 +197,7 @@ class AddressListScreen extends StatelessWidget {
                                                             child: Padding(
                                                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                                                               child: TranslatedText(
-                                                                "Default",
+                                                                "Default".tr,
                                                                 style: TextStyle(
                                                                   fontSize: 12,
                                                                   color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
@@ -271,7 +271,7 @@ class AddressListScreen extends StatelessWidget {
                 },
               );
             },
-            child: TranslatedText('Default', style: const TextStyle(color: Colors.blue)),
+            child: TranslatedText('Default'.tr, style: const TextStyle(color: Colors.blue)),
           ),
           CupertinoActionSheetAction(
             onPressed: () async {
@@ -295,7 +295,7 @@ class AddressListScreen extends StatelessWidget {
                 },
               );
             },
-            child: TranslatedText('Delete', style: const TextStyle(color: Colors.red)),
+            child: TranslatedText('Delete'.tr, style: const TextStyle(color: Colors.red)),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(

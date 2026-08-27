@@ -29,6 +29,20 @@ class MoreStories extends StatefulWidget {
 class MoreStoriesState extends State<MoreStories> {
   StoryController storyController = StoryController();
 
+  // Mémorise le vendeur déjà résolu par index — le swipe déclenche 2 setState
+  // (reset du storyController puis incrément de l'index), donc sans ce cache
+  // le même vendeur était refetch deux fois à chaque swipe, et refetch à
+  // nouveau en revenant sur un index déjà consulté.
+  final Map<int, VendorModel> _vendorCache = {};
+
+  Future<VendorModel?> _cachedVendor(int index, String vendorId) async {
+    final VendorModel? cached = _vendorCache[index];
+    if (cached != null) return cached;
+    final VendorModel? fetched = await FireStoreUtils.getVendorById(vendorId);
+    if (fetched != null) _vendorCache[index] = fetched;
+    return fetched;
+  }
+
   @override
   void dispose() {
     storyController.dispose();
@@ -104,7 +118,7 @@ class MoreStoriesState extends State<MoreStories> {
             Padding(
               padding: EdgeInsets.only(top: MediaQuery.of(context).viewPadding.top + 30, left: 16, right: 16),
               child: FutureBuilder(
-                  future: FireStoreUtils.getVendorById(widget.storyList[widget.index].vendorID.toString()),
+                  future: _cachedVendor(widget.index, widget.storyList[widget.index].vendorID.toString()),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return SizedBox();

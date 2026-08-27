@@ -14,12 +14,18 @@ import 'package:customer/utils/notification_service.dart';
 import 'package:customer/utils/preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
 class SplashController extends GetxController {
   @override
   void onInit() {
-    Timer(const Duration(seconds: 3), () => redirectScreen());
+    // Pas de délai artificiel : on attend juste la 1ère frame avant de
+    // naviguer (Get.offAll a besoin du Navigator déjà monté — appelé trop tôt
+    // dans onInit(), quand _redirectScreen() résout très vite (cache Firestore
+    // déjà chaud), la redirection échouait silencieusement et l'app restait
+    // bloquée sur le splash). On n'impose plus 3s fixes pour autant.
+    WidgetsBinding.instance.addPostFrameCallback((_) => redirectScreen());
     super.onInit();
   }
 
@@ -82,8 +88,21 @@ class SplashController extends GetxController {
                 log(userModel.toJson().toString());
                 if (userModel.role == Constant.userRoleCustomer) {
                   if (userModel.active == true) {
-                    userModel.fcmToken = await NotificationService.getToken();
-                    await FireStoreUtils.updateUser(userModel);
+                    try {
+                      // Le token FCM est secondaire : s'il échoue (hors-ligne,
+                      // service Messaging indisponible...), ça ne doit jamais
+                      // faire échouer toute la redirection vers le dashboard —
+                      // avant ce try/catch, une erreur ici remontait jusqu'au
+                      // catch de redirectScreen() sans forcément matcher son
+                      // filtre "erreur réseau connue", et l'utilisateur
+                      // retombait sur l'écran de connexion au lieu du cache.
+                      userModel.fcmToken = await NotificationService.getToken();
+                    } catch (e) {
+                      log("SplashController: échec récupération token FCM (ignoré) :: $e");
+                    }
+                    // Pas d'await : le rafraîchissement du token FCM ne doit pas
+                    // retarder la navigation vers le dashboard à chaque lancement.
+                    FireStoreUtils.updateUser(userModel);
                     RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
                     if (initialMessage != null && initialMessage.data['type'] != null) {
                     } else if (userModel.shippingAddress != null && userModel.shippingAddress!.isNotEmpty) {
@@ -104,6 +123,15 @@ class SplashController extends GetxController {
                   await FirebaseAuth.instance.signOut();
                   Get.offAll(const LoginScreen());
                 }
+              } else {
+                // getUserProfile() avale ses erreurs et renvoie null aussi bien
+                // pour "profil absent" que pour "lecture impossible" (hors-ligne,
+                // pas encore de cache pour ce document). On ne peut pas distinguer
+                // les deux ici, donc on relance une erreur : le catch de
+                // redirectScreen() sait déjà faire la bonne chose (rester sur le
+                // dashboard si l'utilisateur a une session locale et est hors-ligne)
+                // plutôt que de laisser le splash bloqué indéfiniment.
+                throw Exception("User profile unavailable (offline or missing document)");
               }
             });
           } else {

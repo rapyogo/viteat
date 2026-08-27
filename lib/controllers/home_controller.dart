@@ -24,7 +24,7 @@ class HomeController extends GetxController {
   RxBool isLoading = true.obs;
   RxBool isListView = true.obs;
   RxBool isPopular = true.obs;
-  RxString selectedOrderTypeValue = "Delivery".tr.obs;
+  RxString selectedOrderTypeValue = "Delivery".obs;
 
   final Rx<PageController> pageController = PageController(viewportFraction: 0.877).obs;
   final Rx<PageController> pageBottomController = PageController(viewportFraction: 0.877).obs;
@@ -214,6 +214,11 @@ class HomeController extends GetxController {
       if (inside) break;
     }
   }
+
+  // allNearestRestaurant contient déjà tous les vendeurs pertinents pour les
+  // pubs et stories (elles sont filtrées contre cette même liste dans
+  // _fetchAds/_fetchStories) — recherche synchrone, pas de nouveau fetch.
+  VendorModel? vendorById(String? id) => id == null ? null : allNearestRestaurant.firstWhereOrNull((v) => v.id == id);
 
   @override
   void onClose() {

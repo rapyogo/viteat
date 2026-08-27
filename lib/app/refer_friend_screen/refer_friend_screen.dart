@@ -69,7 +69,7 @@ class ReferFriendScreen extends StatelessWidget {
                                   width: 4,
                                 ),
                                 TranslatedText(
-                                  "${Constant.amountShow(amount: Constant.referralAmount)} ${'Each'} 🎉",
+                                  "${Constant.amountShow(amount: Constant.referralAmount)} ${'Each'.tr} 🎉",
                                   style: TextStyle(
                                     fontSize: 24,
                                     color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50,
@@ -93,7 +93,7 @@ class ReferFriendScreen extends StatelessWidget {
                                   height: 8,
                                 ),
                                 TranslatedText(
-                                  "${'Invite your friends to sign up with Viteat using your code, and you’ll earn'} ${Constant.amountShow(amount: Constant.referralAmount)} ${'after their Success the first order! 💸🍔'}",
+                                  "${'Invite your friends to sign up with Viteat using your code, and you’ll earn'.tr} ${Constant.amountShow(amount: Constant.referralAmount)} ${'after their Success the first order! 💸🍔'.tr}",
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 16,

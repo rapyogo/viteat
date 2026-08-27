@@ -16,6 +16,7 @@ import 'package:customer/utils/preferences.dart';
 import 'package:customer/utils/translation_notifier.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
@@ -35,10 +36,16 @@ void main() async {
     FireStoreUtils.instance.init(firebaseApp, databaseId: 'staging'); // pass databaseId if named DB
   }
 
+  // Play Integrity échoue systématiquement sur un build debug installé hors
+  // Play Store (device non "Play Protect certified" pour ce chemin d'install) :
+  // chaque appel Firebase (auth, Firestore, Cloud Functions) tentait alors une
+  // vraie attestation avec retry/backoff avant de retomber sur un token
+  // placeholder — ça ralentissait tout (connexion Google, paiement...).
+  // Le provider debug ne fait pas cette tentative et répond immédiatement.
   await FirebaseAppCheck.instance.activate(
     webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
-    androidProvider: AndroidProvider.playIntegrity,
-    appleProvider: AppleProvider.appAttest,
+    androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+    appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
   );
 
   DatabaseHelper.instance;

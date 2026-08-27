@@ -117,9 +117,13 @@ class WalletController extends GetxController {
         cashfreeModel.value = Cashfree.fromJson(jsonDecode(Preferences.getString(Preferences.cashFreeSettings)));
         flexPayModel.value = FlexPay.fromJson(jsonDecode(Preferences.getString(Preferences.flexPaySettings, defaultValue: '{}')));
         isLoadingPayment.value = false;
-        Stripe.publishableKey = stripeModel.value.clientpublishableKey.toString();
-        Stripe.merchantIdentifier = 'Viteat';
-        Stripe.instance.applySettings();
+        // Même garde que cart_controller.dart : une clé Stripe absente/vide
+        // faisait planter le SDK natif à chaque initialisation du wallet.
+        if (stripeModel.value.isEnabled == true && (stripeModel.value.clientpublishableKey ?? '').isNotEmpty) {
+          Stripe.publishableKey = stripeModel.value.clientpublishableKey!;
+          Stripe.merchantIdentifier = 'Viteat';
+          Stripe.instance.applySettings();
+        }
         setRef();
 
         razorPay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccess);
@@ -559,7 +563,7 @@ class WalletController extends GetxController {
     final data = jsonDecode(response.body);
     if (data["body"]["txnToken"] == null || data["body"]["txnToken"].toString().isEmpty) {
       Get.back();
-      ShowToastDialog.showToast("something went wrong, please contact admin.");
+      ShowToastDialog.showToast("Something went wrong, please contact admin.");
       return null;
     }
     return GetPaymentTxtTokenModel.fromJson(data);
@@ -652,7 +656,7 @@ class WalletController extends GetxController {
       final responseData = jsonDecode(response.body);
       return responseData['payment_url'];
     } else {
-      ShowToastDialog.showToast("something went wrong, please contact admin.");
+      ShowToastDialog.showToast("Something went wrong, please contact admin.");
       return '';
     }
   }
@@ -854,6 +858,7 @@ class WalletController extends GetxController {
       flexPaySettings: flexPayModel.value,
       amount: double.parse(amount),
       currency: flexPayModel.value.currency ?? 'USD',
+      isWalletTopUp: true,
     ))?.then((value) {
       if (value == true) {
         ShowToastDialog.showToast("Payment Successful!!");

@@ -20,9 +20,9 @@ class ConnectivityBanner extends StatelessWidget {
       if (state == SyncState.online) return const SizedBox.shrink();
 
       final (Color background, Color foreground, String message) = switch (state) {
-        SyncState.offline => (AppThemeData.warning100, AppThemeData.warning500, "Hors ligne — affichage des données enregistrées"),
-        SyncState.syncing => (AppThemeData.info100, AppThemeData.info500, "Synchronisation..."),
-        SyncState.syncFailed => (AppThemeData.danger100, AppThemeData.danger500, "Echec de synchronisation — nouvelle tentative à la reconnexion"),
+        SyncState.offline => (AppThemeData.warning100, AppThemeData.warning500, "You're offline — showing saved data"),
+        SyncState.syncing => (AppThemeData.info100, AppThemeData.info500, "Syncing..."),
+        SyncState.syncFailed => (AppThemeData.danger100, AppThemeData.danger500, "Sync failed — retrying when back online"),
         SyncState.online => (AppThemeData.grey100, AppThemeData.grey600, ""),
       };
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:customer/constant/constant.dart';
 import 'package:customer/models/BannerModel.dart';
 import 'package:customer/models/favourite_model.dart';
@@ -21,6 +23,14 @@ class DineInController extends GetxController {
     super.onInit();
   }
 
+  StreamSubscription<List<VendorModel>>? _restaurantSubscription;
+
+  @override
+  void onClose() {
+    _restaurantSubscription?.cancel();
+    super.onClose();
+  }
+
   RxList<VendorCategoryModel> vendorCategoryModel = <VendorCategoryModel>[].obs;
 
   RxList<VendorModel> allNearestRestaurant = <VendorModel>[].obs;
@@ -36,7 +46,8 @@ class DineInController extends GetxController {
   Future<void> getData() async {
     isLoading.value = true;
     await getZone();
-    FireStoreUtils.getAllNearestRestaurant(isDining: true).listen((event) async {
+    _restaurantSubscription?.cancel();
+    _restaurantSubscription = FireStoreUtils.getAllNearestRestaurant(isDining: true).listen((event) async {
       newArrivalRestaurantList.clear();
       allNearestRestaurant.clear();
       popularRestaurantList.clear();
@@ -61,24 +72,15 @@ class DineInController extends GetxController {
   }
 
   Future<void> getCategory() async {
-    await FireStoreUtils.getHomeVendorCategory().then(
-      (value) {
-        vendorCategoryModel.value = value;
-      },
-    );
-
-    await FireStoreUtils.getHomeBottomBanner().then(
-      (value) {
-        bannerBottomModel.value = value;
-      },
-    );
+    // Les 3 lectures ci-dessous sont indépendantes — lancées en parallèle.
+    final List<Future<void>> tasks = [
+      FireStoreUtils.getHomeVendorCategory().then((value) => vendorCategoryModel.value = value),
+      FireStoreUtils.getHomeBottomBanner().then((value) => bannerBottomModel.value = value),
+    ];
     if (Constant.userModel != null) {
-      await FireStoreUtils.getFavouriteRestaurant().then(
-        (value) {
-          favouriteList.value = value;
-        },
-      );
+      tasks.add(FireStoreUtils.getFavouriteRestaurant().then((value) => favouriteList.value = value));
     }
+    await Future.wait(tasks);
   }
 
   Future<void> getZone() async {

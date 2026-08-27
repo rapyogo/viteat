@@ -17,24 +17,39 @@ class SplashScreen extends StatelessWidget {
       builder: (controller) {
         return Scaffold(
           backgroundColor: AppThemeData.primary300,
-          body: Center(
+          body: SafeArea(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Image.asset(
-                  "assets/images/ic_logo.png",
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          "assets/images/ic_logo.png",
+                        ),
+                        const SizedBox(
+                          height: 10,
+                        ),
+                        TranslatedText(
+                          "Welcome to Viteat",
+                          style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50, fontSize: 28, fontFamily: AppThemeData.bold),
+                        ),
+                        TranslatedText(
+                          "Your Favorite Food Delivered Fast!",
+                          style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                const SizedBox(
-                  height: 10,
-                ),
-                TranslatedText(
-                  "Welcome to Viteat",
-                  style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50, fontSize: 28, fontFamily: AppThemeData.bold),
-                ),
-                TranslatedText(
-                  "Your Favorite Food Delivered Fast!",
-                  style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: TranslatedText(
+                    "by Rapyogo Ltd",
+                    style: TextStyle(color: (themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50).withValues(alpha: 0.7), fontSize: 12, fontFamily: AppThemeData.medium),
+                  ),
                 ),
               ],
             ),

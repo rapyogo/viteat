@@ -89,30 +89,51 @@ class CartScreen extends StatelessWidget {
                                                     width: 10,
                                                   ),
                                                   Expanded(
-                                                    child: TranslatedText(
-                                                      controller.selectedAddress.value.addressAs.toString(),
-                                                      textAlign: TextAlign.start,
-                                                      style: TextStyle(
-                                                        fontFamily: AppThemeData.semiBold,
-                                                        color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
-                                                        fontSize: 16,
-                                                      ),
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        TranslatedText(
+                                                          "Delivery Address",
+                                                          textAlign: TextAlign.start,
+                                                          style: TextStyle(
+                                                            fontFamily: AppThemeData.medium,
+                                                            color: themeChange.getThem() ? AppThemeData.grey400 : AppThemeData.grey500,
+                                                            fontSize: 11,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                          height: 2,
+                                                        ),
+                                                        TranslatedText(
+                                                          controller.selectedAddress.value.location == null
+                                                              ? "Add Location"
+                                                              : controller.selectedAddress.value.addressAs.toString(),
+                                                          textAlign: TextAlign.start,
+                                                          style: TextStyle(
+                                                            fontFamily: AppThemeData.semiBold,
+                                                            color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
+                                                            fontSize: 16,
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
                                                   ),
                                                   SvgPicture.asset("assets/icons/ic_down.svg"),
                                                 ],
                                               ),
-                                              const SizedBox(
-                                                height: 5,
-                                              ),
-                                              TranslatedText(
-                                                controller.selectedAddress.value.getFullAddress(),
-                                                textAlign: TextAlign.start,
-                                                style: TextStyle(
-                                                  fontFamily: AppThemeData.medium,
-                                                  color: themeChange.getThem() ? AppThemeData.grey400 : AppThemeData.grey500,
+                                              if (controller.selectedAddress.value.location != null) ...[
+                                                const SizedBox(
+                                                  height: 5,
                                                 ),
-                                              ),
+                                                TranslatedText(
+                                                  controller.selectedAddress.value.getFullAddress(),
+                                                  textAlign: TextAlign.start,
+                                                  style: TextStyle(
+                                                    fontFamily: AppThemeData.medium,
+                                                    color: themeChange.getThem() ? AppThemeData.grey400 : AppThemeData.grey500,
+                                                  ),
+                                                ),
+                                              ],
                                             ],
                                           ),
                                         ),
@@ -223,7 +244,7 @@ class CartScreen extends StatelessWidget {
                                                       cartProductModel.taxSetting?.isEmpty == true
                                                           ? SizedBox()
                                                           : TranslatedText(
-                                                              "${'Tax:'} ${Constant.getTaxDisplayText(cartProductModel.taxSetting)}",
+                                                              "${'Tax:'.tr} ${Constant.getTaxDisplayText(cartProductModel.taxSetting)}",
                                                               maxLines: 2,
                                                               overflow: TextOverflow.ellipsis,
                                                               style: TextStyle(
@@ -450,7 +471,7 @@ class CartScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               TranslatedText(
-                                "${'Delivery Type'} ${'(${controller.selectedFoodType.value})'}",
+                                "${'Delivery Type'.tr} ${'(${controller.selectedFoodType.value})'}",
                                 textAlign: TextAlign.start,
                                 style: TextStyle(
                                   fontFamily: AppThemeData.semiBold,
@@ -556,7 +577,7 @@ class CartScreen extends StatelessWidget {
                                                 height: 5,
                                               ),
                                               TranslatedText(
-                                                "${'Your preferred time'} ${controller.deliveryType.value == "schedule" ? Constant.timestampToDateTime(Timestamp.fromDate(controller.scheduleDateTime.value)) : ""}",
+                                                "${'Your preferred time'.tr} ${controller.deliveryType.value == "schedule" ? Constant.timestampToDateTime(Timestamp.fromDate(controller.scheduleDateTime.value)) : ""}",
                                                 textAlign: TextAlign.start,
                                                 style: TextStyle(
                                                   fontFamily: AppThemeData.medium,
@@ -1175,7 +1196,7 @@ class CartScreen extends StatelessWidget {
                                       )),
                                     ),
                                     TranslatedText(
-                                      "${'Buy'} ${Constant.amountShow(amount: "${double.parse("${controller.freeDeliveryByAdminModel.value.freeDeliveryOver ?? 0.0}") - controller.subTotal.value}")} ${"more for free delivery"}",
+                                      "${'Buy'.tr} ${Constant.amountShow(amount: "${double.parse("${controller.freeDeliveryByAdminModel.value.freeDeliveryOver ?? 0.0}") - controller.subTotal.value}")} ${"more for free delivery".tr}",
                                       style: TextStyle(
                                         color: AppThemeData.primary300,
                                         fontFamily: AppThemeData.semiBold,
@@ -1202,7 +1223,6 @@ class CartScreen extends StatelessWidget {
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.start,
                                     crossAxisAlignment: CrossAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
                                     children: [
                                       controller.selectedPaymentMethod.value == ''
                                           ? cardDecoration(controller, PaymentGateway.wallet, themeChange, "")
@@ -1251,7 +1271,8 @@ class CartScreen extends StatelessWidget {
                                                                                                                       : const SizedBox(
                                                                                                                           width: 10,
                                                                                                                         ),
-                                      Padding(
+                                      Expanded(
+                                        child: Padding(
                                         padding: const EdgeInsets.only(left: 8, right: 8),
                                         child: Column(
                                           mainAxisSize: MainAxisSize.min,
@@ -1300,6 +1321,7 @@ class CartScreen extends StatelessWidget {
                                                   ),
                                           ],
                                         ),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -1342,7 +1364,7 @@ class CartScreen extends StatelessWidget {
                                       return;
                                     }
                                     if (controller.selectedAddress.value.location == null) {
-                                      ShowToastDialog.showToast("Veuillez ajouter votre localisation avant de commander.");
+                                      ShowToastDialog.showToast("Please add your location before placing an order.");
                                       return;
                                     }
                                     if (controller.isOrderPlaced.value == false) {

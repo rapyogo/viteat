@@ -55,7 +55,7 @@ class RestaurantDetailsScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           TranslatedText(
-                            '${cartItem.length} ${'items'}',
+                            '${cartItem.length} ${'items'.tr}',
                             style: TextStyle(
                               fontFamily: AppThemeData.medium,
                               color: AppThemeData.grey50,
@@ -368,7 +368,7 @@ class RestaurantDetailsScreen extends StatelessWidget {
                                               Get.to(const ReviewListScreen(), arguments: {"vendorModel": controller.vendorModel.value});
                                             },
                                             child: TranslatedText(
-                                              "${controller.vendorModel.value.reviewsCount} ${'Ratings'}",
+                                              "${controller.vendorModel.value.reviewsCount} ${'Ratings'.tr}",
                                               style: TextStyle(
                                                 decoration: TextDecoration.underline,
                                                 color: themeChange.getThem() ? AppThemeData.grey200 : AppThemeData.grey700,

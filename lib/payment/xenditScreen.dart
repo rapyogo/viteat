@@ -259,7 +259,7 @@ class _XenditScreenState extends State<XenditScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: TranslatedText('Cancel Payment'),
-        content: TranslatedText('CancelPayment?'),
+        content: TranslatedText('Cancel Payment?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, true),

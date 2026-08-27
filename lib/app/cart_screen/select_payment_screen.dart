@@ -4,6 +4,7 @@ import 'package:customer/controllers/cart_controller.dart';
 import 'package:customer/themes/app_them_data.dart';
 import 'package:customer/themes/round_button_fill.dart';
 import 'package:customer/utils/dark_theme_provider.dart';
+import 'package:customer/utils/preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:customer/widget/translated_text.dart';
 import 'package:get/get.dart';
@@ -246,6 +247,7 @@ class SelectPaymentScreen extends StatelessWidget {
             InkWell(
               onTap: () {
                 controller.selectedPaymentMethod.value = value.name;
+                Preferences.setString(Preferences.selectedPaymentMethod, value.name);
               },
               child: Row(
                 children: [
@@ -314,6 +316,7 @@ class SelectPaymentScreen extends StatelessWidget {
                     activeColor: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
                     onChanged: (value) {
                       controller.selectedPaymentMethod.value = value.toString();
+                      Preferences.setString(Preferences.selectedPaymentMethod, value.toString());
                     },
                   )
                 ],

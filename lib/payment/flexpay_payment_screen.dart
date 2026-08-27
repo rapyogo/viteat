@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -7,6 +8,7 @@ import 'package:customer/constant/show_toast_dialog.dart';
 import 'package:customer/models/payment_model/flexpay_model.dart';
 import 'package:customer/themes/app_them_data.dart';
 import 'package:customer/utils/dark_theme_provider.dart';
+import 'package:customer/utils/preferences.dart';
 import 'package:customer/widget/translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -18,8 +20,14 @@ class FlexPayPaymentScreen extends StatefulWidget {
   final FlexPay flexPaySettings;
   final double amount;
   final String currency;
+  // Le rechargement du portefeuille peut prendre jusqu'à une minute à se
+  // refléter (écriture asynchrone après le retour de cet écran) — on laisse
+  // plus de temps de lecture et on prévient l'utilisateur uniquement dans ce
+  // cas. En checkout (valeur par défaut), la commande n'est passée qu'au
+  // retour de cet écran : on ne retarde pas la redirection automatique.
+  final bool isWalletTopUp;
 
-  const FlexPayPaymentScreen({super.key, required this.flexPaySettings, required this.amount, required this.currency});
+  const FlexPayPaymentScreen({super.key, required this.flexPaySettings, required this.amount, required this.currency, this.isWalletTopUp = false});
 
   @override
   State<FlexPayPaymentScreen> createState() => _FlexPayPaymentScreenState();
@@ -34,13 +42,76 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
   String? _reference;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _subscription;
   Timer? _timeoutTimer;
+  Timer? _successRedirectTimer;
+
+  List<String> _recentNumbers = [];
+
+  static const List<String> _waitingTips = [
+    "Please confirm on your phone to complete the payment. Don't close this page.",
+    'Check your phone for a Mobile Money notification or USSD prompt.',
+    'Enter your Mobile Money PIN when prompted to confirm the transaction.',
+    'This usually takes less than a minute, but can take up to two.',
+    'We are checking your payment status automatically — no need to refresh.',
+  ];
+  int _waitingTipIndex = 0;
+  Timer? _waitingTipTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentNumbers();
+  }
 
   @override
   void dispose() {
     _subscription?.cancel();
     _timeoutTimer?.cancel();
+    _successRedirectTimer?.cancel();
+    _waitingTipTimer?.cancel();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  void _loadRecentNumbers() {
+    final String raw = Preferences.getString(Preferences.recentMobileMoneyNumbers, defaultValue: '[]');
+    try {
+      final List<dynamic> decoded = jsonDecode(raw);
+      setState(() => _recentNumbers = decoded.map((e) => e.toString()).toList());
+    } catch (_) {
+      // Valeur corrompue/legacy — on ignore plutôt que de faire planter l'écran.
+    }
+  }
+
+  Future<void> _rememberNumber(String number) async {
+    final List<String> updated = [number, ..._recentNumbers.where((n) => n != number)].take(3).toList();
+    setState(() => _recentNumbers = updated);
+    await Preferences.setString(Preferences.recentMobileMoneyNumbers, jsonEncode(updated));
+  }
+
+  void _startWaitingTips() {
+    _waitingTipIndex = 0;
+    _waitingTipTimer?.cancel();
+    _waitingTipTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!mounted || _state != _FlexPayState.waiting) {
+        timer.cancel();
+        return;
+      }
+      setState(() => _waitingTipIndex = (_waitingTipIndex + 1) % _waitingTips.length);
+    });
+  }
+
+  void _onSuccess() {
+    _timeoutTimer?.cancel();
+    setState(() => _state = _FlexPayState.success);
+    _successRedirectTimer?.cancel();
+    _successRedirectTimer = Timer(Duration(seconds: widget.isWalletTopUp ? 30 : 2), () {
+      if (mounted) Get.back(result: true);
+    });
+  }
+
+  void _confirmNow() {
+    _successRedirectTimer?.cancel();
+    Get.back(result: true);
   }
 
   /// Traduit une erreur technique en explication comprehensible, plutot
@@ -50,40 +121,45 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
       switch (error.code) {
         case 'unavailable':
         case 'deadline-exceeded':
-          return 'Le service de paiement est momentanement indisponible. Veuillez réessayer dans quelques instants.';
+          return 'Payment service is temporarily unavailable. Please try again shortly.';
         case 'invalid-argument':
-          return 'Le numéro de téléphone saisi semble invalide. Vérifiez-le et réessayez.';
+          return 'The phone number you entered looks invalid. Please check and try again.';
         case 'failed-precondition':
         case 'unavailable-payment-method':
-          return 'Mobile Money n\'est pas disponible pour le moment. Choisissez un autre moyen de paiement.';
+          return 'Mobile Money isn\'t available right now. Please choose another payment method.';
         default:
-          return error.message ?? 'Le paiement n\'a pas pu être initié. Veuillez réessayer.';
+          return error.message ?? 'Payment could not be initiated. Please try again.';
       }
     }
-    return 'Une erreur est survenue. Vérifiez votre connexion internet et réessayez.';
+    return 'Something went wrong. Check your internet connection and try again.';
   }
+
+  String get _normalizedPhone => _phoneController.text.trim().replaceAll(RegExp(r'[\s-]'), '');
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
     setState(() => _submitting = true);
+    final String phone = _normalizedPhone;
 
     try {
       final callable = FirebaseFunctions.instance.httpsCallable('initiateMobileMoneyPayment');
       final result = await callable.call({
-        'phone': _phoneController.text.trim(),
+        'phone': phone,
         'amount': widget.amount,
         'currency': widget.currency,
       });
 
       final reference = result.data['reference'] as String;
       _reference = reference;
+      _rememberNumber(phone);
 
       setState(() {
         _state = _FlexPayState.waiting;
         _submitting = false;
       });
 
+      _startWaitingTips();
       _listenForStatus(reference);
       _timeoutTimer = Timer(const Duration(minutes: 2), () {
         if (mounted && _state == _FlexPayState.waiting) {
@@ -100,11 +176,7 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
     _subscription = FirebaseFirestore.instance.collection('mobile_money_payments').doc(reference).snapshots().listen((snap) {
       final status = snap.data()?['status'];
       if (status == 'completed') {
-        _timeoutTimer?.cancel();
-        setState(() => _state = _FlexPayState.success);
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) Get.back(result: true);
-        });
+        _onSuccess();
       } else if (status == 'failed') {
         _timeoutTimer?.cancel();
         setState(() => _state = _FlexPayState.failed);
@@ -120,11 +192,7 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
       final result = await callable.call({'reference': _reference});
       final status = result.data['status'];
       if (status == 'completed') {
-        _timeoutTimer?.cancel();
-        setState(() => _state = _FlexPayState.success);
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) Get.back(result: true);
-        });
+        _onSuccess();
       } else if (status == 'failed') {
         _timeoutTimer?.cancel();
         setState(() => _state = _FlexPayState.failed);
@@ -133,6 +201,7 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
           _submitting = false;
           _state = _FlexPayState.waiting;
         });
+        _startWaitingTips();
         _timeoutTimer = Timer(const Duration(minutes: 2), () {
           if (mounted && _state == _FlexPayState.waiting) {
             setState(() => _state = _FlexPayState.timeout);
@@ -214,12 +283,12 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
         children: [
           InkWell(
             onTap: () => Get.to(const TermsAndConditionScreen(type: "privacy")),
-            child: TranslatedText('Confidentialité', style: linkStyle),
+            child: TranslatedText('Privacy Policy', style: linkStyle),
           ),
           TranslatedText('•', style: TextStyle(color: textSecondary, fontSize: 12)),
           InkWell(
             onTap: () => Get.to(const TermsAndConditionScreen(type: "termAndCondition")),
-            child: TranslatedText('Conditions d\'utilisation', style: linkStyle),
+            child: TranslatedText('Terms & Conditions', style: linkStyle),
           ),
         ],
       ),
@@ -235,12 +304,12 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TranslatedText(
-                'Entrez votre numéro Mobile Money'.tr,
+                'Enter your Mobile Money number',
                 style: TextStyle(color: textPrimary, fontFamily: AppThemeData.medium, fontSize: 18),
               ),
               const SizedBox(height: 5),
               TranslatedText(
-                'Vous recevrez une notification de paiement sur votre téléphone.'.tr,
+                'You will receive a payment notification on your phone.',
                 style: TextStyle(color: textSecondary, fontFamily: AppThemeData.regular, fontSize: 14),
               ),
               const SizedBox(height: 16),
@@ -250,7 +319,7 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
                 style: TextStyle(color: textPrimary),
                 decoration: InputDecoration(
                   contentPadding: const EdgeInsets.all(12),
-                  hintText: 'ex : 0812345678',
+                  hintText: 'e.g. 0812345678'.tr,
                   hintStyle: TextStyle(color: textSecondary, fontSize: 15),
                   focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(5), borderSide: BorderSide(color: AppThemeData.primary300)),
                   enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(5), borderSide: BorderSide(color: isDark ? AppThemeData.grey700 : AppThemeData.grey200)),
@@ -258,14 +327,52 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Ce champ est requis.'.tr;
+                    return 'This field is required.'.tr;
                   }
-                  if (!RegExp(r'^[0-9+\s]{8,15}$').hasMatch(value.trim())) {
-                    return 'Numéro invalide.'.tr;
+                  final String normalized = value.trim().replaceAll(RegExp(r'[\s-]'), '');
+                  if (!RegExp(r'^(?:\+?243|0)\d{9}$').hasMatch(normalized)) {
+                    return 'Invalid number.'.tr;
                   }
                   return null;
                 },
               ),
+              if (_recentNumbers.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                TranslatedText(
+                  'Recent numbers',
+                  style: TextStyle(color: textSecondary, fontFamily: AppThemeData.medium, fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _recentNumbers.map((number) {
+                    return InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () => setState(() {
+                        _phoneController.text = number;
+                        _phoneController.selection = TextSelection.fromPosition(TextPosition(offset: number.length));
+                      }),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppThemeData.grey900 : AppThemeData.grey50,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: isDark ? AppThemeData.grey700 : AppThemeData.grey200),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.history_rounded, size: 15, color: textSecondary),
+                            const SizedBox(width: 6),
+                            Text(number, style: TextStyle(color: textPrimary, fontFamily: AppThemeData.medium, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
               const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,
@@ -275,7 +382,7 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
                   onPressed: _submitting ? null : _submit,
                   child: _submitting
                       ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
-                      : TranslatedText('Continuer'.tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
+                      : TranslatedText('Continue', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
                 ),
               ),
             ],
@@ -288,15 +395,20 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
             CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppThemeData.primary300)),
             const SizedBox(height: 24),
             TranslatedText(
-              'Une demande de paiement a été envoyée sur votre téléphone'.tr,
+              'A payment request has been sent to your phone',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 18, fontFamily: AppThemeData.semiBold, color: textPrimary),
             ),
-            const SizedBox(height: 10),
-            TranslatedText(
-              'Veuillez confirmer sur votre téléphone pour finaliser le paiement. Ne fermez pas cette page.'.tr,
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, color: textSecondary),
+            const SizedBox(height: 14),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+              child: TranslatedText(
+                _waitingTips[_waitingTipIndex],
+                key: ValueKey<int>(_waitingTipIndex),
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 15, color: textSecondary),
+              ),
             ),
           ],
         );
@@ -306,7 +418,25 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
           children: [
             const Icon(Icons.check_circle, color: AppThemeData.success400, size: 64),
             const SizedBox(height: 16),
-            TranslatedText('Paiement réussi !'.tr, style: TextStyle(fontSize: 20, fontFamily: AppThemeData.bold, color: textPrimary)),
+            TranslatedText('Payment successful!', textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontFamily: AppThemeData.bold, color: textPrimary)),
+            if (widget.isWalletTopUp) ...[
+              const SizedBox(height: 10),
+              TranslatedText(
+                'It can take up to a minute to appear on your wallet.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: textSecondary),
+              ),
+            ],
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(side: BorderSide(color: AppThemeData.primary300), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
+                onPressed: _confirmNow,
+                child: TranslatedText('Back', style: TextStyle(color: AppThemeData.primary300, fontWeight: FontWeight.w700)),
+              ),
+            ),
           ],
         );
       case _FlexPayState.failed:
@@ -315,10 +445,10 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
           children: [
             const Icon(Icons.cancel, color: AppThemeData.danger300, size: 64),
             const SizedBox(height: 16),
-            TranslatedText('Paiement échoué'.tr, style: TextStyle(fontSize: 20, fontFamily: AppThemeData.bold, color: textPrimary)),
+            TranslatedText('Payment failed', style: TextStyle(fontSize: 20, fontFamily: AppThemeData.bold, color: textPrimary)),
             const SizedBox(height: 8),
             TranslatedText(
-              'Le paiement n\'a pas pu être confirmé. Vous n\'avez pas été débité. Vous pouvez réessayer depuis le récapitulatif de commande.'.tr,
+              'Payment could not be confirmed. You have not been charged. You can try again from the order summary.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: textSecondary),
             ),
@@ -329,7 +459,7 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(side: BorderSide(color: AppThemeData.primary300), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5))),
                 onPressed: () => Get.back(result: false),
-                child: TranslatedText('Retour au récapitulatif'.tr, style: TextStyle(color: AppThemeData.primary300, fontWeight: FontWeight.w700)),
+                child: TranslatedText('Back to summary', style: TextStyle(color: AppThemeData.primary300, fontWeight: FontWeight.w700)),
               ),
             ),
           ],
@@ -340,10 +470,10 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
           children: [
             const Icon(Icons.access_time, color: AppThemeData.warning300, size: 64),
             const SizedBox(height: 16),
-            TranslatedText('Délai dépassé'.tr, style: TextStyle(fontSize: 18, fontFamily: AppThemeData.bold, color: textPrimary)),
+            TranslatedText('Timed out', style: TextStyle(fontSize: 18, fontFamily: AppThemeData.bold, color: textPrimary)),
             const SizedBox(height: 10),
             TranslatedText(
-              'Si le montant a été débité, contactez le support. Sinon, vérifiez à nouveau.'.tr,
+              'If the amount was debited, contact support. Otherwise, check again.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 14, color: textSecondary),
             ),
@@ -356,7 +486,7 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
                 onPressed: _submitting ? null : _checkNow,
                 child: _submitting
                     ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 3, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
-                    : TranslatedText('Vérifier maintenant'.tr, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                    : TranslatedText('Check now', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ),
           ],

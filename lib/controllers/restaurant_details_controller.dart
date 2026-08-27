@@ -43,6 +43,14 @@ class RestaurantDetailsController extends GetxController {
     super.onInit();
   }
 
+  StreamSubscription<List<CartProductModel>>? _cartSubscription;
+
+  @override
+  void onClose() {
+    _cartSubscription?.cancel();
+    super.onClose();
+  }
+
   void animateSlider() {
     if (vendorModel.value.photos != null && vendorModel.value.photos!.isNotEmpty) {
       Timer.periodic(const Duration(seconds: 2), (Timer timer) {
@@ -68,7 +76,7 @@ class RestaurantDetailsController extends GetxController {
   final CartProvider cartProvider = CartProvider();
 
   Future<void> getArgument() async {
-    cartProvider.cartStream.listen(
+    _cartSubscription = cartProvider.cartStream.listen(
       (event) async {
         cartItem.clear();
         cartItem.addAll(event);
@@ -81,10 +89,13 @@ class RestaurantDetailsController extends GetxController {
     animateSlider();
     statusCheck();
 
+    // getFavouriteList() ne dépend pas du résultat de getProduct() — les lancer
+    // en parallèle évite d'attendre l'un pour commencer l'autre.
+    final Future<void> favouritesFuture = getFavouriteList();
     await getProduct();
 
     isLoading.value = false;
-    await getFavouriteList();
+    await favouritesFuture;
 
     update();
   }
@@ -143,26 +154,15 @@ class RestaurantDetailsController extends GetxController {
   }
 
   Future<void> getFavouriteList() async {
+    // Les 4 lectures ci-dessous sont indépendantes (aucune ne dépend du
+    // résultat d'une autre) — les lancer en parallèle plutôt qu'en séquence.
+    final List<Future<void>> tasks = [getAttributeData()];
     if (Constant.userModel != null) {
-      await FireStoreUtils.getFavouriteRestaurant().then(
-        (value) {
-          favouriteList.value = value;
-        },
-      );
-
-      await FireStoreUtils.getFavouriteItem().then(
-        (value) {
-          favouriteItemList.value = value;
-        },
-      );
-
-      await FireStoreUtils.getOfferByVendorId(vendorModel.value.id.toString()).then(
-        (value) {
-          couponList.value = value;
-        },
-      );
+      tasks.add(FireStoreUtils.getFavouriteRestaurant().then((value) => favouriteList.value = value));
+      tasks.add(FireStoreUtils.getFavouriteItem().then((value) => favouriteItemList.value = value));
+      tasks.add(FireStoreUtils.getOfferByVendorId(vendorModel.value.id.toString()).then((value) => couponList.value = value));
     }
-    await getAttributeData();
+    await Future.wait(tasks);
     update();
   }
 

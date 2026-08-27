@@ -246,7 +246,7 @@ class PaymentListScreen extends StatelessWidget {
                         }
                       } else {
                         ShowToastDialog.closeLoader();
-                        ShowToastDialog.showToast("${'Please Enter minimum amount of'} ${Constant.amountShow(amount: Constant.minimumAmountToDeposit)}");
+                        ShowToastDialog.showToast("${'Please Enter minimum amount of'.tr} ${Constant.amountShow(amount: Constant.minimumAmountToDeposit)}");
                       }
                     }
                   },

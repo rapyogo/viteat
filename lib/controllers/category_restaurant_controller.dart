@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:customer/constant/constant.dart';
@@ -18,6 +19,14 @@ class CategoryRestaurantController extends GetxController {
     super.onInit();
   }
 
+  StreamSubscription<List<VendorModel>>? _restaurantSubscription;
+
+  @override
+  void onClose() {
+    _restaurantSubscription?.cancel();
+    super.onClose();
+  }
+
   Rx<VendorCategoryModel> vendorCategoryModel = VendorCategoryModel().obs;
   RxList<VendorModel> allNearestRestaurant = <VendorModel>[].obs;
 
@@ -36,7 +45,8 @@ class CategoryRestaurantController extends GetxController {
 
   Future getRestaurant() async {
     log("::::::::::GetRestaurant::::::::::::::");
-    FireStoreUtils.getAllNearestRestaurantByCategoryId(categoryId: vendorCategoryModel.value.id.toString(), isDining: dineIn.value).listen((event) async {
+    _restaurantSubscription?.cancel();
+    _restaurantSubscription = FireStoreUtils.getAllNearestRestaurantByCategoryId(categoryId: vendorCategoryModel.value.id.toString(), isDining: dineIn.value).listen((event) async {
       allNearestRestaurant.clear();
       event.sort((a, b) {
         final aOpen = Constant.statusCheckOpenORClose(vendorModel: a);

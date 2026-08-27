@@ -4,6 +4,8 @@ class Preferences {
   static const languageCodeKey = "languageCodeKey";
   static const isFinishOnBoardingKey = "isFinishOnBoardingKey";
   static const foodDeliveryType = "foodDeliveryType";
+  static const selectedPaymentMethod = "selectedPaymentMethod";
+  static const recentMobileMoneyNumbers = "recentMobileMoneyNumbers";
 
   static const themKey = "themKey";
 

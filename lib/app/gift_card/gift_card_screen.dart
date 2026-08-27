@@ -367,7 +367,7 @@ class GiftCardScreen extends StatelessWidget {
                             ),
                             Center(
                               child: TranslatedText(
-                                "${'Gift Card expire'} ${controller.selectedGiftCard.value.expiryDay} ${'days after purchase'}",
+                                "${'Gift Card expire'.tr} ${controller.selectedGiftCard.value.expiryDay} ${'days after purchase'.tr}",
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontFamily: AppThemeData.medium,
