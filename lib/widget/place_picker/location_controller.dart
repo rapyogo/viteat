@@ -1,3 +1,5 @@
+import 'dart:developer';
+import 'package:customer/services/location_service.dart';
 import 'package:customer/widget/place_picker/selected_location_model.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -33,22 +35,23 @@ class LocationController extends GetxController {
   }
 
   Future<void> getCurrentLocation() async {
-    try {
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-      selectedLocation.value = LatLng(position.latitude, position.longitude);
-
-      if (mapController != null) {
-        mapController!.animateCamera(
-          CameraUpdate.newLatLngZoom(selectedLocation.value!, 15),
-        );
-      }
-
-      await getAddressFromLatLng(selectedLocation.value!);
-    } catch (e) {
-      print("Error fetching current location: $e");
+    // rawPosition() applique le timeout de 10s et rend null au lieu de lever :
+    // sans position on laisse simplement la camera ou elle est, plutot que de
+    // la recentrer sur une coordonnee par defaut.
+    final Position? position = await LocationService.to.rawPosition();
+    if (position == null) {
+      log("LocationController: position indisponible, camera inchangee");
+      return;
     }
+    selectedLocation.value = LatLng(position.latitude, position.longitude);
+
+    if (mapController != null) {
+      mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(selectedLocation.value!, 15),
+      );
+    }
+
+    await getAddressFromLatLng(selectedLocation.value!);
   }
 
   Future<void> getAddressFromLatLng(LatLng latLng) async {

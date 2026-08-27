@@ -1,6 +1,7 @@
+import 'dart:developer';
+import 'package:customer/services/location_service.dart';
 import 'dart:convert';
 
-import 'package:customer/utils/utils.dart';
 import 'package:customer/widget/osm_map/place_model.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
@@ -77,9 +78,24 @@ class OSMMapController extends GetxController {
   }
 
   getCurrentLocation() async {
-    Position? location = await Utils.getCurrentLocation();
-    LatLng latlng = LatLng(location?.latitude ?? 0.0, location?.longitude ?? 0.0);
-    addLatLngOnly(LatLng(location?.latitude ?? 0.0, location?.longitude ?? 0.0));
-    mapController.move(latlng, mapController.camera.zoom);
+    // Le `?? 0.0` d'origine centrait la carte sur (0,0) — au large de l'Afrique
+    // — des que le GPS n'aboutissait pas. Repli en cascade, puis abandon :
+    // mieux vaut laisser la camera en place que sauter dans l'ocean.
+    final Position? position = await LocationService.to.rawPosition();
+    LatLng? target;
+    if (position != null) {
+      target = LatLng(position.latitude, position.longitude);
+    } else if (LocationService.isResolved) {
+      target = LatLng(LocationService.latitude!, LocationService.longitude!);
+    } else {
+      final Position? lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) target = LatLng(lastKnown.latitude, lastKnown.longitude);
+    }
+    if (target == null) {
+      log("OSMMapController: aucune position disponible, camera inchangee");
+      return;
+    }
+    addLatLngOnly(target);
+    mapController.move(target, mapController.camera.zoom);
   }
 }

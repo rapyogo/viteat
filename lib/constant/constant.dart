@@ -512,11 +512,12 @@ class Constant {
     return "#${(orderId).substring(orderId.length - 10)}";
   }
 
+  /// Wrapper UI autour de LocationService.ensurePermission : il a besoin d'un
+  /// BuildContext et affiche dialogue/toast, ce que le service ne doit pas
+  /// faire (il doit rester appelable depuis un controleur). La logique de
+  /// permission elle-meme n'existe plus qu'a un seul endroit.
   static checkPermission({required BuildContext context, required Function() onTap}) async {
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
+    final LocationPermission permission = await LocationService.to.ensurePermission();
     if (permission == LocationPermission.denied) {
       ShowToastDialog.showToast("You have to allow location permission to use your location");
     } else if (permission == LocationPermission.deniedForever) {
