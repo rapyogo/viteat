@@ -1,3 +1,4 @@
+import 'package:customer/services/location_service.dart';
 import 'package:customer/app/auth_screen/login_screen.dart';
 import 'package:customer/app/cashback_screen/cashback_offers_list.dart';
 import 'package:customer/app/change%20langauge/change_language_screen.dart';
@@ -348,6 +349,7 @@ class ProfileScreen extends StatelessWidget {
                                                       Constant.userModel!.fcmToken = "";
                                                       await FireStoreUtils.updateUser(Constant.userModel!);
                                                       Constant.userModel = null;
+                                                      await LocationService.clear();
                                                       await FirebaseAuth.instance.signOut();
                                                       Get.offAll(const LoginScreen());
                                                     },

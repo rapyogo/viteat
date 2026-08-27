@@ -1,3 +1,4 @@
+import 'package:customer/services/location_service.dart';
 import 'dart:convert';
 import 'dart:developer';
 
@@ -52,10 +53,12 @@ class LoginController extends GetxController {
             Get.offAll(const LocationPermissionScreen());
           }
         } else {
+          await LocationService.clear();
           await FirebaseAuth.instance.signOut();
           ShowToastDialog.showToast("This user is disable please contact to administrator");
         }
       } else {
+        await LocationService.clear();
         await FirebaseAuth.instance.signOut();
         ShowToastDialog.showToast("This user is not created in customer application.");
       }
@@ -110,10 +113,12 @@ class LoginController extends GetxController {
                     Get.offAll(const LocationPermissionScreen());
                   }
                 } else {
+                  await LocationService.clear();
                   await FirebaseAuth.instance.signOut();
                   ShowToastDialog.showToast("This user is disable please contact to administrator");
                 }
               } else {
+                await LocationService.clear();
                 await FirebaseAuth.instance.signOut();
                 // ShowToastDialog.showToast("This user is disable please contact to administrator");
               }
@@ -177,10 +182,12 @@ class LoginController extends GetxController {
                     Get.offAll(const LocationPermissionScreen());
                   }
                 } else {
+                  await LocationService.clear();
                   await FirebaseAuth.instance.signOut();
                   ShowToastDialog.showToast("This user is disable please contact to administrator");
                 }
               } else {
+                await LocationService.clear();
                 await FirebaseAuth.instance.signOut();
                 // ShowToastDialog.showToast("This user is disable please contact to administrator");
               }

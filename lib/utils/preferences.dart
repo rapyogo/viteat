@@ -32,6 +32,13 @@ class Preferences {
 
   static const isClickOnNotification = "isClickOnNotification";
 
+  // Localisation de l'utilisateur, persistee entre deux lancements (JSON de
+  // ShippingAddress). Ne jamais y ecrire "" : getString() rend "" par defaut et
+  // il n'y a pas de containsKey, donc "" == "jamais defini". Pour effacer,
+  // passer par clearKeyData (cf. LocationService.clear).
+  static const selectedLocationKey = "selectedLocationKey";
+  static const selectedLocationSourceKey = "selectedLocationSourceKey";
+
   static late SharedPreferences pref;
 
   static initPref() async {

@@ -1,3 +1,4 @@
+import 'package:customer/services/location_service.dart';
 import 'package:customer/app/auth_screen/login_screen.dart';
 import 'package:customer/app/auth_screen/signup_screen.dart';
 import 'package:customer/app/dash_board_screens/dash_board_screen.dart';
@@ -146,10 +147,12 @@ class OtpScreen extends StatelessWidget {
                                             }
                                           } else {
                                             ShowToastDialog.showToast("This user is disable please contact to administrator");
+                                            await LocationService.clear();
                                             await FirebaseAuth.instance.signOut();
                                             Get.offAll(const LoginScreen());
                                           }
                                         } else {
+                                          await LocationService.clear();
                                           await FirebaseAuth.instance.signOut();
                                           Get.offAll(const LoginScreen());
                                           ShowToastDialog.showToast("This user is not created in customer application.");

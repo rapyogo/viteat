@@ -22,6 +22,7 @@ import 'package:customer/models/vendor_model.dart';
 import 'package:customer/models/zone_model.dart';
 import 'package:customer/themes/app_them_data.dart';
 import 'package:customer/utils/fire_store_utils.dart';
+import 'package:customer/services/location_service.dart';
 import 'package:customer/utils/preferences.dart';
 import 'package:customer/widget/permission_dialog.dart';
 import 'package:customer/widget/place_picker/selected_location_model.dart';
@@ -53,7 +54,15 @@ class Constant {
   // dependent doivent gerer explicitement le cas non-resolu (cf.
   // Constant.getDistanceFromUser) plutot que de planter ou d'afficher une
   // distance calculee depuis une fausse position.
-  static ShippingAddress selectedLocation = ShippingAddress();
+  // Facade vers LocationService : les ~19 sites qui font
+  // `Constant.selectedLocation = adresse` passent donc par setLocation(), qui
+  // persiste et refuse toute adresse sans coordonnees. Aucun site ne mute
+  // l'objet en place (verifie par grep), le setter les intercepte donc tous.
+  // Effet voulu : le getter lit un Rx, donc tout Obx/GetX qui lit
+  // selectedLocation devient reactif au changement de localisation.
+  static ShippingAddress get selectedLocation => LocationService.current.value ?? ShippingAddress();
+
+  static set selectedLocation(ShippingAddress value) => LocationService.setLocation(value);
   static UserModel? userModel;
   static const globalUrl = "https://foodie.siswebapp.com/";
 

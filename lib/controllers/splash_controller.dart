@@ -1,3 +1,4 @@
+import 'package:customer/services/location_service.dart';
 import 'dart:async';
 import 'dart:developer';
 import 'package:customer/app/auth_screen/login_screen.dart';
@@ -116,10 +117,12 @@ class SplashController extends GetxController {
                       Get.offAll(const LocationPermissionScreen());
                     }
                   } else {
+                    await LocationService.clear();
                     await FirebaseAuth.instance.signOut();
                     Get.offAll(const LoginScreen());
                   }
                 } else {
+                  await LocationService.clear();
                   await FirebaseAuth.instance.signOut();
                   Get.offAll(const LoginScreen());
                 }
@@ -135,6 +138,7 @@ class SplashController extends GetxController {
               }
             });
           } else {
+            await LocationService.clear();
             await FirebaseAuth.instance.signOut();
             Get.offAll(const LoginScreen());
           }

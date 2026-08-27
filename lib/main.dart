@@ -7,6 +7,7 @@ import 'package:customer/firebase_options.dart';
 import 'package:customer/models/language_model.dart';
 import 'package:customer/services/connectivity_service.dart';
 import 'package:customer/services/database_helper.dart';
+import 'package:customer/services/location_service.dart';
 import 'package:customer/services/localization_service.dart';
 import 'package:customer/themes/styles.dart';
 import 'package:customer/utils/dark_theme_provider.dart';
@@ -50,6 +51,12 @@ void main() async {
 
   DatabaseHelper.instance;
   await Preferences.initPref();
+  // L'ordre compte : LocationService.onInit() lit les SharedPreferences et
+  // Preferences.pref est `late` — l'injecter avant initPref() provoquerait un
+  // LateInitializationError au demarrage. Pose ici (avant runApp), la
+  // localisation de la session precedente est deja restauree quand
+  // SplashController s'execute, hors-ligne compris.
+  Get.put(LocationService(), permanent: true);
   Get.put(ConnectivityService(), permanent: true);
   // _initLanguage();
   runApp(

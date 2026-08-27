@@ -169,8 +169,11 @@ class UserLocation {
   UserLocation({this.latitude, this.longitude});
 
   UserLocation.fromJson(Map<String, dynamic> json) {
-    latitude = json['latitude'];
-    longitude = json['longitude'];
+    // Firestore rend un int quand la coordonnee a ete ecrite sans decimale
+    // (ex. 0 au lieu de 0.0) : une affectation brute sur un double? leve alors
+    // un TypeError. Meme risque sur le JSON relu depuis SharedPreferences.
+    latitude = (json['latitude'] as num?)?.toDouble();
+    longitude = (json['longitude'] as num?)?.toDouble();
   }
 
   Map<String, dynamic> toJson() {
