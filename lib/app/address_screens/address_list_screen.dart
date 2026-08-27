@@ -9,12 +9,12 @@ import 'package:customer/utils/fire_store_utils.dart';
 import 'package:customer/widget/osm_map/map_picker_page.dart';
 import 'package:customer/widget/place_picker/location_picker_screen.dart';
 import 'package:customer/widget/place_picker/selected_location_model.dart';
+import 'package:customer/services/location_service.dart';
+import 'package:customer/widget/location_failure_sheet.dart';
 import 'package:customer/widget/translated_text.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 
@@ -50,36 +50,7 @@ class AddressListScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   InkWell(
-                    onTap: () async {
-                      ShowToastDialog.showLoader("Please wait".tr);
-                      ShippingAddress addressModel = ShippingAddress();
-                      try {
-                        await Geolocator.requestPermission();
-                        Position newLocalData = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-
-                        await placemarkFromCoordinates(newLocalData.latitude, newLocalData.longitude).then((valuePlaceMaker) {
-                          Placemark placeMark = valuePlaceMaker[0];
-                          addressModel.addressAs = "Home".tr;
-                          addressModel.location = UserLocation(latitude: newLocalData.latitude, longitude: newLocalData.longitude);
-                          String currentLocation = "${placeMark.name}, ${placeMark.subLocality}, ${placeMark.locality}, ${placeMark.administrativeArea}, ${placeMark.postalCode}, ${placeMark.country}";
-                          addressModel.locality = currentLocation;
-                        });
-
-                        ShowToastDialog.closeLoader();
-                        Get.back(result: addressModel);
-                      } catch (e) {
-                        await placemarkFromCoordinates(19.228825, 72.854118).then((valuePlaceMaker) {
-                          Placemark placeMark = valuePlaceMaker[0];
-                          addressModel.addressAs = "Home".tr;
-                          addressModel.location = UserLocation(latitude: 19.228825, longitude: 72.854118);
-                          String currentLocation = "${placeMark.name}, ${placeMark.subLocality}, ${placeMark.locality}, ${placeMark.administrativeArea}, ${placeMark.postalCode}, ${placeMark.country}";
-                          addressModel.locality = currentLocation;
-                        });
-                        ShowToastDialog.closeLoader();
-
-                        Get.back(result: addressModel);
-                      }
-                    },
+                    onTap: () => _useCurrentLocation(context, controller),
                     child: Row(
                       children: [
                         SvgPicture.asset("assets/icons/ic_send_one.svg"),
@@ -242,6 +213,32 @@ class AddressListScreen extends StatelessWidget {
             ),
           );
         });
+  }
+
+  /// Le seul des 5 anciens replis "Mumbai" qui ne s'assignait pas lui-meme :
+  /// il renvoyait la fausse adresse via Get.back(result:), et ce sont ses 3
+  /// appelants — plus le panier — qui l'inscrivaient comme localisation. En
+  /// echec on ne rend donc plus la main du tout : l'utilisateur reste ici, ou
+  /// "Add Location" lui permet de saisir l'adresse a la main.
+  Future<void> _useCurrentLocation(BuildContext context, AddressListController controller) async {
+    ShowToastDialog.showLoader("Please wait".tr);
+    final LocationResult result = await LocationService.to.resolveFromGps();
+    ShowToastDialog.closeLoader();
+
+    if (result.isSuccess) {
+      Get.back(result: result.address);
+      return;
+    }
+    if (!context.mounted) return;
+    await showLocationFailureSheet(
+      context,
+      failure: result.failure!,
+      onRetry: () => _useCurrentLocation(context, controller),
+      onEnterAddress: () async {
+        controller.clearData();
+        addAddressBottomSheet(context, controller);
+      },
+    );
   }
 
   void showActionSheet(BuildContext context, int index, AddressListController controller) {

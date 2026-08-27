@@ -621,5 +621,21 @@ const Map<String, String> lnAr = {
   "Unable to initialize payment, credentials are invalid or not authorized.Please check credentials, environment (sandbox/live), and account region.":
       "تعذّر تهيئة الدفع، بيانات الاعتماد غير صالحة أو غير مخوّلة. يرجى التحقق من بيانات الاعتماد، والبيئة (تجريبية/حقيقية)، ومنطقة الحساب.",
   "This product doesn't have tax.": "هذا المنتج لا يحتوي على ضريبة.",
-  "Payment Failed or Cancelled!": "فشل الدفع أو تم إلغاؤه!"
+  "Payment Failed or Cancelled!": "فشل الدفع أو تم إلغاؤه!",
+  "Location is turned off": "خدمة الموقع متوقفة",
+  "Turn on your phone location, or enter your address manually.": "فعّل خدمة الموقع في هاتفك، أو أدخل عنوانك يدويًا.",
+  "Location permission denied": "تم رفض إذن الموقع",
+  "Viteat needs your position to find the restaurants closest to you.": "يحتاج Viteat إلى موقعك للعثور على أقرب المطاعم إليك.",
+  "Location permission blocked": "إذن الموقع محظور",
+  "Allow location access in your phone settings to continue.": "اسمح بالوصول إلى الموقع من إعدادات هاتفك للمتابعة.",
+  "Position not found": "تعذر تحديد الموقع",
+  "The GPS signal is too weak here. Pick your position on the map instead.": "إشارة GPS ضعيفة جدًا هنا. اختر موقعك على الخريطة بدلاً من ذلك.",
+  "Turn on location": "تفعيل الموقع",
+  "Allow location": "السماح بالوصول إلى الموقع",
+  "Open settings": "فتح الإعدادات",
+  "Pick on map": "الاختيار على الخريطة",
+  "Try again": "إعادة المحاولة",
+  "Enter an address": "إدخال عنوان",
+  "Set my location": "تحديد موقعي",
+  "Current position": "الموقع الحالي",
 };

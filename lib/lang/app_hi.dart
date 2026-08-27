@@ -629,5 +629,21 @@ const Map<String, String> hiIN = {
   'Unable to initialize payment, credentials are invalid or not authorized.Please check credentials, environment (sandbox/live), and account region.':
       'भुगतान शुरू नहीं हो सका। क्रेडेंशियल, एनवायरनमेंट और रीजन जांचें।',
   "This product doesn't have tax.": "इस प्रोडक्ट पर कोई कर नहीं।",
-  "Payment Failed or Cancelled!": "भुगतान विफल या रद्द!"
+  "Payment Failed or Cancelled!": "भुगतान विफल या रद्द!",
+  "Location is turned off": "लोकेशन बंद है",
+  "Turn on your phone location, or enter your address manually.": "अपने फ़ोन की लोकेशन चालू करें, या अपना पता मैन्युअल रूप से दर्ज करें।",
+  "Location permission denied": "लोकेशन की अनुमति अस्वीकृत",
+  "Viteat needs your position to find the restaurants closest to you.": "आपके नज़दीकी रेस्टोरेंट खोजने के लिए Viteat को आपकी लोकेशन चाहिए।",
+  "Location permission blocked": "लोकेशन की अनुमति अवरुद्ध",
+  "Allow location access in your phone settings to continue.": "जारी रखने के लिए फ़ोन सेटिंग्स में लोकेशन एक्सेस की अनुमति दें।",
+  "Position not found": "लोकेशन नहीं मिली",
+  "The GPS signal is too weak here. Pick your position on the map instead.": "यहाँ GPS सिग्नल बहुत कमज़ोर है। इसके बजाय मानचित्र पर अपनी लोकेशन चुनें।",
+  "Turn on location": "लोकेशन चालू करें",
+  "Allow location": "लोकेशन की अनुमति दें",
+  "Open settings": "सेटिंग्स खोलें",
+  "Pick on map": "मानचित्र पर चुनें",
+  "Try again": "पुनः प्रयास करें",
+  "Enter an address": "पता दर्ज करें",
+  "Set my location": "मेरी लोकेशन सेट करें",
+  "Current position": "वर्तमान स्थिति",
 };

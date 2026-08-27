@@ -1,3 +1,4 @@
+import 'package:customer/widget/location_picker_flow.dart';
 import 'dart:math';
 import 'package:customer/app/address_screens/address_list_screen.dart';
 import 'package:customer/app/advertisement_screens/all_advertisement_screen.dart';
@@ -30,20 +31,14 @@ import 'package:customer/themes/responsive.dart';
 import 'package:customer/themes/round_button_fill.dart';
 import 'package:customer/themes/text_field_widget.dart';
 import 'package:customer/utils/dark_theme_provider.dart';
-import 'package:customer/utils/dynamic_traslator.dart';
 import 'package:customer/utils/fire_store_utils.dart';
 import 'package:customer/utils/network_image_widget.dart';
 import 'package:customer/utils/preferences.dart';
 import 'package:customer/utils/translation_notifier.dart';
 import 'package:customer/widget/gradiant_text.dart';
-import 'package:customer/widget/osm_map/map_picker_page.dart';
-import 'package:customer/widget/place_picker/location_picker_screen.dart';
-import 'package:customer/widget/place_picker/selected_location_model.dart';
 import 'package:flutter/material.dart';
 import 'package:customer/widget/translated_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -186,61 +181,13 @@ class HomeScreenTwo extends StatelessWidget {
                                                         },
                                                       );
                                                     } else {
-                                                      Constant.checkPermission(
-                                                          onTap: () async {
-                                                            ShowToastDialog.showLoader("Please wait");
-                                                            ShippingAddress addressModel = ShippingAddress();
-                                                            try {
-                                                              await Geolocator.requestPermission();
-                                                              await Geolocator.getCurrentPosition();
-                                                              ShowToastDialog.closeLoader();
-                                                              if (Constant.selectedMapType == 'osm') {
-                                                                final result = await Get.to(() => MapPickerPage());
-                                                                if (result != null) {
-                                                                  final firstPlace = result;
-                                                                  final lat = firstPlace.coordinates.latitude;
-                                                                  final lng = firstPlace.coordinates.longitude;
-                                                                  final address = firstPlace.address;
-
-                                                                  addressModel.addressAs = "Home";
-                                                                  addressModel.locality = address.toString();
-                                                                  addressModel.location = UserLocation(latitude: lat, longitude: lng);
-                                                                  Constant.selectedLocation = addressModel;
-                                                                  controller.getData();
-                                                                  Get.back();
-                                                                }
-                                                              } else {
-                                                                Get.to(LocationPickerScreen())!.then((value) async {
-                                                                  if (value != null) {
-                                                                    SelectedLocationModel selectedLocationModel = value;
-
-                                                                    ShippingAddress addressModel = ShippingAddress();
-                                                                    addressModel.addressAs = "Home";
-                                                                    addressModel.locality = Constant.formatAddress(selectedLocation: selectedLocationModel);
-                                                                    addressModel.location =
-                                                                        UserLocation(latitude: selectedLocationModel.latLng!.latitude, longitude: selectedLocationModel.latLng!.longitude);
-                                                                    Constant.selectedLocation = addressModel;
-                                                                    controller.getData();
-                                                                    Get.back();
-                                                                  }
-                                                                });
-                                                              }
-                                                            } catch (e) {
-                                                              await placemarkFromCoordinates(19.228825, 72.854118).then((valuePlaceMaker) {
-                                                                Placemark placeMark = valuePlaceMaker[0];
-                                                                addressModel.addressAs = "Home";
-                                                                addressModel.location = UserLocation(latitude: 19.228825, longitude: 72.854118);
-                                                                String currentLocation =
-                                                                    "${placeMark.name}, ${placeMark.subLocality}, ${placeMark.locality}, ${placeMark.administrativeArea}, ${placeMark.postalCode}, ${placeMark.country}";
-                                                                addressModel.locality = currentLocation;
-                                                              });
-
-                                                              Constant.selectedLocation = addressModel;
-                                                              ShowToastDialog.closeLoader();
-                                                              controller.getData();
-                                                            }
-                                                          },
-                                                          context: context);
+                                                      // Invite : pas de compte, donc pas de liste d'adresses — on va
+                                                      // directement au choix sur carte. L'ancien code demandait la
+                                                      // permission GPS puis jetait la position obtenue, ce qui rendait
+                                                      // tout l'appel faillible pour rien et retombait sur une
+                                                      // coordonnee en dur en cas d'echec.
+                                                      final bool picked = await pickLocationOnMap();
+                                                      if (picked) controller.getData();
                                                     }
                                                   },
                                                   child: ValueListenableBuilder(

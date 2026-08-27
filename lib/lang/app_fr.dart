@@ -629,5 +629,21 @@ const Map<String, String> trFR = {
   'Unable to initialize payment, credentials are invalid or not authorized.Please check credentials, environment (sandbox/live), and account region.':
       'Impossible d\'initialiser le paiement. Vérifiez les identifiants, l\'environnement et la région.',
   "This product doesn't have tax.": "Ce produit n'a pas de taxe.",
-  "Payment Failed or Cancelled!": "Paiement échoué ou annulé !"
+  "Payment Failed or Cancelled!": "Paiement échoué ou annulé !",
+  "Location is turned off": "La localisation est désactivée",
+  "Turn on your phone location, or enter your address manually.": "Activez la localisation de votre téléphone, ou saisissez votre adresse manuellement.",
+  "Location permission denied": "Localisation refusée",
+  "Viteat needs your position to find the restaurants closest to you.": "Viteat a besoin de votre position pour trouver les restaurants les plus proches de vous.",
+  "Location permission blocked": "Localisation bloquée",
+  "Allow location access in your phone settings to continue.": "Autorisez l'accès à la localisation dans les réglages de votre téléphone pour continuer.",
+  "Position not found": "Position introuvable",
+  "The GPS signal is too weak here. Pick your position on the map instead.": "Le signal GPS est trop faible ici. Choisissez plutôt votre position sur la carte.",
+  "Turn on location": "Activer la localisation",
+  "Allow location": "Autoriser la localisation",
+  "Open settings": "Ouvrir les réglages",
+  "Pick on map": "Choisir sur la carte",
+  "Try again": "Réessayer",
+  "Enter an address": "Saisir une adresse",
+  "Set my location": "Définir ma localisation",
+  "Current position": "Position actuelle",
 };

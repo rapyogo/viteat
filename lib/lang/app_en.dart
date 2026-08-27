@@ -625,5 +625,21 @@ const Map<String, String> enUS = {
   'Unable to initialize payment, credentials are invalid or not authorized.Please check credentials, environment (sandbox/live), and account region.':
       'Unable to initialize payment, credentials are invalid or not authorized.Please check credentials, environment (sandbox/live), and account region.',
   "This product doesn't have tax.": "This product doesn't have tax.",
-  "Payment Failed or Cancelled!": "Payment Failed or Cancelled!"
+  "Payment Failed or Cancelled!": "Payment Failed or Cancelled!",
+  "Location is turned off": "Location is turned off",
+  "Turn on your phone location, or enter your address manually.": "Turn on your phone location, or enter your address manually.",
+  "Location permission denied": "Location permission denied",
+  "Viteat needs your position to find the restaurants closest to you.": "Viteat needs your position to find the restaurants closest to you.",
+  "Location permission blocked": "Location permission blocked",
+  "Allow location access in your phone settings to continue.": "Allow location access in your phone settings to continue.",
+  "Position not found": "Position not found",
+  "The GPS signal is too weak here. Pick your position on the map instead.": "The GPS signal is too weak here. Pick your position on the map instead.",
+  "Turn on location": "Turn on location",
+  "Allow location": "Allow location",
+  "Open settings": "Open settings",
+  "Pick on map": "Pick on map",
+  "Try again": "Try again",
+  "Enter an address": "Enter an address",
+  "Set my location": "Set my location",
+  "Current position": "Current position",
 };
