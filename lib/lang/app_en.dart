@@ -642,4 +642,7 @@ const Map<String, String> enUS = {
   "Enter an address": "Enter an address",
   "Set my location": "Set my location",
   "Current position": "Current position",
+  "Where should we deliver?": "Where should we deliver?",
+  "We need your position to show you the restaurants closest to you.": "We need your position to show you the restaurants closest to you.",
+  "Use my position": "Use my position",
 };

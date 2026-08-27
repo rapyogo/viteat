@@ -2,7 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 
+import 'package:customer/constant/constant.dart';
 import 'package:customer/models/user_model.dart';
+import 'package:customer/models/zone_model.dart';
+import 'package:customer/utils/fire_store_utils.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:customer/utils/preferences.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -117,6 +121,43 @@ class LocationService extends GetxService {
     await Preferences.clearKeyData(Preferences.selectedLocationKey);
     await Preferences.clearKeyData(Preferences.selectedLocationSourceKey);
     log("LocationService: localisation effacee");
+  }
+
+  // ------------------------------------------------------------------ zone
+
+  /// Determine la zone de livraison couvrant la position courante.
+  ///
+  /// Remplace trois implementations divergentes du meme calcul
+  /// (home_controller, dine_in_controller, category_restaurant_controller).
+  /// Celle de home_controller affectait selectedZone a CHAQUE iteration : si
+  /// aucune zone ne correspondait, on repartait avec la derniere zone de la
+  /// liste et isZoneAvailable a false — un etat incoherent.
+  ///
+  /// NB : selectedZone n'est deliberement PAS remis a null quand aucune zone
+  /// ne correspond. Il est lu avec un bang `!` sur une dizaine de sites (dont
+  /// favourite_screen, qui s'affiche independamment de isZoneAvailable) ; les
+  /// passer en `?.` merite sa propre passe. isZoneAvailable reste la seule
+  /// source de verite sur la couverture.
+  static Future<void> refreshZone() async {
+    if (!isResolved) {
+      Constant.isZoneAvailable = false;
+      return;
+    }
+    final List<ZoneModel>? zones = await FireStoreUtils.getZone();
+    if (zones == null || zones.isEmpty) {
+      Constant.isZoneAvailable = false;
+      return;
+    }
+    final LatLng position = LatLng(latitude!, longitude!);
+    for (final ZoneModel zone in zones) {
+      if (zone.area == null) continue;
+      if (Constant.isPointInPolygon(position, zone.area!)) {
+        Constant.selectedZone = zone;
+        Constant.isZoneAvailable = true;
+        return;
+      }
+    }
+    Constant.isZoneAvailable = false;
   }
 
   // ----------------------------------------------------------- acquisition

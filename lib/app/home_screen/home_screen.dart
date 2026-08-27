@@ -1,3 +1,5 @@
+import 'package:customer/widget/location_prompt_view.dart';
+import 'package:customer/services/location_service.dart';
 import 'package:customer/widget/location_picker_flow.dart';
 import 'dart:io';
 import 'package:badges/badges.dart' as badges;
@@ -34,22 +36,16 @@ import 'package:customer/themes/custom_dialog_box.dart';
 import 'package:customer/themes/responsive.dart';
 import 'package:customer/themes/round_button_fill.dart';
 import 'package:customer/utils/dark_theme_provider.dart';
-import 'package:customer/utils/dynamic_traslator.dart';
 import 'package:customer/utils/fire_store_utils.dart';
 import 'package:customer/utils/network_image_widget.dart';
 import 'package:customer/utils/preferences.dart';
 import 'package:customer/utils/translation_notifier.dart';
-import 'package:customer/widget/osm_map/map_picker_page.dart';
-import 'package:customer/widget/place_picker/location_picker_screen.dart';
-import 'package:customer/widget/place_picker/selected_location_model.dart';
 import 'package:customer/widget/restaurant_image_view.dart';
 import 'package:customer/widget/video_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:customer/widget/translated_text.dart';
 import 'package:flutter_map/flutter_map.dart' as flutterMap;
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:geocoding/geocoding.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:latlong2/latlong.dart' as location;
@@ -79,7 +75,11 @@ class HomeScreen extends StatelessWidget {
             ),
             child: controller.isLoading.value
                 ? Constant.loader()
-                : Constant.isZoneAvailable == false || controller.allNearestRestaurant.isEmpty
+                : !LocationService.isResolved
+                    // Localisation non resolue : cause distincte de "zone non
+                    // couverte", les deux etaient confondues sous le meme message.
+                    ? LocationPromptView(onLocationSet: controller.getData)
+                    : Constant.isZoneAvailable == false || controller.allNearestRestaurant.isEmpty
                     ? Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Column(
@@ -225,7 +225,7 @@ class HomeScreen extends StatelessWidget {
                                                             TextSpan(
                                                               children: [
                                                                 TextSpan(
-                                                                  text: Constant.selectedLocation.getFullAddress().tr,
+                                                                  text: LocationService.displayLabel,
                                                                   style: TextStyle(
                                                                     fontFamily: AppThemeData.medium,
                                                                     overflow: TextOverflow.ellipsis,

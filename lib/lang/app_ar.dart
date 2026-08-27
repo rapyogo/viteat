@@ -638,4 +638,7 @@ const Map<String, String> lnAr = {
   "Enter an address": "إدخال عنوان",
   "Set my location": "تحديد موقعي",
   "Current position": "الموقع الحالي",
+  "Where should we deliver?": "أين نوصل الطلب؟",
+  "We need your position to show you the restaurants closest to you.": "نحتاج إلى موقعك لعرض أقرب المطاعم إليك.",
+  "Use my position": "استخدام موقعي",
 };

@@ -1,3 +1,4 @@
+import 'package:customer/services/location_service.dart';
 import 'dart:async';
 import 'package:customer/constant/constant.dart';
 import 'package:customer/controllers/dash_board_controller.dart';
@@ -15,7 +16,6 @@ import 'package:customer/utils/preferences.dart';
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class HomeController extends GetxController {
   final DashBoardController dashBoardController = Get.find<DashBoardController>();
@@ -197,23 +197,7 @@ class HomeController extends GetxController {
     }
   }
 
-  // ✅ Optimized zone check
-  Future<void> getZone() async {
-    final zones = await FireStoreUtils.getZone();
-    if (zones == null || zones.isEmpty) return;
-
-    final current = LatLng(
-      Constant.selectedLocation.location?.latitude ?? 0.0,
-      Constant.selectedLocation.location?.longitude ?? 0.0,
-    );
-
-    for (final zone in zones) {
-      final inside = Constant.isPointInPolygon(current, zone.area!);
-      Constant.selectedZone = zone;
-      Constant.isZoneAvailable = inside;
-      if (inside) break;
-    }
-  }
+  Future<void> getZone() => LocationService.refreshZone();
 
   // allNearestRestaurant contient déjà tous les vendeurs pertinents pour les
   // pubs et stories (elles sont filtrées contre cette même liste dans

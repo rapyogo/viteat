@@ -1,3 +1,5 @@
+import 'package:customer/widget/location_prompt_view.dart';
+import 'package:customer/services/location_service.dart';
 import 'package:customer/widget/location_picker_flow.dart';
 import 'dart:math';
 import 'package:customer/app/address_screens/address_list_screen.dart';
@@ -58,7 +60,11 @@ class HomeScreenTwo extends StatelessWidget {
           backgroundColor: themeChange.getThem() ? AppThemeData.surfaceDark : AppThemeData.surface,
           body: controller.isLoading.value
               ? Constant.loader()
-              : Constant.isZoneAvailable == false
+              : !LocationService.isResolved
+                  // Localisation non resolue : cause distincte de "zone non
+                  // couverte", les deux etaient confondues sous le meme message.
+                  ? LocationPromptView(onLocationSet: controller.getData)
+                  : Constant.isZoneAvailable == false
                   ? Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
@@ -199,7 +205,7 @@ class HomeScreenTwo extends StatelessWidget {
                                                           TextSpan(
                                                             children: [
                                                               TextSpan(
-                                                                text: Constant.selectedLocation.getFullAddress(),
+                                                                text: LocationService.displayLabel,
                                                                 style: TextStyle(
                                                                   fontFamily: AppThemeData.medium,
                                                                   overflow: TextOverflow.ellipsis,

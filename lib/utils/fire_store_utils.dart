@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart' hide Constant;
 import 'package:customer/app/chat_screens/ChatVideoContainer.dart';
 import 'package:customer/constant/collection_name.dart';
 import 'package:customer/constant/constant.dart';
+import 'package:customer/services/location_service.dart';
 import 'package:customer/constant/show_toast_dialog.dart';
 import 'package:customer/controllers/gift_cards_model.dart';
 import 'package:customer/firebase_options.dart';
@@ -648,6 +649,14 @@ class FireStoreUtils {
   static StreamController<List<VendorModel>>? getNearestVendorController;
 
   static Stream<List<VendorModel>> getAllNearestRestaurant({bool? isDining}) async* {
+    // Sans localisation resolue, le centre geographique retombait sur (0,0) —
+    // au large de l'Afrique — et la requete ramenait donc systematiquement une
+    // liste vide, en donnant l'impression que la zone n'etait pas couverte.
+    // On sort explicitement : aux ecrans d'inviter a definir une localisation.
+    if (!LocationService.isResolved || Constant.selectedZone == null) {
+      yield <VendorModel>[];
+      return;
+    }
     try {
       getNearestVendorController = StreamController<List<VendorModel>>.broadcast();
       List<VendorModel> vendorList = [];
@@ -655,7 +664,7 @@ class FireStoreUtils {
           ? fireStore.collection(CollectionName.vendors).where('zoneId', isEqualTo: Constant.selectedZone?.id.toString()).where("enabledDiveInFuture", isEqualTo: true)
           : fireStore.collection(CollectionName.vendors).where('zoneId', isEqualTo: Constant.selectedZone?.id.toString());
 
-      GeoFirePoint center = Geoflutterfire().point(latitude: Constant.selectedLocation.location?.latitude ?? 0.0, longitude: Constant.selectedLocation.location?.longitude ?? 0.0);
+      GeoFirePoint center = Geoflutterfire().point(latitude: LocationService.latitude!, longitude: LocationService.longitude!);
       String field = 'g';
 
       Stream<List<DocumentSnapshot>> stream = Geoflutterfire().collection(collectionRef: query).within(center: center, radius: double.parse(Constant.radius), field: field, strictMode: true);
@@ -689,6 +698,14 @@ class FireStoreUtils {
   static StreamController<List<VendorModel>>? getNearestVendorByCategoryController;
 
   static Stream<List<VendorModel>> getAllNearestRestaurantByCategoryId({bool? isDining, required String categoryId}) async* {
+    // Sans localisation resolue, le centre geographique retombait sur (0,0) —
+    // au large de l'Afrique — et la requete ramenait donc systematiquement une
+    // liste vide, en donnant l'impression que la zone n'etait pas couverte.
+    // On sort explicitement : aux ecrans d'inviter a definir une localisation.
+    if (!LocationService.isResolved || Constant.selectedZone == null) {
+      yield <VendorModel>[];
+      return;
+    }
     try {
       getNearestVendorByCategoryController = StreamController<List<VendorModel>>.broadcast();
       List<VendorModel> vendorList = [];
@@ -700,7 +717,7 @@ class FireStoreUtils {
               .where("enabledDiveInFuture", isEqualTo: true)
           : fireStore.collection(CollectionName.vendors).where('zoneId', isEqualTo: Constant.selectedZone!.id.toString()).where('categoryID', arrayContains: categoryId);
 
-      GeoFirePoint center = Geoflutterfire().point(latitude: Constant.selectedLocation.location?.latitude ?? 0.0, longitude: Constant.selectedLocation.location?.longitude ?? 0.0);
+      GeoFirePoint center = Geoflutterfire().point(latitude: LocationService.latitude!, longitude: LocationService.longitude!);
       String field = 'g';
 
       Stream<List<DocumentSnapshot>> stream = Geoflutterfire().collection(collectionRef: query).within(center: center, radius: double.parse(Constant.radius), field: field, strictMode: true);

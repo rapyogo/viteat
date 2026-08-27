@@ -646,4 +646,7 @@ const Map<String, String> hiIN = {
   "Enter an address": "पता दर्ज करें",
   "Set my location": "मेरी लोकेशन सेट करें",
   "Current position": "वर्तमान स्थिति",
+  "Where should we deliver?": "डिलीवरी कहाँ करें?",
+  "We need your position to show you the restaurants closest to you.": "आपके नज़दीकी रेस्टोरेंट दिखाने के लिए हमें आपकी लोकेशन चाहिए।",
+  "Use my position": "मेरी लोकेशन इस्तेमाल करें",
 };

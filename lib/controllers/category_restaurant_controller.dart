@@ -1,3 +1,4 @@
+import 'package:customer/services/location_service.dart';
 import 'dart:async';
 import 'dart:developer';
 
@@ -6,7 +7,6 @@ import 'package:customer/models/vendor_category_model.dart';
 import 'package:customer/models/vendor_model.dart';
 import 'package:customer/utils/fire_store_utils.dart';
 import 'package:get/get.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class CategoryRestaurantController extends GetxController {
   RxBool isLoading = true.obs;
@@ -62,19 +62,5 @@ class CategoryRestaurantController extends GetxController {
     });
   }
 
-  getZone() async {
-    await FireStoreUtils.getZone().then((value) {
-      if (value != null) {
-        for (int i = 0; i < value.length; i++) {
-          if (Constant.isPointInPolygon(LatLng(Constant.selectedLocation.location?.latitude ?? 0.0, Constant.selectedLocation.location?.longitude ?? 0.0), value[i].area!)) {
-            Constant.selectedZone = value[i];
-            Constant.isZoneAvailable = true;
-            break;
-          } else {
-            Constant.isZoneAvailable = false;
-          }
-        }
-      }
-    });
-  }
+  Future<void> getZone() => LocationService.refreshZone();
 }
