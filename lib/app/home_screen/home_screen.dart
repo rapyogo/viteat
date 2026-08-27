@@ -2287,7 +2287,11 @@ class MapView extends StatelessWidget {
                 ? flutterMap.FlutterMap(
                     mapController: controller.osmMapController,
                     options: flutterMap.MapOptions(
-                      initialCenter: location.LatLng(Constant.selectedLocation.location?.latitude ?? 0.0, Constant.selectedLocation.location?.longitude ?? 0.0),
+                      // MapView n'est construite que lorsque la localisation est
+                      // resolue (cf. la branche LocationPromptView plus haut), d'ou
+                      // le bang. Les anciens replis — (0,0) ici, Portland cote
+                      // Google — centraient la carte n'importe ou.
+                      initialCenter: location.LatLng(LocationService.latitude!, LocationService.longitude!),
                       initialZoom: 10,
                     ),
                     children: [
@@ -2313,10 +2317,7 @@ class MapView extends StatelessWidget {
                     initialCameraPosition: CameraPosition(
                       zoom: 18,
                       target: controller.homeController.allNearestRestaurant.isEmpty
-                          ? LatLng(
-                              Constant.selectedLocation.location?.latitude ?? 45.521563,
-                              Constant.selectedLocation.location?.longitude ?? -122.677433,
-                            )
+                          ? LatLng(LocationService.latitude!, LocationService.longitude!)
                           : LatLng(
                               controller.homeController.allNearestRestaurant.first.latitude ?? 45.521563,
                               controller.homeController.allNearestRestaurant.first.longitude ?? -122.677433,
