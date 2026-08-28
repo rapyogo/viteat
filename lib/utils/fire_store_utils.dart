@@ -84,6 +84,143 @@ class FireStoreUtils {
     return FirebaseAuth.instance.currentUser?.uid ?? '';
   }
 
+  // ---------------------------------------------------------------------------
+  // Lectures cache-first (stale-while-revalidate)
+  //
+  // La persistance Firestore est active (init(), plus haut) mais aucune lecture
+  // n'utilisait GetOptions : toutes etaient en serverAndCache, donc en ligne
+  // Firestore attendait le serveur avant de rendre la main meme quand le cache
+  // contenait deja la donnee. D'ou une app plus rapide hors ligne qu'en ligne.
+  //
+  // Piege central : un cache vide ne se signale pas de la meme facon selon la
+  // cible. Sur une Query il rend un snapshot VIDE, indistinguable de « aucun
+  // resultat » ; sur un DocumentReference il LEVE. Les deux helpers ci-dessous
+  // sont le seul endroit ou cette difference est traitee.
+  // ---------------------------------------------------------------------------
+
+  /// Lit un document depuis le cache local, puis revalide depuis le serveur.
+  ///
+  /// [apply] est rejoue a l'identique sur la reponse serveur. Les handlers de
+  /// reglages n'ecrivent que dans `Constant`, donc le rejeu est idempotent —
+  /// c'est ce qui rend la double execution sure.
+  ///
+  /// Le Future se resout des que la valeur est disponible (cache s'il est
+  /// present, serveur sinon), pas quand la revalidation est terminee.
+  static Future<T?> _cacheThenServer<T>(
+    DocumentReference<Map<String, dynamic>> ref,
+    T? Function(DocumentSnapshot<Map<String, dynamic>>) apply, {
+    void Function(T?)? onRefresh,
+    String? tag,
+  }) async {
+    Future<T?> fromServer() async {
+      try {
+        final DocumentSnapshot<Map<String, dynamic>> snapshot = await ref.get(const GetOptions(source: Source.server));
+        if (!snapshot.exists) {
+          return null;
+        }
+        return apply(snapshot);
+      } catch (e) {
+        log("_cacheThenServer server ${tag ?? ref.path} :: $e");
+        return null;
+      }
+    }
+
+    T? cached;
+    bool servedFromCache = false;
+    try {
+      final DocumentSnapshot<Map<String, dynamic>> snapshot = await ref.get(const GetOptions(source: Source.cache));
+      // Un document jamais lu leve ; un document lu puis supprime revient avec
+      // exists == false. On ne sert que ce qui existe reellement.
+      if (snapshot.exists) {
+        cached = apply(snapshot);
+        servedFromCache = true;
+      }
+    } catch (e) {
+      // Cache vide pour ce document : normal au premier lancement.
+      log("_cacheThenServer cache miss ${tag ?? ref.path} :: $e");
+    }
+
+    if (!servedFromCache) {
+      return fromServer();
+    }
+
+    unawaited(fromServer().then((T? fresh) {
+      if (onRefresh != null) {
+        onRefresh(fresh);
+      }
+    }));
+
+    return cached;
+  }
+
+  /// Lit une requete depuis le cache local, puis revalide depuis le serveur.
+  ///
+  /// Si le cache rend une liste vide, elle n'est jamais servie telle quelle :
+  /// impossible de distinguer « rien en cache » de « aucun resultat », et la
+  /// servir afficherait « aucun restaurant dans votre zone » au premier
+  /// lancement. Dans ce cas on attend le serveur, et [onRefresh] n'est pas
+  /// appele — la valeur rendue est deja fraiche.
+  ///
+  /// [where] filtre cote client apres parsing (certaines requetes ne peuvent
+  /// pas exprimer leur filtre cote Firestore sans exclure les documents ou le
+  /// champ est absent).
+  static Future<List<T>> _cacheFirstQuery<T>(
+    Query<Map<String, dynamic>> query,
+    T Function(Map<String, dynamic>) fromJson, {
+    void Function(List<T>)? onRefresh,
+    bool Function(T)? where,
+    String? tag,
+  }) async {
+    List<T> parse(QuerySnapshot<Map<String, dynamic>> snapshot) {
+      final List<T> list = <T>[];
+      for (final QueryDocumentSnapshot<Map<String, dynamic>> doc in snapshot.docs) {
+        try {
+          final T item = fromJson(doc.data());
+          if (where == null || where(item)) {
+            list.add(item);
+          }
+        } catch (e) {
+          // Un document mal forme cote admin ne doit pas vider la liste entiere.
+          log("_cacheFirstQuery parse ${tag ?? ''} ${doc.id} :: $e");
+        }
+      }
+      return list;
+    }
+
+    Future<List<T>> fromServer() async {
+      try {
+        return parse(await query.get(const GetOptions(source: Source.server)));
+      } catch (e) {
+        log("_cacheFirstQuery server ${tag ?? ''} :: $e");
+        return <T>[];
+      }
+    }
+
+    List<T> cached = <T>[];
+    try {
+      cached = parse(await query.get(const GetOptions(source: Source.cache)));
+    } catch (e) {
+      log("_cacheFirstQuery cache ${tag ?? ''} :: $e");
+    }
+
+    if (cached.isEmpty) {
+      return fromServer();
+    }
+
+    unawaited(fromServer().then((List<T> fresh) {
+      // Une reponse serveur vide alors que le cache avait du contenu est
+      // indistinguable d'une erreur reseau (fromServer rend [] dans les deux
+      // cas) : on ne l'impose pas a l'ecran. Consequence assumee : une
+      // collection entierement videe cote admin ne se propage qu'au prochain
+      // lancement.
+      if (fresh.isNotEmpty && onRefresh != null) {
+        onRefresh(fresh);
+      }
+    }));
+
+    return cached;
+  }
+
   static Future<bool> isLogin() async {
     if (FirebaseAuth.instance.currentUser == null) return false;
     // Ne pas passer par userExistOrNot() ici : celui-ci avale les erreurs réseau
