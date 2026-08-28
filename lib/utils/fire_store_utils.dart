@@ -402,25 +402,13 @@ class FireStoreUtils {
 
   static Future<void> getSettings() async {
     try {
+      // --- Flux temps reel ---------------------------------------------------
+      // Inchanges : snapshots() sert deja le cache avant le serveur.
       fireStore.collection(CollectionName.settings).doc("localisationSettings").snapshots().listen((event) async {
         if (event.exists) {
           Constant.apiKeyOfDeepl = event.data()?["apiKeyOfDeepl"] ?? '';
           Constant.localisationType = event.data()?["localisationType"] ?? '';
         }
-      });
-      await FireStoreUtils.fireStore.collection(CollectionName.currencies).where("isActive", isEqualTo: true).get().then((value) async {
-        if (value.docs.isNotEmpty) {
-          Constant.currencyModel = CurrencyModel.fromJson(value.docs.first.data());
-        } else {
-          Constant.currencyModel = CurrencyModel(id: "", code: "USD", decimalDigits: 2, isActive: true, name: "US Dollar", symbol: "\$", symbolAtRight: false);
-        }
-      });
-
-      fireStore.collection(CollectionName.settings).doc('restaurant').get().then((value) {
-        Constant.isSubscriptionModelApplied = value.data()!['subscription_model'];
-        Constant.packagingChargeEnable = value.data()!['packagingChargeEnable'];
-      }).catchError((e) {
-        log("getSettings restaurant error :: $e");
       });
 
       fireStore.collection(CollectionName.settings).doc("RestaurantNearBy").snapshots().listen((event) {
@@ -429,33 +417,6 @@ class FireStoreUtils {
           Constant.driverRadios = event.data()!["driverRadios"];
           Constant.distanceType = event.data()!["distanceType"];
         }
-      });
-
-      await fireStore.collection(CollectionName.settings).doc("globalSettings").get().then((value) async {
-        Constant.defaultCountryCode = value.data()?["defaultCountryCode"] ?? '';
-        Constant.isEnableAdsFeature = value.data()?['isEnableAdsFeature'] ?? false;
-        Constant.isSelfDeliveryFeature = value.data()?['isSelfDelivery'] ?? false;
-        Constant.taxScope = value.data()?['taxScope'] ?? "";
-        // Isole le parsing de couleur : une valeur absente/mal formee cote
-        // admin (ex. champ vide, pas de "#") ne doit pas faire planter cette
-        // lecture et bloquer avec elle tous les autres reglages qui suivent
-        // dans getSettings() (ils partageaient le meme try/catch englobant).
-        final String? customerColorHex = value.data()?['app_customer_color'];
-        if (customerColorHex != null && customerColorHex.isNotEmpty) {
-          try {
-            AppThemeData.primary300 = Color(int.parse(customerColorHex.replaceFirst("#", "0xff")));
-          } catch (e) {
-            log("getSettings app_customer_color invalide ($customerColorHex) :: $e");
-          }
-        }
-      });
-
-      fireStore.collection(CollectionName.settings).doc("DineinForRestaurant").get().then((dineinresult) {
-        if (dineinresult.exists) {
-          Constant.isDineInEnable = dineinresult.data()!["isEnabled"];
-        }
-      }).catchError((e) {
-        log("getSettings DineinForRestaurant error :: $e");
       });
 
       fireStore.collection(CollectionName.settings).doc("googleMapKey").snapshots().listen((event) {
@@ -469,23 +430,6 @@ class FireStoreUtils {
         if (event.exists) {
           Constant.theme = event.data()!["theme"];
         }
-      });
-
-      fireStore.collection(CollectionName.settings).doc("cashbackOffer").get().then((event) {
-        if (event.exists) {
-          Constant.isCashbackActive = event.data()?["isEnable"] ?? false;
-        }
-      }).catchError((e) {
-        log("getSettings cashbackOffer error :: $e");
-      });
-
-      fireStore.collection(CollectionName.settings).doc("DriverNearBy").get().then((event) {
-        if (event.exists) {
-          Constant.selectedMapType = event.data()!["selectedMapType"];
-          Constant.mapType = event.data()!["mapType"];
-        }
-      }).catchError((e) {
-        log("getSettings DriverNearBy error :: $e");
       });
 
       fireStore.collection(CollectionName.settings).doc("privacyPolicy").snapshots().listen((event) {
@@ -515,55 +459,159 @@ class FireStoreUtils {
         }
       });
 
-      fireStore.collection(CollectionName.settings).doc('story').get().then((value) {
-        Constant.storyEnable = value.data()?['isEnabled'] ?? false;
-      }).catchError((e) {
-        log("getSettings story error :: $e");
-      });
-
-      fireStore.collection(CollectionName.settings).doc('adminSettings').get().then((value) {
-        if (value.data() != null) {
-          Constant.platformFeeModel = PlatformFeeModel.fromJson(value.data()!);
-        }
-      }).catchError((e) {
-        log("getSettings adminSettings error :: $e");
-      });
-
-      fireStore.collection(CollectionName.settings).doc('referral_amount').get().then((value) {
-        Constant.referralAmount = '${value.data()?['referralAmount'] ?? '0.0'}';
-      }).catchError((e) {
-        log("getSettings referral_amount error :: $e");
-      });
-
-      fireStore.collection(CollectionName.settings).doc('placeHolderImage').get().then((value) {
-        Constant.placeholderImage = value.data()?['image'] ?? '';
-      }).catchError((e) {
-        log("getSettings placeHolderImage error :: $e");
-      });
-
-      // E-mails transactionnels envoyés par le serveur (email_outbox) :
-      // l'app ne lit plus settings/emailSetting (identifiants SMTP).
-
-      fireStore.collection(CollectionName.settings).doc("specialDiscountOffer").get().then((dineinresult) {
-        if (dineinresult.exists) {
-          Constant.specialDiscountOffer = dineinresult.data()?["isEnable"] ?? false;
-        }
-      }).catchError((e) {
-        log("getSettings specialDiscountOffer error :: $e");
-      });
-
-      await fireStore.collection(CollectionName.settings).doc("DineinForRestaurant").get().then((value) {
-        Constant.isEnabledForCustomer = value['isEnabledForCustomer'] ?? false;
-      });
-
-      await fireStore.collection(CollectionName.settings).doc("AdminCommission").get().then((value) {
-        if (value.data() != null) {
-          Constant.adminCommission = AdminCommission.fromJson(value.data()!);
-        }
-      });
-
       // Les notifications push sont envoyées par le serveur (v1_sendPush) :
       // plus de lecture de la clé de compte de service (serviceJson).
+
+      // --- Devise : une requete, pas un document ------------------------------
+      final List<CurrencyModel> currencies = await _cacheFirstQuery<CurrencyModel>(
+        FireStoreUtils.fireStore.collection(CollectionName.currencies).where("isActive", isEqualTo: true),
+        CurrencyModel.fromJson,
+        onRefresh: (List<CurrencyModel> fresh) {
+          if (fresh.isNotEmpty) {
+            Constant.currencyModel = fresh.first;
+          }
+        },
+        tag: 'currencies',
+      );
+      Constant.currencyModel = currencies.isNotEmpty
+          ? currencies.first
+          : CurrencyModel(id: "", code: "USD", decimalDigits: 2, isActive: true, name: "US Dollar", symbol: "\$", symbolAtRight: false);
+
+      // --- Reglages : servis par le cache, revalides en arriere-plan ----------
+      // Ces lectures etaient lancees sans etre attendues : getSettings() rendait
+      // la main avant que la moitie des Constant soient renseignees, et les
+      // ecrans pouvaient en lire de nulles (a l'origine du crash adminCommission
+      // du 2026-08-25). Servies par le cache, les attendre coute quelques
+      // millisecondes au lieu de plusieurs centaines.
+      //
+      // Le parametre de type est Object, pas void : avec T = void le helper
+      // rendrait Future<void?>, qui n'est pas un type Dart valide. Les apply
+      // rendent null, leur valeur de retour est ignoree.
+      await Future.wait(<Future<Object?>>[
+        _cacheThenServer<Object>(
+          fireStore.collection(CollectionName.settings).doc('restaurant'),
+          (value) {
+            Constant.isSubscriptionModelApplied = value.data()!['subscription_model'];
+            Constant.packagingChargeEnable = value.data()!['packagingChargeEnable'];
+            return null;
+          },
+          tag: 'restaurant',
+        ),
+        _cacheThenServer<Object>(
+          fireStore.collection(CollectionName.settings).doc("globalSettings"),
+          (value) {
+            Constant.defaultCountryCode = value.data()?["defaultCountryCode"] ?? '';
+            Constant.isEnableAdsFeature = value.data()?['isEnableAdsFeature'] ?? false;
+            Constant.isSelfDeliveryFeature = value.data()?['isSelfDelivery'] ?? false;
+            Constant.taxScope = value.data()?['taxScope'] ?? "";
+            // Isole le parsing de couleur : une valeur absente/mal formee cote
+            // admin (ex. champ vide, pas de "#") ne doit pas faire planter cette
+            // lecture et bloquer avec elle tous les autres reglages qui suivent
+            // dans getSettings() (ils partageaient le meme try/catch englobant).
+            final String? customerColorHex = value.data()?['app_customer_color'];
+            if (customerColorHex != null && customerColorHex.isNotEmpty) {
+              try {
+                AppThemeData.primary300 = Color(int.parse(customerColorHex.replaceFirst("#", "0xff")));
+              } catch (e) {
+                log("getSettings app_customer_color invalide ($customerColorHex) :: $e");
+              }
+            }
+            return null;
+          },
+          tag: 'globalSettings',
+        ),
+        // Le document etait lu deux fois, pour deux champs. Une seule lecture
+        // desormais. L'ancienne seconde lecture faisait value['isEnabledForCustomer']
+        // sans garder exists : elle levait sur un document absent.
+        _cacheThenServer<Object>(
+          fireStore.collection(CollectionName.settings).doc("DineinForRestaurant"),
+          (value) {
+            if (value.exists) {
+              Constant.isDineInEnable = value.data()!["isEnabled"];
+              Constant.isEnabledForCustomer = value.data()?['isEnabledForCustomer'] ?? false;
+            }
+            return null;
+          },
+          tag: 'DineinForRestaurant',
+        ),
+        _cacheThenServer<Object>(
+          fireStore.collection(CollectionName.settings).doc("cashbackOffer"),
+          (event) {
+            if (event.exists) {
+              Constant.isCashbackActive = event.data()?["isEnable"] ?? false;
+            }
+            return null;
+          },
+          tag: 'cashbackOffer',
+        ),
+        _cacheThenServer<Object>(
+          fireStore.collection(CollectionName.settings).doc("DriverNearBy"),
+          (event) {
+            if (event.exists) {
+              Constant.selectedMapType = event.data()!["selectedMapType"];
+              Constant.mapType = event.data()!["mapType"];
+            }
+            return null;
+          },
+          tag: 'DriverNearBy',
+        ),
+        _cacheThenServer<Object>(
+          fireStore.collection(CollectionName.settings).doc('story'),
+          (value) {
+            Constant.storyEnable = value.data()?['isEnabled'] ?? false;
+            return null;
+          },
+          tag: 'story',
+        ),
+        _cacheThenServer<Object>(
+          fireStore.collection(CollectionName.settings).doc('adminSettings'),
+          (value) {
+            if (value.data() != null) {
+              Constant.platformFeeModel = PlatformFeeModel.fromJson(value.data()!);
+            }
+            return null;
+          },
+          tag: 'adminSettings',
+        ),
+        _cacheThenServer<Object>(
+          fireStore.collection(CollectionName.settings).doc('referral_amount'),
+          (value) {
+            Constant.referralAmount = '${value.data()?['referralAmount'] ?? '0.0'}';
+            return null;
+          },
+          tag: 'referral_amount',
+        ),
+        _cacheThenServer<Object>(
+          fireStore.collection(CollectionName.settings).doc('placeHolderImage'),
+          (value) {
+            Constant.placeholderImage = value.data()?['image'] ?? '';
+            return null;
+          },
+          tag: 'placeHolderImage',
+        ),
+        // E-mails transactionnels envoyés par le serveur (email_outbox) :
+        // l'app ne lit plus settings/emailSetting (identifiants SMTP).
+        _cacheThenServer<Object>(
+          fireStore.collection(CollectionName.settings).doc("specialDiscountOffer"),
+          (value) {
+            if (value.exists) {
+              Constant.specialDiscountOffer = value.data()?["isEnable"] ?? false;
+            }
+            return null;
+          },
+          tag: 'specialDiscountOffer',
+        ),
+        _cacheThenServer<Object>(
+          fireStore.collection(CollectionName.settings).doc("AdminCommission"),
+          (value) {
+            if (value.data() != null) {
+              Constant.adminCommission = AdminCommission.fromJson(value.data()!);
+            }
+            return null;
+          },
+          tag: 'AdminCommission',
+        ),
+      ]);
     } catch (e) {
       log(e.toString());
     }
