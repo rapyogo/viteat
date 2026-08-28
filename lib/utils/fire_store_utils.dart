@@ -958,38 +958,20 @@ class FireStoreUtils {
     await fireStore.collection(CollectionName.favoriteItem).add(favouriteModel.toJson());
   }
 
-  static Future<List<ProductModel>> getProductByVendorId(String vendorId) async {
-    String selectedFoodType = Preferences.getString(Preferences.foodDeliveryType, defaultValue: "Delivery");
-    List<ProductModel> list = [];
-    if (selectedFoodType == "TakeAway") {
-      await fireStore.collection(CollectionName.vendorProducts).where("vendorID", isEqualTo: vendorId).where('publish', isEqualTo: true).orderBy("createdAt", descending: false).get().then((value) {
-        for (var element in value.docs) {
-          ProductModel productModel = ProductModel.fromJson(element.data());
-          list.add(productModel);
-        }
-      }).catchError((error) {
-        log(error.toString());
-      });
-    } else {
-      await fireStore
-          .collection(CollectionName.vendorProducts)
-          .where("vendorID", isEqualTo: vendorId)
-          .where('publish', isEqualTo: true)
-          .orderBy("createdAt", descending: false)
-          .get()
-          .then((value) {
-        for (var element in value.docs) {
-          ProductModel productModel = ProductModel.fromJson(element.data());
-          if (productModel.takeawayOption != true) {
-            list.add(productModel);
-          }
-        }
-      }).catchError((error) {
-        log(error.toString());
-      });
-    }
-
-    return list;
+  static Future<List<ProductModel>> getProductByVendorId(String vendorId, {void Function(List<ProductModel>)? onRefresh}) async {
+    final String selectedFoodType = Preferences.getString(Preferences.foodDeliveryType, defaultValue: "Delivery");
+    // Les deux branches d'origine executaient exactement la meme requete : seul
+    // le filtre client differait. Une seule requete, un filtre conditionnel.
+    return _cacheFirstQuery<ProductModel>(
+      fireStore.collection(CollectionName.vendorProducts).where("vendorID", isEqualTo: vendorId).where('publish', isEqualTo: true).orderBy("createdAt", descending: false),
+      ProductModel.fromJson,
+      // Le filtre reste cote client : where("takeawayOption", isEqualTo: false)
+      // cote Firestore excluait les plats ou le champ est absent (bug corrige le
+      // 2026-08-25). Ne pas le redeplacer cote serveur.
+      where: selectedFoodType == "TakeAway" ? null : (ProductModel p) => p.takeawayOption != true,
+      onRefresh: onRefresh,
+      tag: 'getProductByVendorId',
+    );
   }
 
   static Future<VendorCategoryModel?> getVendorCategoryById(String categoryId) async {
@@ -1022,37 +1004,27 @@ class FireStoreUtils {
     return vendorCategoryModel;
   }
 
-  static Future<List<CouponModel>> getOfferByVendorId(String vendorId) async {
-    List<CouponModel> couponList = [];
-    await fireStore
-        .collection(CollectionName.coupons)
-        .where("resturant_id", isEqualTo: vendorId)
-        .where("isEnabled", isEqualTo: true)
-        .where("isPublic", isEqualTo: true)
-        .where('expiresAt', isGreaterThanOrEqualTo: Timestamp.now())
-        .get()
-        .then(
-      (value) {
-        for (var element in value.docs) {
-          CouponModel favouriteModel = CouponModel.fromJson(element.data());
-          couponList.add(favouriteModel);
-        }
-      },
+  static Future<List<CouponModel>> getOfferByVendorId(String vendorId, {void Function(List<CouponModel>)? onRefresh}) async {
+    return _cacheFirstQuery<CouponModel>(
+      fireStore
+          .collection(CollectionName.coupons)
+          .where("resturant_id", isEqualTo: vendorId)
+          .where("isEnabled", isEqualTo: true)
+          .where("isPublic", isEqualTo: true)
+          .where('expiresAt', isGreaterThanOrEqualTo: Timestamp.now()),
+      CouponModel.fromJson,
+      onRefresh: onRefresh,
+      tag: 'getOfferByVendorId',
     );
-    return couponList;
   }
 
-  static Future<List<AttributesModel>?> getAttributes() async {
-    List<AttributesModel> attributeList = [];
-    await fireStore.collection(CollectionName.vendorAttributes).get().then(
-      (value) {
-        for (var element in value.docs) {
-          AttributesModel favouriteModel = AttributesModel.fromJson(element.data());
-          attributeList.add(favouriteModel);
-        }
-      },
+  static Future<List<AttributesModel>?> getAttributes({void Function(List<AttributesModel>)? onRefresh}) async {
+    return _cacheFirstQuery<AttributesModel>(
+      fireStore.collection(CollectionName.vendorAttributes),
+      AttributesModel.fromJson,
+      onRefresh: onRefresh,
+      tag: 'getAttributes',
     );
-    return attributeList;
   }
 
   static Future<DeliveryCharge?> getDeliveryCharge() async {
@@ -1085,8 +1057,7 @@ class FireStoreUtils {
     return freeDeliveryByAdminModel;
   }
 
-  static Future<List<TaxModel>?> getTaxList() async {
-    List<TaxModel> taxList = [];
+  static Future<List<TaxModel>?> getTaxList({void Function(List<TaxModel>)? onRefresh}) async {
     try {
       final double? latitude = Constant.selectedLocation.location?.latitude;
       final double? longitude = Constant.selectedLocation.location?.longitude;
@@ -1094,68 +1065,54 @@ class FireStoreUtils {
       // encore accordee...) — pas de taxe applicable pour l'instant plutot que
       // de planter tout l'ecran d'accueil.
       if (latitude == null || longitude == null) {
-        return taxList;
+        return <TaxModel>[];
       }
-      List<Placemark> placeMarks = await Geocoding().placemarkFromCoordinates(latitude, longitude);
+      final List<Placemark> placeMarks = await Geocoding().placemarkFromCoordinates(latitude, longitude);
       if (placeMarks.isEmpty) {
-        return taxList;
+        return <TaxModel>[];
       }
-      log("placeMarks.first.country :: ${placeMarks.first.country}");
-      await fireStore.collection(CollectionName.tax).where('country', isEqualTo: placeMarks.first.country).where('enable', isEqualTo: true).get().then((value) {
-        for (var element in value.docs) {
-          TaxModel taxModel = TaxModel.fromJson(element.data());
-          taxList.add(taxModel);
-        }
-      }).catchError((error) {
-        log(error.toString());
-      });
+      // Limite connue : placemarkFromCoordinates a besoin du reseau. Hors ligne
+      // le pays reste inconnu et on sort ci-dessus — le cache-first ci-dessous
+      // ne sert donc qu'en ligne, ou il evite quand meme l'aller-retour.
+      return _cacheFirstQuery<TaxModel>(
+        fireStore.collection(CollectionName.tax).where('country', isEqualTo: placeMarks.first.country).where('enable', isEqualTo: true),
+        TaxModel.fromJson,
+        onRefresh: onRefresh,
+        tag: 'getTaxList',
+      );
     } catch (e) {
       // Geocodage indisponible hors-ligne, ou toute autre erreur transitoire —
       // degrade proprement au lieu de faire planter HomeController.getData().
       log("getTaxList error :: $e");
+      return <TaxModel>[];
     }
-    return taxList;
   }
 
-  static Future<List<CouponModel>> getAllVendorPublicCoupons(String vendorId) async {
-    List<CouponModel> coupon = [];
-
-    await fireStore
-        .collection(CollectionName.coupons)
-        .where("resturant_id", isEqualTo: vendorId)
-        .where('expiresAt', isGreaterThanOrEqualTo: Timestamp.now())
-        .where("isEnabled", isEqualTo: true)
-        .where("isPublic", isEqualTo: true)
-        .get()
-        .then((value) {
-      for (var element in value.docs) {
-        CouponModel taxModel = CouponModel.fromJson(element.data());
-        coupon.add(taxModel);
-      }
-    }).catchError((error) {
-      log(error.toString());
-    });
-    return coupon;
+  static Future<List<CouponModel>> getAllVendorPublicCoupons(String vendorId, {void Function(List<CouponModel>)? onRefresh}) async {
+    return _cacheFirstQuery<CouponModel>(
+      fireStore
+          .collection(CollectionName.coupons)
+          .where("resturant_id", isEqualTo: vendorId)
+          .where('expiresAt', isGreaterThanOrEqualTo: Timestamp.now())
+          .where("isEnabled", isEqualTo: true)
+          .where("isPublic", isEqualTo: true),
+      CouponModel.fromJson,
+      onRefresh: onRefresh,
+      tag: 'getAllVendorPublicCoupons',
+    );
   }
 
-  static Future<List<CouponModel>> getAllVendorCoupons(String vendorId) async {
-    List<CouponModel> coupon = [];
-
-    await fireStore
-        .collection(CollectionName.coupons)
-        .where("resturant_id", isEqualTo: vendorId)
-        .where('expiresAt', isGreaterThanOrEqualTo: Timestamp.now())
-        .where("isEnabled", isEqualTo: true)
-        .get()
-        .then((value) {
-      for (var element in value.docs) {
-        CouponModel taxModel = CouponModel.fromJson(element.data());
-        coupon.add(taxModel);
-      }
-    }).catchError((error) {
-      log(error.toString());
-    });
-    return coupon;
+  static Future<List<CouponModel>> getAllVendorCoupons(String vendorId, {void Function(List<CouponModel>)? onRefresh}) async {
+    return _cacheFirstQuery<CouponModel>(
+      fireStore
+          .collection(CollectionName.coupons)
+          .where("resturant_id", isEqualTo: vendorId)
+          .where('expiresAt', isGreaterThanOrEqualTo: Timestamp.now())
+          .where("isEnabled", isEqualTo: true),
+      CouponModel.fromJson,
+      onRefresh: onRefresh,
+      tag: 'getAllVendorCoupons',
+    );
   }
 
   static Future<bool?> setOrder(OrderModel orderModel) async {
@@ -1330,10 +1287,15 @@ class FireStoreUtils {
 
   static Future<List> getVendorCuisines(String id) async {
     List tagList = [];
-    QuerySnapshot<Map<String, dynamic>> productsQuery = await fireStore.collection(CollectionName.vendorProducts).where('vendorID', isEqualTo: id).get();
+    // Les deux requetes passent par le cache : identite comme fromJson, le
+    // post-traitement travaille sur les documents bruts comme avant.
+    final List<Map<String, dynamic>> products = await _cacheFirstQuery<Map<String, dynamic>>(
+      fireStore.collection(CollectionName.vendorProducts).where('vendorID', isEqualTo: id),
+      (Map<String, dynamic> data) => data,
+      tag: 'getVendorCuisines products',
+    );
     final Set<String> categoryIds = {};
-    for (var document in productsQuery.docs) {
-      final data = document.data();
+    for (var data in products) {
       if (data.containsKey("categoryID") && data['categoryID'].toString().isNotEmpty) {
         categoryIds.add(data['categoryID'].toString());
       }
@@ -1341,17 +1303,20 @@ class FireStoreUtils {
     if (categoryIds.isEmpty) return tagList;
 
     // Avant : on tirait TOUTE la collection vendorCategories (publish==true) puis
-    // on filtrait côté client sur les IDs du menu de ce vendeur. Désormais on ne
-    // demande que les catégories réellement utilisées par ses produits, par lots
+    // on filtrait cote client sur les IDs du menu de ce vendeur. Desormais on ne
+    // demande que les categories reellement utilisees par ses produits, par lots
     // de 30 (limite de whereIn) — un seul .where('id', ...) reste indexable
     // simplement, le filtre publish se fait ensuite sur ce petit lot.
     final List<String> idList = categoryIds.toList();
     for (int i = 0; i < idList.length; i += 30) {
       final int end = i + 30 > idList.length ? idList.length : i + 30;
       final List<String> chunk = idList.sublist(i, end);
-      QuerySnapshot<Map<String, dynamic>> catQuery = await fireStore.collection(CollectionName.vendorCategories).where('id', whereIn: chunk).get();
-      for (var document in catQuery.docs) {
-        Map<String, dynamic> catDoc = document.data();
+      final List<Map<String, dynamic>> categories = await _cacheFirstQuery<Map<String, dynamic>>(
+        fireStore.collection(CollectionName.vendorCategories).where('id', whereIn: chunk),
+        (Map<String, dynamic> data) => data,
+        tag: 'getVendorCuisines categories',
+      );
+      for (var catDoc in categories) {
         if (catDoc['publish'] == true && catDoc.containsKey("title") && catDoc['title'].toString().isNotEmpty) {
           tagList.add(catDoc['title']);
         }
