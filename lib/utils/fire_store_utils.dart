@@ -725,19 +725,13 @@ class FireStoreUtils {
     ]);
   }
 
-  static Future<VendorModel?> getVendorById(String vendorId) async {
-    VendorModel? vendorModel;
-    try {
-      await fireStore.collection(CollectionName.vendors).doc(vendorId).get().then((value) {
-        if (value.exists) {
-          vendorModel = VendorModel.fromJson(value.data()!);
-        }
-      });
-    } catch (e, s) {
-      log('FireStoreUtils.firebaseCreateNewUser $e $s');
-      return null;
-    }
-    return vendorModel;
+  static Future<VendorModel?> getVendorById(String vendorId, {void Function(VendorModel?)? onRefresh}) async {
+    return _cacheThenServer<VendorModel>(
+      fireStore.collection(CollectionName.vendors).doc(vendorId),
+      (value) => value.exists ? VendorModel.fromJson(value.data()!) : null,
+      onRefresh: onRefresh,
+      tag: 'getVendorById',
+    );
   }
 
   static StreamController<List<VendorModel>>? getNearestVendorController;
@@ -974,34 +968,22 @@ class FireStoreUtils {
     );
   }
 
-  static Future<VendorCategoryModel?> getVendorCategoryById(String categoryId) async {
-    VendorCategoryModel? vendorCategoryModel;
-    try {
-      await fireStore.collection(CollectionName.vendorCategories).doc(categoryId).get().then((value) {
-        if (value.exists) {
-          vendorCategoryModel = VendorCategoryModel.fromJson(value.data()!);
-        }
-      });
-    } catch (e, s) {
-      log('FireStoreUtils.firebaseCreateNewUser $e $s');
-      return null;
-    }
-    return vendorCategoryModel;
+  static Future<VendorCategoryModel?> getVendorCategoryById(String categoryId, {void Function(VendorCategoryModel?)? onRefresh}) async {
+    return _cacheThenServer<VendorCategoryModel>(
+      fireStore.collection(CollectionName.vendorCategories).doc(categoryId),
+      (value) => value.exists ? VendorCategoryModel.fromJson(value.data()!) : null,
+      onRefresh: onRefresh,
+      tag: 'getVendorCategoryById',
+    );
   }
 
-  static Future<ProductModel?> getProductById(String productId) async {
-    ProductModel? vendorCategoryModel;
-    try {
-      await fireStore.collection(CollectionName.vendorProducts).doc(productId).get().then((value) {
-        if (value.exists) {
-          vendorCategoryModel = ProductModel.fromJson(value.data()!);
-        }
-      });
-    } catch (e, s) {
-      log('FireStoreUtils.firebaseCreateNewUser $e $s');
-      return null;
-    }
-    return vendorCategoryModel;
+  static Future<ProductModel?> getProductById(String productId, {void Function(ProductModel?)? onRefresh}) async {
+    return _cacheThenServer<ProductModel>(
+      fireStore.collection(CollectionName.vendorProducts).doc(productId),
+      (value) => value.exists ? ProductModel.fromJson(value.data()!) : null,
+      onRefresh: onRefresh,
+      tag: 'getProductById',
+    );
   }
 
   static Future<List<CouponModel>> getOfferByVendorId(String vendorId, {void Function(List<CouponModel>)? onRefresh}) async {
@@ -1027,19 +1009,13 @@ class FireStoreUtils {
     );
   }
 
-  static Future<DeliveryCharge?> getDeliveryCharge() async {
-    DeliveryCharge? deliveryCharge;
-    try {
-      await fireStore.collection(CollectionName.settings).doc("DeliveryCharge").get().then((value) {
-        if (value.exists) {
-          deliveryCharge = DeliveryCharge.fromJson(value.data()!);
-        }
-      });
-    } catch (e, s) {
-      log('FireStoreUtils.firebaseCreateNewUser $e $s');
-      return null;
-    }
-    return deliveryCharge;
+  static Future<DeliveryCharge?> getDeliveryCharge({void Function(DeliveryCharge?)? onRefresh}) async {
+    return _cacheThenServer<DeliveryCharge>(
+      fireStore.collection(CollectionName.settings).doc("DeliveryCharge"),
+      (value) => value.exists ? DeliveryCharge.fromJson(value.data()!) : null,
+      onRefresh: onRefresh,
+      tag: 'getDeliveryCharge',
+    );
   }
 
   static Future<FreeDeliveryByAdminModel?> getFreeDeliveryByAdminData() async {
@@ -1546,14 +1522,16 @@ class FireStoreUtils {
     );
   }
 
-  static Future<AdvertisementModel> getAdvertisementById(String advId) async {
-    AdvertisementModel advertisementModel = AdvertisementModel();
-    await fireStore.collection(CollectionName.advertisements).doc(advId).get().then((value) {
-      advertisementModel = AdvertisementModel.fromJson(value.data() as Map<String, dynamic>);
-    }).catchError((error) {
-      log(error.toString());
-    });
-    return advertisementModel;
+  static Future<AdvertisementModel> getAdvertisementById(String advId, {void Function(AdvertisementModel?)? onRefresh}) async {
+    final AdvertisementModel? advertisementModel = await _cacheThenServer<AdvertisementModel>(
+      fireStore.collection(CollectionName.advertisements).doc(advId),
+      (value) => value.exists ? AdvertisementModel.fromJson(value.data()!) : null,
+      onRefresh: onRefresh,
+      tag: 'getAdvertisementById',
+    );
+    // Signature non nullable conservee : les appelants attendent un modele vide,
+    // pas un null, quand l'annonce n'existe pas.
+    return advertisementModel ?? AdvertisementModel();
   }
 
   static Future<List<CashbackModel>> getAllCashbak() async {
