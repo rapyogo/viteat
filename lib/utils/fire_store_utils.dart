@@ -373,31 +373,22 @@ class FireStoreUtils {
     }
   }
 
-  static Future<List<OnBoardingModel>> getOnBoardingList() async {
-    List<OnBoardingModel> onBoardingModel = [];
-    await fireStore.collection(CollectionName.onBoarding).where("type", isEqualTo: "customerApp").get().then((value) {
-      for (var element in value.docs) {
-        OnBoardingModel documentModel = OnBoardingModel.fromJson(element.data());
-        onBoardingModel.add(documentModel);
-      }
-    }).catchError((error) {
-      log(error.toString());
-    });
-    return onBoardingModel;
+  static Future<List<OnBoardingModel>> getOnBoardingList({void Function(List<OnBoardingModel>)? onRefresh}) async {
+    return _cacheFirstQuery<OnBoardingModel>(
+      fireStore.collection(CollectionName.onBoarding).where("type", isEqualTo: "customerApp"),
+      OnBoardingModel.fromJson,
+      onRefresh: onRefresh,
+      tag: 'getOnBoardingList',
+    );
   }
 
-  static Future<List<VendorModel>> getVendors() async {
-    List<VendorModel> giftCardModelList = [];
-    QuerySnapshot<Map<String, dynamic>> currencyQuery = await fireStore.collection(CollectionName.vendors).where("zoneId", isEqualTo: Constant.selectedZone!.id.toString()).get();
-    await Future.forEach(currencyQuery.docs, (QueryDocumentSnapshot<Map<String, dynamic>> document) {
-      try {
-        log(document.data().toString());
-        giftCardModelList.add(VendorModel.fromJson(document.data()));
-      } catch (e) {
-        debugPrint('FireStoreUtils.get Currency Parse error $e');
-      }
-    });
-    return giftCardModelList;
+  static Future<List<VendorModel>> getVendors({void Function(List<VendorModel>)? onRefresh}) async {
+    return _cacheFirstQuery<VendorModel>(
+      fireStore.collection(CollectionName.vendors).where("zoneId", isEqualTo: Constant.selectedZone!.id.toString()),
+      VendorModel.fromJson,
+      onRefresh: onRefresh,
+      tag: 'getVendors',
+    );
   }
 
   static Future<void> getSettings() async {
@@ -659,17 +650,13 @@ class FireStoreUtils {
     return null;
   }
 
-  static Future<List<ZoneModel>?> getZone() async {
-    List<ZoneModel> airPortList = [];
-    await fireStore.collection(CollectionName.zone).where('publish', isEqualTo: true).get().then((value) {
-      for (var element in value.docs) {
-        ZoneModel ariPortModel = ZoneModel.fromJson(element.data());
-        airPortList.add(ariPortModel);
-      }
-    }).catchError((error) {
-      log(error.toString());
-    });
-    return airPortList;
+  static Future<List<ZoneModel>?> getZone({void Function(List<ZoneModel>)? onRefresh}) async {
+    return _cacheFirstQuery<ZoneModel>(
+      fireStore.collection(CollectionName.zone).where('publish', isEqualTo: true),
+      ZoneModel.fromJson,
+      onRefresh: onRefresh,
+      tag: 'getZone',
+    );
   }
 
   static Future<List<WalletTransactionModel>?> getWalletTransaction() async {
@@ -859,88 +846,62 @@ class FireStoreUtils {
     }
   }
 
-  static Future<List<StoryModel>> getStory() async {
-    List<StoryModel> storyList = [];
-    await fireStore.collection(CollectionName.story).limit(50).get().then((value) {
-      for (var element in value.docs) {
-        StoryModel walletTransactionModel = StoryModel.fromJson(element.data());
-        storyList.add(walletTransactionModel);
-      }
-    }).catchError((error) {
-      log(error.toString());
-    });
-    return storyList;
-  }
-
-  static Future<List<CouponModel>> getHomeCoupon() async {
-    List<CouponModel> list = [];
-    await fireStore
-        .collection(CollectionName.coupons)
-        .where('expiresAt', isGreaterThanOrEqualTo: Timestamp.now())
-        .where("isEnabled", isEqualTo: true)
-        .where("isPublic", isEqualTo: true)
-        .get()
-        .then((value) {
-      for (var element in value.docs) {
-        CouponModel walletTransactionModel = CouponModel.fromJson(element.data());
-        list.add(walletTransactionModel);
-      }
-    }).catchError((error) {
-      log(error.toString());
-    });
-    return list;
-  }
-
-  static Future<List<VendorCategoryModel>> getHomeVendorCategory() async {
-    List<VendorCategoryModel> list = [];
-    await fireStore.collection(CollectionName.vendorCategories).where("show_in_homepage", isEqualTo: true).where('publish', isEqualTo: true).get().then((value) {
-      for (var element in value.docs) {
-        VendorCategoryModel walletTransactionModel = VendorCategoryModel.fromJson(element.data());
-        list.add(walletTransactionModel);
-      }
-    }).catchError((error) {
-      log(error.toString());
-    });
-    return list;
-  }
-
-  static Future<List<VendorCategoryModel>> getVendorCategory() async {
-    List<VendorCategoryModel> list = [];
-    await fireStore.collection(CollectionName.vendorCategories).where('publish', isEqualTo: true).get().then((value) {
-      for (var element in value.docs) {
-        VendorCategoryModel walletTransactionModel = VendorCategoryModel.fromJson(element.data());
-        list.add(walletTransactionModel);
-      }
-    }).catchError((error) {
-      log(error.toString());
-    });
-    return list;
-  }
-
-  static Future<List<BannerModel>> getHomeTopBanner() async {
-    List<BannerModel> bannerList = [];
-    await fireStore.collection(CollectionName.menuItems).where("is_publish", isEqualTo: true).where("position", isEqualTo: "top").orderBy("set_order", descending: false).get().then(
-      (value) {
-        for (var element in value.docs) {
-          BannerModel bannerHome = BannerModel.fromJson(element.data());
-          bannerList.add(bannerHome);
-        }
-      },
+  static Future<List<StoryModel>> getStory({void Function(List<StoryModel>)? onRefresh}) async {
+    return _cacheFirstQuery<StoryModel>(
+      fireStore.collection(CollectionName.story).limit(50),
+      StoryModel.fromJson,
+      onRefresh: onRefresh,
+      tag: 'getStory',
     );
-    return bannerList;
   }
 
-  static Future<List<BannerModel>> getHomeBottomBanner() async {
-    List<BannerModel> bannerList = [];
-    await fireStore.collection(CollectionName.menuItems).where("is_publish", isEqualTo: true).where("position", isEqualTo: "middle").orderBy("set_order", descending: false).get().then(
-      (value) {
-        for (var element in value.docs) {
-          BannerModel bannerHome = BannerModel.fromJson(element.data());
-          bannerList.add(bannerHome);
-        }
-      },
+  static Future<List<CouponModel>> getHomeCoupon({void Function(List<CouponModel>)? onRefresh}) async {
+    return _cacheFirstQuery<CouponModel>(
+      fireStore
+          .collection(CollectionName.coupons)
+          .where('expiresAt', isGreaterThanOrEqualTo: Timestamp.now())
+          .where("isEnabled", isEqualTo: true)
+          .where("isPublic", isEqualTo: true),
+      CouponModel.fromJson,
+      onRefresh: onRefresh,
+      tag: 'getHomeCoupon',
     );
-    return bannerList;
+  }
+
+  static Future<List<VendorCategoryModel>> getHomeVendorCategory({void Function(List<VendorCategoryModel>)? onRefresh}) async {
+    return _cacheFirstQuery<VendorCategoryModel>(
+      fireStore.collection(CollectionName.vendorCategories).where("show_in_homepage", isEqualTo: true).where('publish', isEqualTo: true),
+      VendorCategoryModel.fromJson,
+      onRefresh: onRefresh,
+      tag: 'getHomeVendorCategory',
+    );
+  }
+
+  static Future<List<VendorCategoryModel>> getVendorCategory({void Function(List<VendorCategoryModel>)? onRefresh}) async {
+    return _cacheFirstQuery<VendorCategoryModel>(
+      fireStore.collection(CollectionName.vendorCategories).where('publish', isEqualTo: true),
+      VendorCategoryModel.fromJson,
+      onRefresh: onRefresh,
+      tag: 'getVendorCategory',
+    );
+  }
+
+  static Future<List<BannerModel>> getHomeTopBanner({void Function(List<BannerModel>)? onRefresh}) async {
+    return _cacheFirstQuery<BannerModel>(
+      fireStore.collection(CollectionName.menuItems).where("is_publish", isEqualTo: true).where("position", isEqualTo: "top").orderBy("set_order", descending: false),
+      BannerModel.fromJson,
+      onRefresh: onRefresh,
+      tag: 'getHomeTopBanner',
+    );
+  }
+
+  static Future<List<BannerModel>> getHomeBottomBanner({void Function(List<BannerModel>)? onRefresh}) async {
+    return _cacheFirstQuery<BannerModel>(
+      fireStore.collection(CollectionName.menuItems).where("is_publish", isEqualTo: true).where("position", isEqualTo: "middle").orderBy("set_order", descending: false),
+      BannerModel.fromJson,
+      onRefresh: onRefresh,
+      tag: 'getHomeBottomBanner',
+    );
   }
 
   static Future<List<FavouriteModel>> getFavouriteRestaurant() async {
@@ -1603,27 +1564,21 @@ class FireStoreUtils {
     });
   }
 
-  static Future<List<AdvertisementModel>> getAllAdvertisement() async {
-    List<AdvertisementModel> advertisementList = [];
-    await fireStore
-        .collection(CollectionName.advertisements)
-        .where('status', isEqualTo: 'approved')
-        .where('paymentStatus', isEqualTo: true)
-        .where('startDate', isLessThanOrEqualTo: DateTime.now())
-        .where('endDate', isGreaterThan: DateTime.now())
-        .orderBy('priority', descending: false)
-        .get()
-        .then((value) {
-      for (var element in value.docs) {
-        AdvertisementModel advertisementModel = AdvertisementModel.fromJson(element.data());
-        if (advertisementModel.isPaused == null || advertisementModel.isPaused == false) {
-          advertisementList.add(advertisementModel);
-        }
-      }
-    }).catchError((error) {
-      log(error.toString());
-    });
-    return advertisementList;
+  static Future<List<AdvertisementModel>> getAllAdvertisement({void Function(List<AdvertisementModel>)? onRefresh}) async {
+    return _cacheFirstQuery<AdvertisementModel>(
+      fireStore
+          .collection(CollectionName.advertisements)
+          .where('status', isEqualTo: 'approved')
+          .where('paymentStatus', isEqualTo: true)
+          .where('startDate', isLessThanOrEqualTo: DateTime.now())
+          .where('endDate', isGreaterThan: DateTime.now())
+          .orderBy('priority', descending: false),
+      AdvertisementModel.fromJson,
+      // Filtre client conserve : une annonce sans champ isPaused est active.
+      where: (AdvertisementModel a) => a.isPaused == null || a.isPaused == false,
+      onRefresh: onRefresh,
+      tag: 'getAllAdvertisement',
+    );
   }
 
   static Future<AdvertisementModel> getAdvertisementById(String advId) async {
