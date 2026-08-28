@@ -18,7 +18,6 @@ import 'package:customer/themes/responsive.dart';
 import 'package:customer/themes/round_button_fill.dart';
 import 'package:customer/themes/text_field_widget.dart';
 import 'package:customer/utils/dark_theme_provider.dart';
-import 'package:customer/utils/dynamic_traslator.dart';
 import 'package:customer/utils/fire_store_utils.dart';
 import 'package:customer/utils/network_image_widget.dart';
 import 'package:flutter/material.dart';
@@ -380,7 +379,16 @@ class RestaurantDetailsScreen extends StatelessWidget {
                                       ),
                                     ],
                                   ),
-                                  Row(
+                                  // Ligne d'infos "Ouvert - Voir les horaires - X pour deux".
+                                  // Un Row la faisait deborder des qu'une traduction depassait
+                                  // l'anglais ("View Timings" fait 12 caracteres, "Voir les
+                                  // horaires" 17). Les enfants portaient bien overflow.ellipsis,
+                                  // mais dans leur TextStyle, ou il reste sans effet tant que la
+                                  // largeur n'est pas contrainte. Wrap fait passer la ligne a la
+                                  // suivante plutot que de la tronquer ou de deborder.
+                                  Wrap(
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    runSpacing: 4,
                                     children: [
                                       TranslatedText(
                                         controller.isOpen.value ? "Open" : "Close",
