@@ -68,22 +68,24 @@ class HomeController extends GetxController {
   }
 
   Future<void> getTaxList() async {
-    await FireStoreUtils.getTaxList().then(
-      (value) {
-        if (value != null) {
-          Constant.taxProductList = value.where((TaxModel taxModel) => taxModel.scope == "product").toList();
-          Constant.orderProductTaxList = value.where((TaxModel taxModel) => taxModel.scope == "order").toList();
-          Constant.driverDeliveryTaxList = value.where((TaxModel taxModel) => taxModel.scope == "delivery").toList();
+    // Le meme traitement sert au resultat servi par le cache et a la version
+    // revalidee qui arrive ensuite du serveur.
+    void apply(List<TaxModel>? value) {
+      if (value != null) {
+        Constant.taxProductList = value.where((TaxModel taxModel) => taxModel.scope == "product").toList();
+        Constant.orderProductTaxList = value.where((TaxModel taxModel) => taxModel.scope == "order").toList();
+        Constant.driverDeliveryTaxList = value.where((TaxModel taxModel) => taxModel.scope == "delivery").toList();
 
-          if (Constant.packagingChargeEnable == true) {
-            Constant.packagingTaxList = value.where((TaxModel taxModel) => taxModel.scope == "packaging").toList();
-          }
-          if (Constant.platformFeeModel?.enable == true) {
-            Constant.platformTaxList = value.where((TaxModel taxModel) => taxModel.scope == "platform").toList();
-          }
+        if (Constant.packagingChargeEnable == true) {
+          Constant.packagingTaxList = value.where((TaxModel taxModel) => taxModel.scope == "packaging").toList();
         }
-      },
-    );
+        if (Constant.platformFeeModel?.enable == true) {
+          Constant.platformTaxList = value.where((TaxModel taxModel) => taxModel.scope == "platform").toList();
+        }
+      }
+    }
+
+    apply(await FireStoreUtils.getTaxList(onRefresh: apply));
   }
 
   // ✅ Optimized cart listening
@@ -145,42 +147,50 @@ class HomeController extends GetxController {
   }
 
   Future<void> _fetchCoupons(List<VendorModel> restaurants) async {
-    final values = await FireStoreUtils.getHomeCoupon();
-    final now = DateTime.now();
-
-    couponList.clear();
-    couponRestaurantList.clear();
-    for (final c in values) {
-      if (c.expiresAt!.toDate().isAfter(now)) {
-        final match = restaurants.firstWhereOrNull((r) => r.id == c.resturantId);
-        if (match != null) {
-          couponList.add(c);
-          couponRestaurantList.add(match);
+    void apply(List<CouponModel> values) {
+      final now = DateTime.now();
+      final List<CouponModel> coupons = [];
+      final List<VendorModel> vendors = [];
+      for (final c in values) {
+        if (c.expiresAt!.toDate().isAfter(now)) {
+          final match = restaurants.firstWhereOrNull((r) => r.id == c.resturantId);
+          if (match != null) {
+            coupons.add(c);
+            vendors.add(match);
+          }
         }
       }
+      couponList.assignAll(coupons);
+      couponRestaurantList.assignAll(vendors);
     }
+
+    apply(await FireStoreUtils.getHomeCoupon(onRefresh: apply));
   }
 
   Future<void> _fetchStories(List<VendorModel> restaurants) async {
-    final values = await FireStoreUtils.getStory();
     final vendorIds = restaurants.map((r) => r.id).toSet();
+    void apply(List<StoryModel> values) {
+      storyList.assignAll(values.where((s) => vendorIds.contains(s.vendorID)).toList());
+    }
 
-    storyList.assignAll(values.where((s) => vendorIds.contains(s.vendorID)).toList());
+    apply(await FireStoreUtils.getStory(onRefresh: apply));
   }
 
   Future<void> _fetchAds(List<VendorModel> restaurants) async {
-    final values = await FireStoreUtils.getAllAdvertisement();
     final vendorIds = restaurants.map((r) => r.id).toSet();
+    void apply(List<AdvertisementModel> values) {
+      advertisementList.assignAll(values.where((a) => vendorIds.contains(a.vendorId)).toList());
+    }
 
-    advertisementList.assignAll(values.where((a) => vendorIds.contains(a.vendorId)).toList());
+    apply(await FireStoreUtils.getAllAdvertisement(onRefresh: apply));
   }
 
   // ✅ Cached and parallel category + banner + favourite fetch
   Future<void> getVendorCategory() async {
     final results = await Future.wait([
-      FireStoreUtils.getHomeVendorCategory(),
-      FireStoreUtils.getHomeTopBanner(),
-      FireStoreUtils.getHomeBottomBanner(),
+      FireStoreUtils.getHomeVendorCategory(onRefresh: vendorCategoryModel.assignAll),
+      FireStoreUtils.getHomeTopBanner(onRefresh: bannerModel.assignAll),
+      FireStoreUtils.getHomeBottomBanner(onRefresh: bannerBottomModel.assignAll),
     ]);
 
     vendorCategoryModel.assignAll(results[0] as List<VendorCategoryModel>);
