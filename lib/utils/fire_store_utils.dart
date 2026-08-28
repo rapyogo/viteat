@@ -665,24 +665,29 @@ class FireStoreUtils {
     ]) {
       await Preferences.setString(key, '{}');
     }
-    await fireStore.collection(CollectionName.settings).doc("walletSettings").get().then((value) async {
-      if (value.exists) {
-        WalletSettingModel walletSettingModel = WalletSettingModel.fromJson(value.data()!);
-        await Preferences.setString(Preferences.walletSettings, jsonEncode(walletSettingModel.toJson()));
-      }
-    });
-    await fireStore.collection(CollectionName.settings).doc("CODSettings").get().then((value) async {
-      if (value.exists) {
-        CodSettingModel codSettingModel = CodSettingModel.fromJson(value.data()!);
-        await Preferences.setString(Preferences.codSettings, jsonEncode(codSettingModel.toJson()));
-      }
-    });
-    await fireStore.collection(CollectionName.settings).doc("flexpay_settings").get().then((value) async {
-      if (value.exists) {
-        FlexPay flexPay = FlexPay.fromJson(value.data()!);
-        await Preferences.setString(Preferences.flexPaySettings, jsonEncode(flexPay.toJson()));
-      }
-    });
+    // Les trois lectures restantes sont independantes (chacune ecrit sa cle) :
+    // en parallele plutot qu'en serie. Volontairement pas cache-first : FlexPay
+    // est actif en production, on ne paie jamais avec une valeur perimee.
+    await Future.wait(<Future<void>>[
+      fireStore.collection(CollectionName.settings).doc("walletSettings").get().then((value) async {
+        if (value.exists) {
+          WalletSettingModel walletSettingModel = WalletSettingModel.fromJson(value.data()!);
+          await Preferences.setString(Preferences.walletSettings, jsonEncode(walletSettingModel.toJson()));
+        }
+      }),
+      fireStore.collection(CollectionName.settings).doc("CODSettings").get().then((value) async {
+        if (value.exists) {
+          CodSettingModel codSettingModel = CodSettingModel.fromJson(value.data()!);
+          await Preferences.setString(Preferences.codSettings, jsonEncode(codSettingModel.toJson()));
+        }
+      }),
+      fireStore.collection(CollectionName.settings).doc("flexpay_settings").get().then((value) async {
+        if (value.exists) {
+          FlexPay flexPay = FlexPay.fromJson(value.data()!);
+          await Preferences.setString(Preferences.flexPaySettings, jsonEncode(flexPay.toJson()));
+        }
+      }),
+    ]);
   }
 
   static Future<VendorModel?> getVendorById(String vendorId) async {
