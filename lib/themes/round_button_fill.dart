@@ -43,13 +43,26 @@ class RoundedButtonFill extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             (isRight == false) ? Padding(padding: const EdgeInsets.only(right: 5), child: icon) : const SizedBox(),
-            TranslatedText(
-              title.tr.toString(),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: AppThemeData.semiBold,
-                color: textColor ?? AppThemeData.grey800,
-                fontSize: fontSizes ?? 14,
+            // Le libelle etait pose directement dans le Row : il prenait sa
+            // largeur naturelle et debordait des qu'une traduction depassait
+            // l'anglais (le francais est regulierement 30% plus long). Flexible
+            // borne la largeur disponible, FittedBox reduit legerement la
+            // police plutot que de tronquer — le libelle reste entier et
+            // aucun bouton de l'app ne peut plus deborder.
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: TranslatedText(
+                  title.tr.toString(),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: AppThemeData.semiBold,
+                    color: textColor ?? AppThemeData.grey800,
+                    fontSize: fontSizes ?? 14,
+                  ),
+                ),
               ),
             ),
             (isRight == true) ? Padding(padding: const EdgeInsets.only(left: 5), child: icon) : const SizedBox(),

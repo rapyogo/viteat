@@ -410,27 +410,38 @@ class OrderDetailsScreen extends StatelessWidget {
                                                                 const SizedBox(
                                                                   width: 5,
                                                                 ),
-                                                                TranslatedText(
-                                                                  controller.orderModel.value.driver!.fullName(),
-                                                                  textAlign: TextAlign.right,
-                                                                  style: TextStyle(
-                                                                    color: themeChange.getThem() ? AppThemeData.grey100 : AppThemeData.grey800,
-                                                                    fontFamily: AppThemeData.semiBold,
-                                                                    fontWeight: FontWeight.w500,
-                                                                    fontSize: 14,
+                                                                // Ni le nom du livreur ni le libelle n'etaient flexibles :
+                                                                // ce Row debordait des qu'un nom etait un peu long, dans
+                                                                // n'importe quelle langue.
+                                                                Flexible(
+                                                                  child: TranslatedText(
+                                                                    controller.orderModel.value.driver!.fullName(),
+                                                                    textAlign: TextAlign.right,
+                                                                    maxLines: 1,
+                                                                    overflow: TextOverflow.ellipsis,
+                                                                    style: TextStyle(
+                                                                      color: themeChange.getThem() ? AppThemeData.grey100 : AppThemeData.grey800,
+                                                                      fontFamily: AppThemeData.semiBold,
+                                                                      fontWeight: FontWeight.w500,
+                                                                      fontSize: 14,
+                                                                    ),
                                                                   ),
                                                                 ),
                                                                 const SizedBox(
                                                                   width: 5,
                                                                 ),
-                                                                TranslatedText(
-                                                                  "Order Delivered.",
-                                                                  textAlign: TextAlign.right,
-                                                                  style: TextStyle(
-                                                                    color: themeChange.getThem() ? AppThemeData.grey100 : AppThemeData.grey800,
-                                                                    fontFamily: AppThemeData.regular,
-                                                                    fontWeight: FontWeight.w500,
-                                                                    fontSize: 14,
+                                                                Flexible(
+                                                                  child: TranslatedText(
+                                                                    "Order Delivered.",
+                                                                    textAlign: TextAlign.right,
+                                                                    maxLines: 1,
+                                                                    overflow: TextOverflow.ellipsis,
+                                                                    style: TextStyle(
+                                                                      color: themeChange.getThem() ? AppThemeData.grey100 : AppThemeData.grey800,
+                                                                      fontFamily: AppThemeData.regular,
+                                                                      fontWeight: FontWeight.w500,
+                                                                      fontSize: 14,
+                                                                    ),
                                                                   ),
                                                                 ),
                                                               ],
