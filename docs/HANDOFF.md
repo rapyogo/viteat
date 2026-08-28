@@ -1,12 +1,12 @@
 # HANDOFF — customer (app Flutter de livraison de repas)
 
-Dernière mise à jour : 2026-08-27
+Dernière mise à jour : 2026-08-28
 
 ## Contexte projet
 - App Flutter cliente d'une plateforme de livraison de repas multi-vendeurs, marque "Rapyogo" (package Android `com.rapyogo.client`).
 - Firebase project : **rapyogo-2bccd** (base Firestore par défaut, `currentEnv = FirebaseEnv.defaultDb` dans `lib/utils/fire_store_utils.dart`).
 - Le repo fait partie d'un ensemble de projets sœurs dans `C:\Projet\AUTRE\Nouveau dossier\` : `Admin Panel`, `customer` (ce repo), `driver`, plus des dossiers d'outillage Firebase (`Firebase Indexing`, `Firebase Import Export Collections`, `Firestore Demo Authentication User Import`, `Order Tracking Firebase Function`) qui ne sont **pas** des dépôts git.
-- Version app : 7.0.0+25 (pubspec.yaml).
+- Version app : **`1.0.0+4`** (`pubspec.yaml` ligne 19, vérifié le 2026-08-28). Ce fichier annonçait `7.0.0+25`, ce qui était faux — la valeur ne correspond à aucun état du dépôt. ⚠️ La session du 21/08 notait « versionCode 4 → 5 pour la prochaine mise à jour » : **le bump n'a jamais été fait**. Un envoi au Play Store avec le versionCode 4 sera rejeté si le 4 y est déjà publié — à incrémenter avant toute publication.
 
 ## État git
 - Branche `master`, remote `origin` = **`https://github.com/rapyogo/viteat`** (le remote par défaut de la config globale, `rapyogo/rapycar`, ne correspond PAS à ce projet — ce dépôt-ci utilise `viteat`, poussé et confirmé le 2026-08-24).
@@ -125,10 +125,11 @@ Tous confirmés en conditions réelles (device physique, pas juste en lecture de
 
 **Vérification structurelle faite (rassurante)** : les 35 collections utilisées par le code Dart (`CollectionName`), les 7 Cloud Functions (dont tout le module FlexPay), et les index Firestore composites sont tous présents et intacts après l'import — l'import n'a rien cassé de structurel, seulement potentiellement des valeurs de config partagées.
 
-**Sécurité** : une vraie clé de compte de service Firebase (`firebase-adminsdk-qn3oh@rapyogo-2bccd`) a été collée directement dans le chat par l'utilisateur pour débloquer l'import, utilisée une fois, puis supprimée du disque. **Cette clé doit être révoquée et régénérée** depuis la console Firebase (Paramètres du projet → Comptes de service) — jamais fait à ce jour.
+**Sécurité** : une vraie clé de compte de service Firebase (`firebase-adminsdk-qn3oh@rapyogo-2bccd`) a été collée directement dans le chat par l'utilisateur pour débloquer l'import. **Cette clé doit être révoquée et régénérée** depuis la console Firebase (Paramètres du projet → Comptes de service) — jamais fait à ce jour.
+> **Correction 2026-08-28** : cette section affirmait que la clé avait été « supprimée du disque ». C'est faux — le fichier `Order Tracking Firebase Function/functions/serviceAccountKey.json` est toujours présent (daté du 21/08). Il est gitignoré et ce dossier n'est pas un dépôt git, donc pas de fuite par le versionnage, mais **la clé exposée en chat reste à révoquer**. Elle a servi le 2026-08-28 pour lire et migrer des réglages Firestore.
 
 **Pistes ouvertes issues de cet import :**
-- Vérifier le panel admin web : `globalSettings` (nom d'app, logo, contact, couleurs) affiche-t-il des valeurs génériques "Foodie" au lieu de "Rapyogo"/"Viteat" ? Si oui, les reconfigurer manuellement (pas de backup pour restaurer automatiquement).
+- ~~Vérifier si `globalSettings` affiche des valeurs génériques "Foodie"~~ → **VÉRIFIÉ LE 2026-08-28 : c'est faux, `applicationName = "Viteat"`, couleurs `#ff6a00`, `defaultCountryCode = CD`.** L'import de démo n'a pas écrasé ce document. Crainte levée, aucune reconfiguration nécessaire.
 - Nettoyer les 5 comptes `@gromart.com` restants (Auth + toute donnée Firestore associée à leurs UID) — confirmé "reliquat" par l'utilisateur mais nettoyage pas encore exécuté.
 - Réessayer l'import des comptes de démo (`import-user.js`) seulement après avoir libéré/choisi d'autres UID (les 5 UID cibles du script sont pris par les comptes Gromart).
 - **Révoquer la clé de compte de service exposée dans le chat** et en générer une nouvelle si besoin futur.
@@ -263,3 +264,134 @@ Suite de l'audit #1 (deux points plus lourds, laissés de côté initialement). 
 - **Rien de tout ça n'a encore été retesté sur device réel dans son ensemble** par l'utilisateur (App Check nécessite un arrêt complet + relance pour être pris en compte — pas encore confirmé fait) : à valider en priorité en prochaine session — connexion Google, paiement Mobile Money bout en bout (temps réel), écrans recherche/accueil/favoris/commandes/pubs/avis, mode hors-ligne, redémarrage à froid.
 - Backend FlexPay (`flexPayCallback`) déployé et corrigé en production — comportement temps réel à confirmer avec un vrai paiement.
 - Pistes ouvertes des sessions précédentes (clé de service compte à révoquer, comptes `@gromart.com` à nettoyer, IPs FlexPay à clarifier, logo Mobile Money à remplacer, config iOS jamais terminée) — **toujours pas traitées**, non touchées cette session.
+
+---
+
+## Session 2026-08-28 — LocationService (offline-first P1), mise en page adaptative, audit tarification
+
+Branche `feat/location-service`, **fusionnée et poussée sur `master`** (`3e1a372..31de21c`, 14 commits). Plan écrit en mode plan : `C:\Users\RAPYOGO\.claude\plans\bonjour-shiny-pelican.md`.
+
+> ⚠️ Le plan offline-first de la session du 26 était censé vivre dans
+> `tu-es-un-lead-synthetic-brooks.md` — **ce fichier a été écrasé** par le plan perf du 27.
+> Le contenu du P1 a dû être reconstruit par exploration du code. Les fichiers de plan
+> portent un nom généré et se réécrivent : ne pas s'y fier comme archive.
+
+### 1. LocationService — le P1 « localisation » du plan offline-first est livré
+
+Nouveau `lib/services/location_service.dart`, service GetX permanent posé dans `main.dart` **avant `runApp`** (donc la localisation est restaurée avant que `SplashController` s'exécute, hors-ligne compris).
+
+**Décision de conception structurante** : `Constant.selectedLocation` devient une **façade getter/setter** vers le service, au lieu de migrer les 19 sites d'écriture. Vérifié par grep : aucun site ne mute l'objet en place, tous font une assignation complète — le setter les intercepte donc tous. Conséquence : la persistance est effective partout sans toucher une ligne des 6 parcours d'authentification (splash, 3 logins, signup ×2, OTP), les plus coûteux à retester. Effet de bord voulu : le getter lit un `Rxn`, donc tout `Obx`/`GetX` lisant `selectedLocation` devient réactif.
+
+L'état est un `Rxn<ShippingAddress>` **statique** (le null fait partie du type, l'analyseur refuse une lecture non gardée). `setLocation()` refuse toute adresse sans coordonnées : une `ShippingAddress()` vide ne peut jamais écraser une localisation valide.
+
+Persistance en SharedPreferences (`selectedLocationKey`, `selectedLocationSourceKey`). `Preferences` n'ayant ni `containsKey` ni sentinelle, trois règles rendent l'état « défini mais vide » inatteignable : ne jamais écrire `""`, traiter `""` comme jamais défini, revalider les coordonnées après décodage. Priorité en cas de conflit : **le profil Firestore gagne** sur le cache local (choix explicite et cross-device de l'utilisateur), le cache servant d'hydratation instantanée.
+
+`UserLocation.fromJson` castait `json['latitude']` brut sur un `double?` → `TypeError` dès que Firestore rend un `int`. Passé en `(json['latitude'] as num?)?.toDouble()` — prérequis de la persistance.
+
+`LocationService.clear()` ajouté aux **12 `signOut()`** de l'app : sans purge, la localisation du compte A fuitait dans la session du compte B (`clearSharPreference()` n'est appelé nulle part).
+
+### 2. Les 5 coordonnées de Mumbai codées en dur, supprimées
+
+`19.228825, 72.854118` était écrit dans 5 blocs `catch` quand le GPS échouait — la donnée factice explicitement rejetée le 2026-08-26 pour `(0,0)`. `grep 19.228825 lib/` → **0 occurrence**.
+
+Nouveau `lib/widget/location_failure_sheet.dart` : la cause est nommée (service désactivé, permission refusée, permission bloquée, signal trop faible) et chaque cas propose l'action qui la résout. En échec, **aucune localisation n'est renseignée et l'écran ne navigue pas**.
+
+Le site le plus dangereux était `address_list_screen.dart:71` : il ne s'assignait pas la fausse adresse, il la renvoyait par `Get.back(result:)` à ses 3 appelants **plus le panier** — le seul des cinq qui contaminait le checkout. Il avait été manqué par la première exploration justement parce qu'il n'assignait pas `selectedLocation` directement.
+
+**Gain fonctionnel non prévu** : le géocodage inverse (qui a besoin du réseau) faisait tomber tout l'appel GPS dans le `catch`, jetant une position parfaitement valide pour lui substituer Mumbai. Il a désormais son propre `try/catch` — les coordonnées survivent, seul le libellé manque.
+
+Le flux de sélection sur carte, dupliqué dans 3 écrans, est extrait dans `lib/widget/location_picker_flow.dart`. Au passage, 3 sites appelaient `getCurrentPosition()` **et jetaient le résultat**, uniquement pour déclencher la permission avant d'ouvrir le picker — supprimé, un picker manuel n'a pas besoin du GPS.
+
+### 3. « Localisation non résolue » ≠ « zone non couverte »
+
+Les deux requêtes géo construisaient leur centre avec `?? 0.0` : sans localisation, l'app cherchait les restaurants autour de **(0,0)**, au large de l'Afrique. Elles ramenaient une liste vide, que les écrans interprétaient comme « aucun restaurant dans votre zone » — message trompeur, et le bouton « Change Zone » n'y changeait rien.
+
+Garde ajoutée en tête des deux `async*`, `?? 0.0` supprimé. Nouveau `lib/widget/location_prompt_view.dart` (« Où livrer ? » + 3 CTA) affiché dans ce cas sur `home_screen`, `home_screen_two` et `dine_in_screen`.
+
+`LocationService.refreshZone()` remplace **3 implémentations divergentes** du calcul de zone. Celle de `home_controller` affectait `selectedZone` à **chaque itération** : sans zone correspondante, l'app repartait avec la dernière zone de la liste et `isZoneAvailable = false`.
+
+> **Dette assumée** : `Constant.selectedZone` **n'est pas remis à `null`** quand aucune zone ne correspond. Il est lu avec un bang `!` sur ~11 sites (`home_screen.dart:1956,1968,2057,2069`, `home_screen_two.dart:898,910`, `dine_in_screen.dart:1083,1095`, `favourite_screen.dart:207,498`, `fire_store_utils.dart:237`), dont deux dans `favourite_screen` qui s'affiche indépendamment de `isZoneAvailable`. Passe dédiée nécessaire ; `isZoneAvailable` reste la seule source de vérité sur la couverture.
+
+### 4. Gardes null et piège du checkout
+
+`getFullAddress()` ne gardait pas `locality` → affichait littéralement `" null "` dans le header d'accueil. Les deux headers passent à `LocationService.displayLabel`.
+
+`Constant.getDistance` faisait `double.parse` sur ses 4 arguments. Les appelants passent `vendorModel.latitude.toString()` : quand la latitude est null, la chaîne vaut `"null"` — non-null, donc aucune garde amont ne l'attrape — et le parse levait une `FormatException` en plein build. Passé en `double.tryParse`, rend `''`.
+
+> **Contrepartie traitée dans le même commit** : `cart_controller.dart:239` est le seul appelant vivant qui parse le retour de `getDistance`. Sa garde ne couvrait que l'adresse client, pas le vendeur — **un vendeur sans coordonnées y plantait déjà le checkout avant cette session**. Sans distance, les frais de livraison restent à 0 au lieu de lever.
+
+### 5. Mise en page : boutons adaptatifs aux traductions longues
+
+**Cause structurelle** : dans `RoundedButtonFill` et `RoundedButtonBorder`, le libellé était posé directement dans le `Row` sans `Flexible` — il prenait sa largeur naturelle et débordait dès qu'une traduction dépassait l'anglais (le français est régulièrement 30 % plus long).
+
+Correction en deux temps, après retour utilisateur :
+1. `Flexible` + `FittedBox` — le texte rétrécissait, mais le fond gardait sa taille figée.
+2. **La largeur/hauteur demandée devient un minimum** (`BoxConstraints` au lieu de `width`/`height`) et le `Row` passe en `mainAxisSize.min` : **le fond s'élargit avec le libellé**. Défaut à 100 % inchangé (plein écran), seuls les boutons compacts grandissent.
+
+Garde ajoutée : `Flexible` n'est licite que sous une largeur bornée. Le bouton n'ayant plus de largeur fixe, il pourrait se trouver dans un parent à largeur infinie (liste horizontale) où `Flexible` lèverait une exception. Un `LayoutBuilder` ne l'applique que si les contraintes sont finies.
+
+Corrigé aussi : la ligne « Ouvert • Voir les horaires • X pour deux » (`restaurant_details_screen` **et** `dine_in_details_screen`, bloc dupliqué) débordait de 26 px — passée en `Wrap`. Ses trois textes déclaraient pourtant `overflow: ellipsis`, mais **dans leur `TextStyle`**, où la propriété reste sans effet tant que la largeur n'est pas contrainte : le code avait l'air de gérer le cas sans le gérer. Et le `Row` du livreur (`order_details_screen`) n'avait de flex sur aucun de ses deux textes — il débordait dès qu'un nom était un peu long, dans n'importe quelle langue.
+
+> **Erreur commise et corrigée dans la session** : des traductions françaises volontairement raccourcies par l'utilisateur (pour supprimer ces mêmes débordements) ont été prises pour une corruption et rallongées, réintroduisant un overflow. Voir la mémoire `user-edits-in-working-tree`. Une fois la cause structurelle traitée, **toutes les valeurs longues ont été rétablies** — `app_fr.dart` est identique à l'état d'avant session, aux 19 clés ajoutées près.
+
+### 6. Migration des fichiers hébergés sur l'ancien projet `foodies-3c1d9`
+
+6 champs de `settings` référençaient le bucket Storage du projet du template : son de notification (`globalSettings.order_ringtone_url`), drapeaux anglais et arabe (`languages.list`), logos midtrans / orange money / xendit. Les fichiers ont été téléchargés et téléversés dans `rapyogo-2bccd.appspot.com`, les URLs mises à jour dans Firestore. Sauvegarde des valeurs d'origine : `migration_backup.txt` (dossier temporaire de session, non pérenne).
+
+**Un septième n'a pas pu l'être** : `googleMapKey.placeHolderImage` renvoie **HTTP 404** — le fichier a déjà été supprimé de l'ancien projet. Le risque n'était donc pas théorique. À re-téléverser depuis le panel admin (le correctif Flutter du 25/08 affiche une icône locale en attendant).
+
+### 7. Audit de tarification (Firestore lu en direct, aucune modification de code)
+
+- `settings/adminSettings` (= **frais de plateforme**, pas la commission) portait `enable: true, amount: 16` → **16 $ facturés sur chaque commande, emporter compris**. L'utilisateur l'avait activé sans le savoir ; il l'a désactivé en séance (`enable: false, amount: 0`). Ce n'était pas un bug de calcul.
+- `settings/freeDeliveryFeature` : **le document n'existe pas**.
+- Devise active : **USD**.
+- `settings/DeliveryCharge` ajusté par l'utilisateur en séance : `per_km 20 → 1`, `minimum 10 → 2`, seuil 5 km. Envisageait ensuite `minimum 3, seuil 10 km`.
+
+**Défaut de formule (code du template, aucun réglage ne le corrige)** : au-delà du seuil, `cart_controller` applique le tarif kilométrique à la **distance totale**, pas aux kilomètres excédentaires. D'où une marche au franchissement, de montant `seuil × tarif − forfait` :
+
+| Config | 5 km | 5,1 km | 10 km | 10,1 km | Marche |
+|---|---|---|---|---|---|
+| Avant (20/10/5) | 10 $ | **102 $** | 200 $ | 202 $ | 90 $ |
+| Actuelle (1/2/5) | 2 $ | 5,10 $ | 10 $ | 10,10 $ | 3 $ |
+| Envisagée (1/3/10) | 3 $ | 3 $ | 3 $ | **10,10 $** | 7 $ |
+
+Noter le contre-intuitif : **augmenter le seuil aggrave la marche**.
+
+**Recommandation documentée pour le terrain** (à appliquer quand les données réelles seront collectées) — formule continue, alignée sur les pratiques Uber Eats / Deliveroo :
+```
+frais = forfait                                    si distance ≤ seuil
+frais = forfait + (distance − seuil) × tarif_km    au-delà
+```
+Avec forfait 2 $, seuil 3 km, tarif 0,50 $/km : 3 km → 2 $, 5 km → 3 $, 10 km → 5,50 $, 20 km → 10,50 $. Aucune marche. **Ne demande aucun changement du panel admin**, les 3 champs existants suffisent — uniquement `cart_controller.calculatePrice()`.
+
+Existent chez les grandes plateformes mais **absents du modèle de données** (chacun = champ Firestore + panel admin) : plafond de frais, frais « petite commande » sous un panier minimum, tarification dynamique.
+
+### 8. Livraison gratuite : deux mécanismes distincts, ne pas les confondre
+
+- **Fonctionnel** : `vendorModel.isSelfDelivery == true && Constant.isSelfDeliveryFeature == true` → frais à 0. `globalSettings.isSelfDelivery = true`, donc **actif**. C'est la livraison gratuite quand le restaurant a ses propres livreurs.
+- **Dormant** : la promotion pilotée par l'admin (gratuit en deçà de X km, ou au-delà de Y de panier). Le drapeau `isEnableFreeDeliveryByAdmin` est lu à 9 endroits et enregistré dans la commande, mais **n'est mis à `true` nulle part en code actif**. La logique existe en commentaire (`cart_controller.dart:506-512`). Vérifié : **elle était déjà commentée dans le commit initial** — ça vient du template, personne dans cet historique ne l'a cassée.
+- **Défaut latent si on la rebranche** : la taxe de livraison est calculée sur `deliveryCharges` sans consulter le drapeau, alors que le total l'exclut → le client serait taxé sur des frais qu'il ne paie pas. Les deux corrections vont ensemble.
+
+### 9. Environnement — fermetures brutales de l'app expliquées
+
+L'utilisateur signalait que l'app « se ferme brusquement presque à chaque fois ». **Ce n'est pas un bug applicatif.** Capture logcat : le `lowmemorykiller` tue WhatsApp 3 fois et 4 autres processus en 25 secondes, avec pour motif `low watermark is breached and swap is low (0kB)` et même `device is not responding`. Viteat n'apparaît pas dans la liste **uniquement parce qu'elle est au premier plan** — Android tue l'app active en dernier.
+
+Téléphone de test (Infinix X693) : **65 Mo de RAM libre** sur 3,8 Go, **1,4 Go de stockage libre sur 109 Go (99 %)**, zéro swap. Le build debug (VM Dart + hot reload) aggrave nettement. Recommandé : tester en `--release`, fermer WhatsApp/Facebook, libérer du stockage. Voir mémoire `android-build-gotchas`.
+
+PC : disque à 100 % (363 Mo libres), un build a échoué après 35 min sur `java.io.IOException: Espace insuffisant sur le disque`. Résolu par `flutter clean` + purge de `Temp` + **`powercfg /h off`** (supprime `hiberfil.sys`, 2,8 Go) → 12 Go libres. `pagefile.sys` pèse 21 Go et reste le plus gros levier si besoin.
+
+adb s'est déconnecté 3 fois ; l'interface « Android ADB Interface » est passée en statut `Error` côté Windows. Le cycle `adb kill-server` + `adb start-server` la fait réapparaître.
+
+### État en fin de session
+- `flutter analyze` : **0 erreur**, 312 problèmes contre 318 en baseline (tous `info` préexistants ; les avertissements sont passés de plusieurs à un seul, dans `test/widget_test.dart`).
+- **Checkout validé sur device réel par l'utilisateur.** Persistance de la localisation prouvée objectivement : `flutter.selectedLocationKey` contient une position GPS réelle à Goma (`-1.665755, 29.2202079`), source `gps`, géocodage inverse rempli, survivant au redémarrage de l'app.
+- `master` poussé sur `github.com/rapyogo/viteat`.
+
+### Pistes ouvertes (mises à jour)
+- **Formule de tarification de livraison** — correction documentée en section 7, à appliquer quand les données terrain seront collectées. Décision utilisateur explicite : attendre.
+- **P1 offline-first, suite** — l'utilisateur a observé que **l'app est plus rapide hors-ligne qu'en ligne**. Diagnostic confirmé : la persistance Firestore est active (100 Mo) mais **aucun appel n'utilise `GetOptions(source: Source.cache)`** (0 occurrence). Tous les `.get()` sont en `serverAndCache`, donc en ligne Firestore attend le serveur avant de rendre la main, même quand le cache contient la donnée. Correction = lecture *cache-first* puis rafraîchissement en arrière-plan (*stale-while-revalidate*). **Le plus gros gain ressenti pour le moins d'effort — à traiter en premier.** Ensuite seulement : cache Tier A/B (`shared_preferences` / `sqflite`), puis refonte de la recherche (aujourd'hui : une requête Firestore **par restaurant, en séquence, sans limite** à l'ouverture de l'écran).
+- **`Constant.selectedZone` avec bang `!`** sur ~11 sites — passe « zone » dédiée (section 3).
+- **Livraison gratuite admin** — rebrancher le bloc + corriger la taxe associée, ensemble (section 8).
+- `placeHolderImage` à re-téléverser (section 6).
+- Non traitées, héritées : clé de service à révoquer, comptes `@gromart.com` à nettoyer, IPs FlexPay à clarifier, logo Mobile Money à remplacer, config iOS (`firebase_options.dart` référence encore `foodies-3c1d9`).
+- **Mises à jour du fournisseur du template** : demande explicite de l'utilisateur — en extraire ce qui est utile **sans écraser les personnalisations**. Voir mémoire `template-updates-never-overwrite`.
