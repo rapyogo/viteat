@@ -1189,19 +1189,69 @@ test('recomputeStatus est idempotent : deux appels, une seule ligne d historique
   assert.strictEqual(h.size, 1, 'une transition sans changement ne doit rien ecrire');
 });
 
-test('recomputeStatus ne met jamais users.isActive a false', async () => {
-  const uid = 'u_jamais_false';
-  await db.collection('users').doc(uid).set({ isActive: true, orderRequestData: ['course_en_cours'] });
-  await db.collection('driver_program').doc(uid).set({
-    driverCode: 'VT-LVR-000011', profile: {}, status: 'ACTIVE'
+// Construit un dossier reellement complet, de facon que recomputeStatus
+// resolve ACTIVE et execute la branche du miroir. Un dossier incomplet ferait
+// passer les assertions a vide : la branche ne s'executerait pas et le test
+// ne prouverait rien.
+async function dossierActivable(uid) {
+  await db.collection('driver_program_settings').doc('config').set({
+    requiredDocumentTypes: ['id_proof'], identityDocumentType: 'id_proof',
+    theoryPassScore: 24, practicalPassScore: 16, requiredAgreements: ['partnership'],
+    codeFormat: 'VT-LVR-{seq:6}', referralCodeFormat: 'VT-REF-{seq:6}'
   });
+  await db.collection('driver_agreements').doc('partnership').set({ version: 1, hash: 'h1' });
+  await db.collection('driver_program').doc(uid).set({
+    driverCode: 'VT-LVR-000011',
+    profile: {
+      firstName: 'Amani', lastName: 'Kabila', phone: '+243900000003',
+      address: 'Goma', primaryZoneId: 'goma', vehicleType: 'moto'
+    }
+  });
+  await db.collection('driver_documents').add({
+    driverId: uid, typeId: 'id_proof', status: 'APPROVED', version: 1
+  });
+  await db.collection('driver_training').doc(uid).set({
+    theory: { bestScore: 27 }, practical: { score: 18 }, certifiedAt: 1
+  });
+  await db.collection('driver_signatures').add({
+    driverId: uid, documentType: 'partnership', documentVersion: 1
+  });
+}
 
-  await program.recomputeStatus(db, uid, ACTOR);
+test('recomputeStatus active le dossier et preserve la course en cours', async () => {
+  const uid = 'u_jamais_false';
+  await db.collection('users').doc(uid).set({
+    isActive: false, orderRequestData: ['course_en_cours'], inProgressOrderID: ['cmd_42']
+  });
+  await dossierActivable(uid);
+
+  const r = await program.recomputeStatus(db, uid, ACTOR);
+  assert.strictEqual(r.status, 'ACTIVE',
+    'sans ce statut la branche du miroir ne s executerait pas et le test serait vide');
 
   const u = await db.collection('users').doc(uid).get();
   assert.strictEqual(u.data().isActive, true);
+  assert.strictEqual(u.data().isDocumentVerify, true);
   assert.deepStrictEqual(u.data().orderRequestData, ['course_en_cours'],
-    'la course en cours ne doit jamais etre effacee');
+    'un set() sans merge effacerait la course en cours');
+  assert.deepStrictEqual(u.data().inProgressOrderID, ['cmd_42']);
+});
+
+test('recomputeStatus ne remet jamais isActive a false quand le dossier regresse', async () => {
+  const uid = 'u_regression';
+  await db.collection('users').doc(uid).set({ isActive: true, orderRequestData: ['course'] });
+  await dossierActivable(uid);
+  await program.recomputeStatus(db, uid, ACTOR);
+
+  // La piece expire : le dossier regresse.
+  const docs = await db.collection('driver_documents').where('driverId', '==', uid).get();
+  await db.collection('driver_documents').doc(docs.docs[0].id).update({ status: 'EXPIRED' });
+  const r = await program.recomputeStatus(db, uid, ACTOR);
+
+  assert.notStrictEqual(r.status, 'ACTIVE');
+  const u = await db.collection('users').doc(uid).get();
+  assert.strictEqual(u.data().isActive, true,
+    'couper un livreur en plein service est une decision d exploitation, pas un effet de bord');
 });
 ```
 
@@ -2134,6 +2184,17 @@ test('reviewDocument approuve et met a jour le miroir documents_verify', async (
 
   const mirror = await db.collection('documents_verify').doc(uid).get();
   assert.strictEqual(mirror.exists, true);
+  // L'app livreur declare String? status et compare a des minuscules.
+  // Un booleen ici ferait planter son ecran de verification.
+  assert.strictEqual(mirror.data().documents[0].status, 'approved');
+  assert.strictEqual(typeof mirror.data().documents[0].status, 'string');
+});
+
+test('mirrorStatus traduit les quatre statuts vers le vocabulaire de l app', () => {
+  assert.strictEqual(adm.mirrorStatus('PENDING'), 'uploaded');
+  assert.strictEqual(adm.mirrorStatus('APPROVED'), 'approved');
+  assert.strictEqual(adm.mirrorStatus('REJECTED'), 'rejected');
+  assert.strictEqual(adm.mirrorStatus('EXPIRED'), 'rejected');
 });
 
 test('reviewDocument exige un motif pour un rejet', async () => {
@@ -2211,6 +2272,27 @@ function requireAdmin(context) {
 }
 
 /**
+ * Traduit un statut du programme vers le vocabulaire de l'app livreur.
+ *
+ * L'app Flutter declare `String? status` et compare a des chaines minuscules
+ * ("uploaded", "approved", "rejected") dans verification_screen.dart et
+ * verification_details_upload_screen.dart. Y ecrire un booleen ferait lever
+ * une erreur de type a la lecture et planterait l'ecran de verification.
+ *
+ * EXPIRED n'existe pas dans l'app : il est traduit en "rejected", ce qui
+ * affiche au livreur qu'une piece est a redeposer — le comportement voulu.
+ */
+function mirrorStatus(status) {
+  if (status === 'APPROVED') {
+    return 'approved';
+  }
+  if (status === 'REJECTED' || status === 'EXPIRED') {
+    return 'rejected';
+  }
+  return 'uploaded';
+}
+
+/**
  * Reconstruit le miroir documents_verify a partir de driver_documents.
  * Sens unique : driver_documents reste l'original, ce miroir n'existe que
  * pour que l'app livreur actuelle continue de fonctionner sans modification.
@@ -2223,7 +2305,7 @@ function rebuildMirror(db, driverId) {
         documentId: x.typeId,
         frontImage: x.frontURL || '',
         backImage: x.backURL || '',
-        status: x.status === 'APPROVED'
+        status: mirrorStatus(x.status)
       };
     });
     return db.collection('documents_verify').doc(driverId).set({
@@ -2384,6 +2466,7 @@ const v1_updateProgramSettings = functions.https.onCall((data, context) => {
 
 module.exports = {
   requireAdmin: requireAdmin,
+  mirrorStatus: mirrorStatus,
   rebuildMirror: rebuildMirror,
   reviewDocument: reviewDocument,
   recordPracticalTest: recordPracticalTest,

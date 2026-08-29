@@ -62,6 +62,7 @@ Dernière mise à jour : 2026-10-04
 - Consigne utilisateur : push autorisé, AUCUN merge ni déploiement prod avant les tests réels (§9 du rapport).
 - Ne pas déployer les déclencheurs wallet avant publication des nouvelles apps et des panels (sinon double crédit).
 - App client : branche `feat/contrats-restaurant-clean` (worktree `customer-clean`, repartie de origin/master ; la branche `feat/contrats-restaurant` locale contient 35 commits étrangers, ne pas la fusionner). Filtre isLive, badge, mise à jour forcée (`settings/Version.minCustomerBuildNumber`), wallet/push par callables. Flutter 3.47.5 : `C:/src/flutter-3.47`. versionCode à incrémenter seulement à la publication.
+Dernière mise à jour : 2026-08-29
 
 ## Contexte projet
 - App Flutter cliente d'une plateforme de livraison de repas multi-vendeurs, marque "Rapyogo" (package Android `com.rapyogo.client`).
@@ -552,7 +553,12 @@ Le compte de test « Interne Rosty » porte un `vendorID` : ne rien recevoir du 
 | | Admin Panel | Restaurant Panel |
 |---|---|---|
 | `storage/app/firebase/credentials.json` | existe | **dossier absent** |
-| `FIREBASE_PROJECT_ID` | `rapyogo-2bccd` | **vide** |
+| `FIREBASE_PROJECT_ID` | `rapyogo-2bccd` | ~~**vide**~~ → **faux, voir ci-dessous** |
+
+⚠️ **Rectifié le 29/08/2026 (session 2)** : `FIREBASE_PROJECT_ID` n'était **pas** vide dans le
+Restaurant Panel — il vaut `"rapyogo-2bccd"`, entre guillemets. Seul `credentials.json` manquait.
+Le champ réellement vide était ailleurs : `settings/notification_setting.projectId` **en base**,
+dont dérive `Constant.senderId` des deux apps Flutter.
 
 `OrderController::sendnotification()` sort immédiatement si le fichier manque
 (`'Firebase credentials file not found.'`), et le JavaScript fait `await $.ajax(...)` **sans jamais
@@ -595,3 +601,246 @@ ailleurs, c'est sur ce serveur-là qu'il faut corriger.** À clarifier avant d'a
 (le démon passe en TCP et ignore l'USB) ; `adb kill-server` + `start-server` répare. `adb connect` en
 WiFi est **bloqué par le pare-feu Windows** (erreur 10013). `Get-PnpDevice` dit en trois secondes si
 Windows voit le téléphone — à faire **avant** de suspecter le câble.
+
+---
+
+## Session 2026-08-29 (2) — app **driver** : réparation des notifications d'affectation, et le son
+
+Suite directe de la session précédente, dont la piste n°1 était « notifications ». Objectif révisé
+en cours de route par l'utilisateur : l'affectation étant manuelle, la notification est un **confort**
+— la vraie demande est **que ça sonne**, longuement pour une livraison, deux coups pour une annonce.
+
+### 1. Cause racine, et une correction au HANDOFF
+
+`Restaurant Panel/storage/app/firebase/credentials.json` **n'existait pas**. La garde de
+`OrderController.php:47` échouait donc toujours et la méthode renvoyait
+`{"success":false,"message":"Firebase credentials file not found."}` **en HTTP 200** — que le JS
+jetait, n'ayant ni `success:` ni `error:` sur l'appel livreur.
+
+⚠️ **Le HANDOFF affirmait que `FIREBASE_PROJECT_ID` était vide dans le Restaurant Panel. C'était
+faux** : il vaut `"rapyogo-2bccd"`. Seul le fichier manquait.
+
+Pourquoi il manquait : le bootstrap automatique (`HomeController::storeFirebaseService`) exige une
+session authentifiée (`$this->middleware('auth')` ligne 10-13), impossible ici — `.env` a
+`DB_USERNAME=` et `DB_PASSWORD=` vides, d'où les 7 `SQLSTATE[HY000] [1045]` qui composent tout
+`laravel.log`. Le bootstrap n'a jamais **pu** s'exécuter.
+
+### 2. Découverte majeure, hors périmètre initial
+
+**`settings/notification_setting.projectId` était VIDE** (`""`) en production. Or `Constant.senderId`
+en dérive dans **les deux apps Flutter**, qui bâtissent leur URL FCM v1 avec (6 points d'appel entre
+`customer` et `driver`). **Toutes les notifications émises par les apps mobiles partaient donc vers
+une URL invalide depuis l'origine**, silencieusement (`catch` qui renvoie `false`).
+
+Corrigé à `rapyogo-2bccd` par écriture ciblée (`update()`, `serviceJson` et `senderId` intacts).
+Le champ est alimenté par le formulaire « Firebase Project ID » de l'Admin Panel.
+
+### 3. Restaurant Panel — corrigé (sauvegardes dans `_backup_restaurant_panel_20260829/`)
+
+- `credentials.json` copié depuis l'Admin Panel (même projet, même compte de service).
+- `OrderController::sendnotification` réécrit : chemin absolu au lieu du disque abstrait, `try/catch`
+  sur `refreshTokenWithAssertion()`, `die()` supprimé, **lecture du vrai code retour**
+  (`$httpCode === 200 && isset($result->name)` — l'ancien renvoyait `success:true` sur un
+  `404 UNREGISTERED`), `Log::error('[FCM] …')` avec un code par cause, garde sur `FIREBASE_PROJECT_ID`.
+  **La route reste en HTTP 200 en toutes circonstances** : les 4 autres appels de cette route portent
+  dans leur `success:` des redirections *et* le remboursement du wallet client.
+- `edit.blade.php` : `await callAjax()` puis une **seule** redirection chez l'appelant (le
+  `window.location.href` suivait un appel non attendu — le navigateur annulait la requête au
+  `unload`) ; `timeout: 8000` ; avertissement à l'écran si l'envoi échoue ; bloc `data`
+  (`type: order_assigned`, `orderId`) et `android.notification` (`channel_id`, `PRIORITY_MAX`,
+  `vibrate_timings`, `sticky`).
+- Clé `lang.driver_not_notified` ajoutée à `resources/lang/en/lang.php`.
+
+### 4. App driver — commits `16e0fdf` et `a76db45`, mergés et poussés sur `master`
+
+**Deux canaux Android distincts**, créés explicitement au démarrage (un canal n'est plus modifiable
+après création — les définir avant publication était la seule fenêtre) :
+
+| | `viteat_orders` (Livraisons) | `viteat_announcements` (Annonces) |
+|---|---|---|
+| Importance | 5 (MAX) | 4 (HIGH) |
+| Son | `res/raw/new_order.mp3` | système |
+| Vibration | `[0,800,400,800,400,800,400,800]` (~5 s) | `[0,400,250,400]` |
+
+Plus : `default_notification_channel_id` déclaré au manifest (sans quoi tout tombait sur
+`fcm_fallback_notification_channel`, **constaté dans `dumpsys`**) ; routage du type `order_assigned` ;
+`onTokenRefresh` (absent jusque-là) avec écriture **ciblée** `.update({'fcmToken': …})` et non
+`updateUser`, qui fait un `set()` sans merge et pourrait effacer `orderRequestData`.
+
+**Décision utilisateur** : une livraison sonne **jusqu'à ce que le livreur réagisse**
+(`FLAG_INSISTENT`), notification `ongoing` non balayable. ⚠️ **Ces deux drapeaux n'existent pas dans
+l'API FCM** : ils ne s'appliquent qu'au **premier plan**. App fermée, le système dessine — canal
+dédié, son et vibration longue oui, mais une seule fois et balayable. Ne pas promettre mieux sans
+passer en data-only, ce qui est **déconseillé** (voir norme N2.7).
+
+### 5. Ce qui n'a **pas** été fait, et pourquoi
+
+**Le son in-app n'a pas été réactivé pour les livreurs internes.** Le plan le prévoyait ;
+la vérification a inversé la conclusion. `AudioPlayerService` est en `ReleaseMode.loop` et ne
+s'arrête que quand `orderRequestData` se vide — ce qui suppose une acceptation, **étape qui n'existe
+pas en self-delivery** (la commande arrive directement en `In Transit`). Le verrou
+`vendorID?.isEmpty` de `home_screen_multiple_order_controller.dart:45` est **protecteur**. De plus
+`singleOrderReceive` vaut `true` en base : c'est `home_controller.dart` qui est actif, pas ce
+contrôleur-là.
+
+### 6. La panne d'origine expliquée — et ce n'était pas le code
+
+L'app **n'était pas exemptée du Doze**. Son *standby bucket* se dégrade quand le téléphone dort
+(`ACTIVE` → … → `RESTRICTED`) et Android finit par abandonner les livraisons FCM. Piège vicieux :
+**se servir de l'app la remet en bucket `ACTIVE`, donc le problème disparaît dès qu'on teste.**
+
+Corrigé sur le téléphone de test par `adb shell dumpsys deviceidle whitelist +com.rapyogo.livrheur`.
+
+**Vérifié en conditions contrôlées** : `dumpsys battery unplug` + `deviceidle step` jusqu'à `IDLE`,
+écran éteint → la notification **arrive**, sur `channel=viteat_orders`, `importance=5`. État batterie
+restauré ensuite.
+
+Le journal a aussi montré XOS bloquer en direct le service FCM d'arrière-plan d'une autre app Flutter
+(`AutoStart Limit`) : la couche Transsion est réelle et **hors de portée d'adb**.
+
+### 7. Normes consignées
+
+À la demande explicite de l'utilisateur, tout ce qui est validé part désormais dans
+`~/.claude/skills/viteat/SKILL.md`, section **« Normes Viteat »** — 17 règles, chacune avec sa
+commande de vérification. N1 (échecs silencieux), N2 (perception du livreur), N3 (hors code).
+Le skill a aussi été corrigé : `driver/` **est** sous git, sur le remote **privé** `viteat_drive`.
+
+### Pistes ouvertes — par impact
+
+1. **Le parcours depuis le panel n'a jamais été exercé.** Le mécanisme de notification est prouvé ;
+   cliquer « Assigner » dans le Restaurant Panel ne l'est pas. Bloqué par `DB_USERNAME`/`DB_PASSWORD`
+   vides et la base `monsite2` absente. `migrate` ne suffira pas : il manque `users.isSubscribed` et
+   la table `vendor_users`. Aucun compte à créer à la main (`AjaxController::setToken` les crée à la
+   volée à la première connexion Firebase).
+2. **8 livreurs internes sur 9 n'ont pas de `fcmToken`** — jamais connectés, ou déconnectés (le
+   logout vide le champ, `dash_board_screen.dart:700`). Ils ne recevront rien.
+3. **Réglages XOS à faire à la main** sur chaque téléphone : verrouillage dans les récents,
+   démarrage automatique. Non scriptable (norme N3.1b).
+4. **Le même travail reste à faire sur `customer`** : elle a les mêmes canaux par défaut absents et
+   le même `updateUser` sans merge.
+5. `BookTableController::sendnotification` est un copié-collé de l'ancien code, non corrigé
+   (hors périmètre retenu) : le prochain incident dine-in reproduira le même silence.
+6. **Disque saturé** : 238 Go dont 232 occupés. Un build de release a consommé les 12 Go restants et
+   a saturé la machine. `flutter clean` sur `driver` + `customer` a rendu 9 Go. Troisième session
+   d'affilée bloquée là-dessus — la correction durable appartient à l'utilisateur.
+
+---
+
+## Session 2026-08-29 (3) — la base de production était grande ouverte
+
+Session d'investigation et de conception. **Aucune ligne de code applicatif modifiée** : le dépôt
+`driver` est resté propre du début à la fin. Ce qui a changé, ce sont les réglages de la base
+Firestore de production.
+
+Point de départ : reprendre les trois chantiers ouverts (notifications — fait le 29/08 (2) ;
+**preuve de livraison** ; **app qui repart de zéro**). L'utilisateur a choisi la preuve de livraison.
+
+### 1. Ce que l'état du code disait vraiment
+
+`DeliverOrderController.completedOrder()` (`driver/lib/controllers/deliver_order_controller.dart:37`)
+écrit `Order Completed`, débite le wallet, verse le cashback et notifie le client — **sans aucune
+vérification**. Le seul garde-fou est une **case à cocher que le livreur coche lui-même**
+(`deliver_order_screen.dart:377`, « Give N Items to the customer »).
+
+Aucun mécanisme d'OTP de livraison n'existe dans les deux apps : les `otp_screen` du livreur ne
+servent qu'à la connexion par téléphone.
+
+### 2. Un volet du travail supprimé : le cash est déjà couvert
+
+Le risque « le livreur garde l'argent du COD » **n'est pas un trou dans le code**.
+`FireStoreUtils.updateWallateAmount()` (`fire_store_utils.dart:645`) **débite** le wallet du livreur
+du montant encaissé à la clôture : il devient débiteur envers la plateforme, et
+`minimumDepositToRideAccept` l'empêche de reprendre des courses sous un seuil. S'il garde le cash,
+il l'a déjà payé. Ce qui reste est un problème de **recouvrement d'un wallet négatif**, pas de code.
+
+### 3. Découverte qui a fait dérailler le chantier — les règles Firestore
+
+Les règles publiées sur `rapyogo-2bccd` sont **`allow read, write: if true`** sur `/{document=**}`.
+Release `cloud.firestore` du **2025-05-29**, jamais refermée depuis. Le commentaire du template
+(« non sécurisé - à utiliser uniquement en test ») est toujours dedans.
+
+La clé API est dans l'APK et dans le JS des panels. **N'importe qui peut lire et écrire toute la
+base** : coordonnées de tous les clients, wallets, payouts, `settings` des quatre apps, et le passage
+d'une commande à `Order Completed`.
+
+**Conséquence directe sur le chantier initial :** la preuve de livraison serait décorative. Le code
+de remise serait lisible par le livreur dans le document de commande, et son app pourrait écrire
+`Order Completed` sans passer par la vérification. Une Cloud Function de validation ne verrouille
+rien tant que le chemin d'écriture directe reste ouvert.
+
+### 4. Cartographie des accès (nécessaire à toute fermeture des règles)
+
+| Client | Identité Firebase | Détail |
+|---|---|---|
+| App cliente | ✅ | rôle `customer` |
+| App livreur | ✅ | rôle `driver` |
+| Restaurant Panel | ⚠️ partielle | `signInWithEmailAndPassword` à la connexion (`auth/login.blade.php:355`) |
+| Admin Panel | ❌ **aucune** | 161 vues écrivent en **anonyme** |
+
+**210 vues Blade** parlent à Firestore depuis le navigateur (161 Admin, 49 Restaurant) — toutes
+soumises aux règles. Fermer les règles sans donner d'identité à l'Admin Panel le casse intégralement.
+
+Points d'injection trouvés, qui rendent le chantier réaliste **sans toucher les 210 vues** :
+
+- L'init Firebase de l'Admin Panel est planquée dans **`public/js/jquery.validate.js` lignes 1-13**
+  (un fichier portant le nom de la librairie jQuery Validate). La config arrive par des cookies
+  `XSRF-TOKEN-*` posés dans `app/Providers/AppServiceProvider.php:19` via `bin2hex()` — de
+  l'hexadécimal, pas du chiffrement. **Un canal Laravel → JS existe donc déjà**, et
+  `firebase-auth-compat.js` est déjà chargé (`layouts/app.blade.php:300`).
+- `kreait/firebase-php ^7.15` est présent dans les deux panels : il sait émettre des custom tokens
+  porteurs d'un claim de rôle.
+
+### 5. Sauvegardes activées sur la production (à la demande de l'utilisateur)
+
+La base n'avait **aucune protection**. Créée le 17/06/2024, jamais reconfigurée.
+
+| Réglage | Avant | Après |
+|---|---|---|
+| Sauvegarde planifiée | aucune | **quotidienne**, rétention 7 jours |
+| Point-in-time recovery | 3600 s (1 h) | **604800 s (7 jours)**, à la minute près |
+| Protection contre la suppression | désactivée | **activée** |
+
+Vérifié par `firebase firestore:databases:get "(default)"`. Le ruleset d'origine est sauvegardé dans
+`_backup_firestore_20260829/firestore.rules.original-20260829.txt` — **c'est le fichier dont dépend
+tout retour arrière** sur les règles.
+
+Un export hors ligne complet a abouti dans le même dossier : **9 797 documents, 47 collections**,
+un JSON par collection plus un `_resume.json`. Les sous-collections ne sont pas incluses (voir
+ci-dessous) — la sauvegarde Google, elle, est complète.
+⚠️ **Erreur de ma part à ne pas reproduire** : un premier export a été tué par un `taskkill` alors
+qu'il progressait normalement — sa sortie était bufferisée et je l'ai cru bloqué. Il écrivait tout à
+la fin : **tout a été perdu**. La v2 écrit collection par collection au fil de l'eau.
+
+### 6. Conception écrite, implémentation reportée
+
+Spec complet : **`customer/docs/superpowers/specs/2026-08-29-securisation-regles-firestore-design.md`**
+(non commité — il vit dans `customer`, dont les commits appartiennent à ses propres sessions).
+
+Approche retenue et validée par l'utilisateur : **donner une identité Firebase aux panels, puis
+refermer les règles en deux paliers** — palier 1 « il faut être connecté » (ferme l'accès anonyme,
+ne casse rien), palier 2 règles par rôle sur les collections sensibles. Le catalogue public reste en
+lecture large.
+
+**Décision de l'utilisateur en fin de session : ce chantier passe en DERNIER.** Il sera repris après
+les autres travaux. La conception est prête et n'a plus qu'à être relue puis planifiée.
+
+**Deux inconnues à lever avant d'implémenter :**
+1. Les administrateurs ont-ils un compte Firebase Auth ? Le custom token doit porter un `uid`.
+2. Le Restaurant Panel tourne-t-il en production ailleurs ? Son `.env` porte `APP_ENV=local` /
+   `APP_URL=http://localhost`. Si oui, tout le travail doit être fait sur ce serveur-là.
+
+### Pistes ouvertes après cette session — par ordre décidé par l'utilisateur
+
+1. **App qui repart de zéro** (jamais traitée). Suspects classiques déjà écartés
+   (`always_finish_activities=0`, `launchMode=singleTop`). Restent : APK debug de 192 Mo qu'Android
+   tue vite — **à retester en release** — et l'absence totale de `RestorationMixin`.
+2. **Preuve de livraison** — conception commencée, à reprendre. Recommandation : code PIN à
+   4 chiffres validé par Cloud Function, pas une signature (une signature au doigt prouve surtout
+   qu'un doigt a touché l'écran). Le volet cash est inutile, voir §2. **Dépend du chantier règles**
+   pour ne pas être décorative.
+3. **Sécurisation des règles Firestore** — en dernier, sur décision de l'utilisateur. Spec prêt.
+4. **Disque à 99 %** (3,4 Go libres) — **quatrième** session d'affilée bloquée là-dessus. Piste
+   trouvée cette fois : un dossier temporaire oublié
+   `Admin Panel/.petmpF2C3B8/Admin Panel - Restaurant Panel - Website Panel - Landing Panel/`
+   contenant des copies complètes des quatre panels. Il pèse **297 Mo**, daté du 21/08 — utile
+   à récupérer mais pas suffisant à lui seul. **Rien n’a été supprimé** — décision de l’utilisateur.
