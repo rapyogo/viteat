@@ -456,3 +456,142 @@ adb s'est déconnecté 3 fois ; l'interface « Android ADB Interface » est pass
 - `placeHolderImage` à re-téléverser (section 6).
 - Non traitées, héritées : clé de service à révoquer, comptes `@gromart.com` à nettoyer, IPs FlexPay à clarifier, logo Mobile Money à remplacer, config iOS (`firebase_options.dart` référence encore `foodies-3c1d9`).
 - **Mises à jour du fournisseur du template** : demande explicite de l'utilisateur — en extraire ce qui est utile **sans écraser les personnalisations**. Voir mémoire `template-updates-never-overwrite`.
+
+---
+
+## Session 2026-08-29 — app **driver** (livreur) : mise sous git, alignement Firebase, diagnostic terrain
+
+Première session consacrée au dossier `driver/`. L'app cliente n'a pas été touchée.
+
+### 1. Le dossier `driver/` est désormais sous git
+
+Il n'avait aucun historique. Commit initial `e5158fa` fige l'état antérieur **avant** toute
+modification, comme point de retour. Remote : **`github.com/rapyogo/viteat_drive`** (dépôt **privé**,
+préexistant et vide) — à ne pas confondre avec `rapyogo/viteat`, qui est **public**.
+
+`.gitignore` complété : il laissait passer `android/build/`, `android/app/build/`,
+`android/app/.cxx/` (3 Mo) et `.firebase/`. 408 fichiers versionnés, aucun artefact.
+
+Un `CLAUDE.md` a été créé à la racine du driver (architecture GetX, `FireStoreUtils`, cycle de vie
+des commandes, cartes Google/OSM, pièges du dépôt).
+
+### 2. Alignement complet sur `rapyogo-2bccd` (commit `faf2021`)
+
+Deux valeurs de `lib/firebase_options.dart` étaient **invalides**, pas seulement périmées :
+
+- `apiKey` contenait en réalité le **`certificate_hash` SHA-1** recopié depuis `google-services.json` ;
+- `messagingSenderId` était préfixé `1:`.
+
+**Pourquoi personne ne l'avait vu** : sur Android le SDK natif s'auto-initialise depuis
+`google-services.json` **avant** Flutter, et `Firebase.initializeApp(options:)` récupère alors l'app
+déjà créée **en ignorant les options Dart**. Elles n'étaient donc jamais exercées — mais auraient fait
+foi sur toute autre plateforme. Vérifié à l'exécution en fin de session : les options effectives sont
+bien `projectId=rapyogo-2bccd`, `apiKey=AIzaSyACw_…`.
+
+`firebase.json` pointait intégralement sur `foodies-3c1d9` → réécrit. Restes du template corrigés :
+`userAgentPackageName` des tuiles OSM, `applicationId` du `build.gradle.kts` dormant.
+
+**Audit Firestore** : sur les 53 documents de `settings`, **une seule** valeur pointe encore vers
+l'ancien projet — `settings/googleMapKey.placeHolderImage` → `foodies-3c1d9.appspot.com`. Elle est
+**morte** (le code lit `settings/placeHolderImage`, correct). Sa correction a été **refusée par le
+garde-fou du mode auto** et reste à faire. Aucun résidu dans `dynamic_notification`,
+`email_templates`, `on_boarding`, `currencies`. `senderId` = `1041336319516` (bon projet).
+
+**Clé Google Maps** `AIzaSyDQIaQ…` : vérifiée par triple recoupement (manifest driver, manifest
+customer, `settings/googleMapKey.key`) — c'est bien la clé de la plateforme. Son absence de
+`google-services.json` est normale : c'est une clé GCP, pas Firebase.
+
+### 3. Fichiers morts supprimés (commit `8be4875`)
+
+`android/{build,settings}.gradle.kts`, `android/app/build.gradle.kts` et un second `MainActivity.kt`
+(`package com.foodies.driver.driver`). **Preuve qu'ils étaient inertes** : `build.gradle.kts` contenait
+de la syntaxe Groovy (`url "..."`), invalide en Kotlin DSL — s'il avait été évalué, le script n'aurait
+pas compilé. Validé par `flutter build apk --debug` (succès) : le plugin `google-services` échoue si
+l'`applicationId` n'est pas dans `google-services.json`, ce qui confirme le passage par le Groovy.
+
+**iOS volontairement laissé de côté** (décision utilisateur) : `ios/` est le seul endroit du dépôt qui
+référence encore l'ancien projet (bundle `com.foodies.driver.ios`, client IDs `275231286183-…`,
+`GoogleService-Info.plist` réduit à un gabarit). Rien n'y est corrigeable tant que l'app iOS
+`com.rapyogo.livrheur` n'existe pas sur `rapyogo-2bccd`.
+
+### 4. Diagnostic du blocage au splash — cause racine trouvée
+
+L'app restait figée sur le splash. Branche **`diagnostic-splash-bloque`** (commit `1ac6170`, poussée,
+**non mergée** : l'instrumentation est temporaire).
+
+**Le `runZonedGuarded` de `main.dart` avait un handler vide** — toute exception au démarrage
+disparaissait sans trace. C'est ce qui rendait le diagnostic aveugle. Une fois qu'il journalise :
+
+```
+PlatformException(PERMISSION_DENIED, Background location permission denied)
+```
+
+levée par `dash_board_controller.dart:94` (`location.enableBackgroundMode`), la permission
+`ACCESS_BACKGROUND_LOCATION` étant refusée (`granted=false` ; `FINE_LOCATION` est en `ONE_TIME`).
+**C'est aussi pourquoi la carte reste bleue** : sans position, elle est centrée sur des coordonnées
+nulles — l'océan. Le SDK Maps fonctionne (contrôles et logo présents).
+
+**Hypothèse App Check : fausse.** La trace `.get() exists=true, fromCache=false` prouve que Firestore
+dialoguait avec le serveur. Le blocage initial venait du **DNS** (`EAI_NODATA`), transitoire. La
+bascule `kDebugMode ? AndroidProvider.debug : playIntegrity` reste défendable en soi (Play Integrity
+ne peut pas attester un APK debug) mais **n'a pas résolu ce bug**. Jeton de debug de cette
+installation, autorisé par l'utilisateur : `90c8e112-ad57-4122-a8ba-4a474315d3fa`.
+
+**Leçon de méthode** : `dart:developer log()` ne sort **ni** sur la console de `flutter run` **ni**
+dans logcat — seulement vers le VM Service. Trois lancements perdus. Utiliser `debugPrint`.
+
+### 5. Les deux types de livreurs, et pourquoi les notifications manquent
+
+Confirmé par l'utilisateur et par le code : **livreur plateforme** (`vendorID` vide) → dispatch
+automatique par `delivery.js` ; **livreur de restaurant** (`vendorID` renseigné) → **affectation
+manuelle** par le restaurant. `delivery.js` écarte explicitement les seconds (`continue`, ligne 110).
+Le compte de test « Interne Rosty » porte un `vendorID` : ne rien recevoir du dispatch est **normal**.
+
+**Cause racine des notifications absentes — prouvée par comparaison avec l'Admin Panel :**
+
+| | Admin Panel | Restaurant Panel |
+|---|---|---|
+| `storage/app/firebase/credentials.json` | existe | **dossier absent** |
+| `FIREBASE_PROJECT_ID` | `rapyogo-2bccd` | **vide** |
+
+`OrderController::sendnotification()` sort immédiatement si le fichier manque
+(`'Firebase credentials file not found.'`), et le JavaScript fait `await $.ajax(...)` **sans jamais
+lire la réponse**. Le restaurant croit avoir prévenu son livreur ; personne n'apprend l'échec. Le
+template `assign_order` existe pourtant et `isSelfDelivery` vaut `true` (global **et** restaurant).
+
+⚠️ Le `.env` inspecté porte `APP_ENV=local` / `APP_URL=http://localhost` : **si la production tourne
+ailleurs, c'est sur ce serveur-là qu'il faut corriger.** À clarifier avant d'agir.
+
+**Anomalie de données** : sur ce compte, `zoneId` contient un **ID de restaurant**
+(`LJz6PoVCZLD36mpWcmTb`, la zone de ce nom n'existe pas). Sans effet tant que le livreur est rattaché
+à un restaurant, mais bloquant le jour où on viderait son `vendorID`.
+
+### Pistes ouvertes — app driver (par impact décroissant)
+
+1. **Notifications** — copier `credentials.json` de l'Admin Panel vers
+   `Restaurant Panel/storage/app/firebase/` et renseigner ses `FIREBASE_*`. Dossier **non versionné** :
+   sauvegarder le `.env` avant. Vérifier d'abord **où tourne la production**.
+2. **Preuve de livraison — inexistante.** `completedOrder()` passe à `Order Completed` sans aucune
+   vérification : ni code, ni signature, ni photo. Un livreur peut clôturer sans avoir rien remis.
+   Recommandation : **code PIN à 4 chiffres** (fonctionne sans réseau à la remise, aucun matériel),
+   validé par Cloud Function et non par l'app seule. D'autant plus nécessaire que les commandes en
+   self-delivery arrivent directement en `In Transit`, **sans acceptation par le livreur**.
+3. **Restauration d'état** — l'app repart de zéro au retour. Suspects classiques écartés
+   (`always_finish_activities=0`, `launchMode=singleTop`). Restent : APK debug de 192 Mo qu'Android tue
+   vite (tester en release), et **aucun `RestorationMixin`** — le splash relance tout depuis zéro.
+4. **Localisation en arrière-plan** — accorder la permission, entourer `enableBackgroundMode` d'un
+   `try/catch`, et **donner un vrai handler au `runZonedGuarded`** (seul ajout de la branche de
+   diagnostic que je recommande de conserver).
+5. **Marque** — l'app affiche « Welcome to Foodie Driver » avec le logo « D » du template. Chaînes en
+   dur, hors système de traduction : `splash_screen.dart:35`, `auth_screen/splash_screen.dart:30`,
+   login, signup, et `merchantDisplayName` Stripe. Le manifest affiche « Livrheur ».
+6. **Débordement UI** — `RenderFlex overflowed by 22 pixels`, `on_boarding_screen.dart:76`.
+7. **`settings/googleMapKey.placeHolderImage`** — dernière valeur `foodies` en base (inerte).
+8. **Sécurité, héritée du template** : `settings/notification_setting.serviceJson` expose l'URL
+   publique du **compte de service Admin SDK**. Qui a l'URL a les pleins pouvoirs sur `rapyogo-2bccd`.
+   Changer cela impose de revoir le chemin d'envoi FCM des quatre applications à la fois.
+
+**Environnement** : `adb` s'est déconnecté 5 fois. Un `adb tcpip 5555` de ma part a aggravé les choses
+(le démon passe en TCP et ignore l'USB) ; `adb kill-server` + `start-server` répare. `adb connect` en
+WiFi est **bloqué par le pare-feu Windows** (erreur 10013). `Get-PnpDevice` dit en trois secondes si
+Windows voit le téléphone — à faire **avant** de suspecter le câble.
