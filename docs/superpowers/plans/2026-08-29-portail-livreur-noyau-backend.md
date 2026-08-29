@@ -82,10 +82,20 @@ Attendu : les deux dossiers de sauvegarde existent.
 Dans `functions/package.json`, ajouter une ligne au bloc `scripts` (ne rien retirer) :
 
 ```json
-    "test": "node --test test/"
+    "test": "node --test"
 ```
 
 Aucune dépendance n'est ajoutée : `node:test` est intégré à Node 20 et 22.
+
+**Sans argument, délibérément.** Vérifié empiriquement sur ce dépôt : `node --test test/`
+**échoue** — le lanceur tente de charger le dossier comme un module et rapporte un échec.
+`node --test` sans argument fait la découverte récursive documentée, ignore `node_modules`
+(232 ms depuis `functions/`), et ne dépend d'aucune résolution de glob par le shell, laquelle
+diffère entre cmd.exe et bash.
+
+**Ne jamais introduire un fichier `test/index.js` qui `require()` les tests un à un.** Un tel
+registre manuel fait passer la suite au vert en ignorant silencieusement tout fichier de test
+non inscrit — un faux succès est pire que pas de test du tout.
 
 - [ ] **Step 3: Exclure les tests du lint de déploiement**
 
