@@ -349,21 +349,60 @@ Créer six rôles vides maintenant donnerait l'illusion d'un cloisonnement qui n
 
 ---
 
-## 9. Les 30 livreurs déjà en service
+## 9. Les comptes livreurs existants
 
-Ils existent dans `users` et n'ont aucun `driver_program`. Sans reprise, le portail les traite en
-candidats : ils perdraient leur accès.
+Relevé sur `rapyogo-2bccd` le 2026-08-29 :
 
-**Reprise** : un script exécuté une fois crée leur dossier avec `status: ACTIVE`, `level: 1`, un
-`driverCode`, un `referralCode`, un `qrToken`, et une checklist marquée acquise par antériorité —
-avec `dates.activatedAt` = leur `createdAt`, et une ligne d'historique `actorType: "migration"`.
+| Mesure | Nombre |
+|---|---|
+| Documents `users` avec `role == "driver"` | **383** |
+| dont `isActive == true` | **8** |
+| dont `isDocumentVerify == true` | 12 |
+| dont `fcmToken` présent | 370 |
+| dont `zoneId` renseigné | **42** |
+| dont coordonnées bancaires | 138 |
 
-Ils ne repassent ni par la formation ni par la certification. En revanche `agreement` reste **faux**
-tant qu'ils n'ont pas signé : c'est la seule condition qu'on ne peut pas leur accorder d'office,
-puisqu'une signature est précisément ce qui ne se présume pas. Ils restent actifs et livrent
-normalement ; le portail leur demande de signer à leur première connexion.
+L'objectif de 30 livreurs est un objectif **d'activation à court terme**, pas un effectif existant.
+Le terrain est l'inverse de ce que je supposais : il n'y a pas trente partenaires à reprendre, il y a
+**383 comptes ouverts dont 8 fonctionnent**. Le portail n'a donc pas à migrer une flotte — il a à
+faire remonter une file d'attente.
 
-Le script est exécuté d'abord sur un seul livreur, vérifié, puis sur les autres.
+Un chiffre mérite d'être isolé : `deliveryDispatch` exige `driver.zoneId == zone de la commande`.
+**341 comptes sur 383 n'ont aucune zone** et ne peuvent, structurellement, recevoir aucune course.
+Ce n'est pas un problème créé par ce chantier, mais il explique l'écart entre 383 inscrits et
+8 actifs, et le portail doit rendre la zone obligatoire à la candidature.
+
+### Reprise
+
+Deux populations, deux traitements. Aucune ne perd son accès.
+
+**Les 8 actifs** — `status: ACTIVE`, `level: 1`, `dates.activatedAt` = leur `createdAt`, checklist
+marquée acquise par antériorité. Ils ne repassent ni par la formation ni par la certification.
+Seul `agreement` reste **faux** : une signature ne se présume pas. Ils continuent de livrer
+normalement, et le portail leur demande de signer à leur première connexion.
+
+**Les 375 autres** — `status: CANDIDATURE`, checklist vide, `driverCode` alloué. Ils entrent dans
+l'entonnoir normal : compléter le profil, choisir une zone, déposer les pièces. C'est précisément
+ce que le portail est fait pour absorber, et c'est de cette file que sortiront les 30 activations
+visées.
+
+Le script est exécuté d'abord sur un seul compte de chaque population, vérifié, puis sur le reste.
+Il alloue 383 `driverCode` : la transaction de séquence doit être testée sous charge avant, pas
+pendant.
+
+### Le catalogue de documents est celui du template indien
+
+Les cinq types configurés dans `documents` sont `RC Book`, `FSSAI Certificate`, `Driving License`,
+`ID Proof` et `Autorisation d'ouverture`. Les deux premiers sont des documents réglementaires
+indiens sans objet en RDC. Aucun des cinq n'a `expireAt` renseigné — la gestion d'expiration du §7
+n'est configurée nulle part.
+
+Ce catalogue est à redéfinir pour Goma **avant** l'ouverture du portail, sinon les candidats
+déposeront des pièces qui ne veulent rien dire. C'est une décision métier, pas technique : elle
+appartient à l'exploitation, et le plan d'implémentation la porte comme une tâche à part entière.
+
+Même remarque sur `zone` : sept zones, dont `Worldwide` et `World Wide` en doublon. À nettoyer avant
+de rendre la zone obligatoire.
 
 ---
 

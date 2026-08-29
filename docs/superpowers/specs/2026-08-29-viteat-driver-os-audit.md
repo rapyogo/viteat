@@ -107,6 +107,29 @@ Le §67 le prévoit lui-même : « adapter les noms à l'architecture existante 
 | `settings` | Configuration des 4 applications, dont `driverNearBy` |
 | `chat`, `notifications`, `dynamic_notification`, `email_templates`, `tax`, `currencies`, `on_boarding` | Support, notifications, référentiels |
 
+### 3.2b Volumétrie réelle des livreurs (relevé du 2026-08-29)
+
+| Mesure | Nombre |
+|---|---|
+| `users` avec `role == "driver"` | **383** |
+| dont `isActive == true` | **8** |
+| dont `isDocumentVerify == true` | 12 |
+| dont `fcmToken` présent | 370 |
+| dont `zoneId` renseigné | **42** |
+| dont coordonnées bancaires | 138 |
+
+L'objectif de 30 livreurs du brief est un objectif **d'activation**, pas un effectif. 383 comptes
+sont ouverts, 8 fonctionnent.
+
+`deliveryDispatch` exige `driver.zoneId == zone de la commande` : **341 comptes n'ont aucune zone**
+et ne peuvent structurellement recevoir aucune course. C'est la première explication de l'écart
+entre 383 inscrits et 8 actifs.
+
+Le catalogue `documents` contient cinq types hérités du template indien (`RC Book`,
+`FSSAI Certificate`, `Driving License`, `ID Proof`, `Autorisation d'ouverture`), aucun avec
+`expireAt` renseigné. La collection `zone` contient sept entrées dont `Worldwide` et `World Wide`
+en doublon. Les deux sont à redéfinir pour la RDC — décision d'exploitation, pas technique.
+
 ### 3.3 Cloud Functions déployées
 
 | Fonction | Rôle | Origine |
