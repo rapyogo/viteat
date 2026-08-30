@@ -2234,18 +2234,33 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Tout le reste conserve les regles en vigueur, traitees par la spec
-    // 2026-08-29-securisation-regles-firestore-design.md. NE PAS MODIFIER ICI.
-    match /{document=**} {
-      allow read, write: if true;
+    // Tout le reste conserve l'ouverture en vigueur, dont la fermeture appartient
+    // a la spec 2026-08-29-securisation-regles-firestore-design.md.
+    //
+    // Le joker EXCLUT explicitement les collections du programme livreur. Sans
+    // cette exclusion, il les autoriserait toutes et rendrait decoratifs les
+    // blocs restrictifs ci-dessus : Firestore evalue les regles en OU logique,
+    // pas du chemin le plus specifique au plus general. Un seul `allow` qui
+    // couvre le chemin suffit a autoriser l'acces.
+    match /{collection}/{document=**} {
+      allow read, write: if !(collection in [
+        'driver_program', 'driver_program_history', 'driver_documents',
+        'driver_training', 'driver_training_modules', 'driver_training_questions',
+        'driver_theory_attempts', 'driver_signatures', 'driver_agreements',
+        'driver_program_settings', 'driver_program_counters', 'driver_audit_log'
+      ]);
     }
   }
 }
 ```
 
-**Le bloc final est la ligne la plus importante de ce fichier.** Il conserve l'ouverture actuelle sur les 33 collections existantes. La retirer ici couperait les quatre applications en production. Sa fermeture appartient au chantier de sécurisation, pas à celui-ci.
+**Ce bloc final est la partie la plus délicate du fichier**, et il l'est dans les deux sens.
 
-Les règles étant évaluées par chemin le plus spécifique, les blocs `driver_*` ci-dessus s'appliquent bien malgré ce joker.
+Il conserve l'ouverture actuelle sur les 33 collections existantes : la retirer couperait les quatre applications en production, et sa fermeture appartient au chantier de sécurisation.
+
+Mais il doit **exclure nommément** les collections du programme livreur. Firestore n'applique pas « la règle la plus spécifique gagne » — il réunit toutes les règles qui couvrent un chemin par un **OU logique**. Un joker `allow read, write: if true` non borné autoriserait donc l'écriture directe de `driver_program/{uid}.level`, et les blocs restrictifs écrits au-dessus ne serviraient à rien. Vérifié sur reproduction isolée le 2026-08-31.
+
+Chaque nouvelle collection `driver_*` créée par un chantier ultérieur doit être ajoutée à cette liste d'exclusion, faute de quoi elle naîtra publiquement écrivable.
 
 - [ ] **Step 5: Lancer les tests et vérifier qu'ils passent**
 

@@ -71,6 +71,18 @@ Un point favorable : les collections du Driver OS étant **neuves**, leurs règl
 33 collections actuelles. On peut donc avancer sur le portail livreur en parallèle du chantier
 sécurité, à condition de ne jamais considérer une donnée comme fiable avant le palier 2.
 
+> **Correction du 2026-08-31.** Ce paragraphe était incomplet et sa conclusion pratique était
+> fausse. Firestore n'applique pas « la règle la plus spécifique gagne » : il réunit toutes les
+> règles qui couvrent un chemin par un **OU logique**, et un seul `allow` suffit à autoriser
+> l'accès. Le joker `match /{document=**} { allow read, write: if true; }` actuellement déployé
+> couvre donc aussi les collections neuves et rendrait décorative toute règle restrictive écrite
+> à côté. Vérifié sur reproduction isolée en émulateur.
+>
+> Écrire des règles strictes sur les collections neuves exige donc de **borner le joker** pour
+> qu'il les exclue nommément — ce que fait désormais le plan 1A. Toute nouvelle collection
+> `driver_*` doit être ajoutée à cette liste d'exclusion, sans quoi elle naît publiquement
+> écrivable.
+
 ---
 
 ## 3. Inventaire de l'existant
