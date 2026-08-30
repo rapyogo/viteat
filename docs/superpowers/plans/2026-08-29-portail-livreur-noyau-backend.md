@@ -581,9 +581,19 @@ function computeActivation(dossier, settings) {
     }
   });
 
+  // Echoue ferme, deliberement. Si aucune version n'est en vigueur pour un
+  // accord obligatoire, il n'y a rien de signable : la condition doit etre
+  // fausse, jamais vraie par defaut. Comparer deux `undefined` les trouverait
+  // egaux et activerait le livreur sans la moindre signature — sur la seule
+  // condition de la checklist qui porte un engagement juridique.
   let agreementOk = true;
   settings.requiredAgreements.forEach((type) => {
-    if (signedVersions[type] !== agreementVersions[type]) {
+    const currentVersion = agreementVersions[type];
+    if (currentVersion === undefined || currentVersion === null) {
+      agreementOk = false;
+      return;
+    }
+    if (signedVersions[type] !== currentVersion) {
       agreementOk = false;
     }
   });
