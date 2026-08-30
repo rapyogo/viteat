@@ -1366,6 +1366,36 @@ function loadSettings(db) {
 }
 
 /**
+ * Repercute l'activation dans la collection users, celle dont l'application
+ * livreur en production depend.
+ *
+ * update() cible, jamais set() : un set sans merge effacerait orderRequestData
+ * et inProgressOrderID, c'est-a-dire une course en cours (norme N1.8).
+ *
+ * isActive n'est jamais mis a false ici — uniquement a true.
+ */
+function mirrorActivationToUsers(db, uid) {
+  return db.collection('users').doc(uid).update({
+    isActive: true,
+    isDocumentVerify: true
+  }).catch((e) => {
+    // Code gRPC 5 = NOT_FOUND : le document users n'existe pas encore. C'est le
+    // cas legitime d'une candidature deposee depuis le web par quelqu'un qui n'a
+    // jamais ouvert l'application mobile.
+    if (e.code === 5) {
+      console.log('[DRIVER_PROGRAM] MIROIR_USERS_ABSENT ' + uid);
+      return null;
+    }
+    // Tout le reste remonte : permission refusee, quota, panne reseau. Ce champ
+    // gouverne si un livreur recoit des courses ; le voir echouer en silence
+    // laisserait un livreur active cote programme et invisible cote terrain,
+    // sans que personne l'apprenne. La norme N1 de la plateforme l'interdit.
+    console.error('[DRIVER_PROGRAM] MIROIR_USERS_ECHEC ' + uid + ' : ' + e.message);
+    throw e;
+  });
+}
+
+/**
  * Recalcule la checklist et le statut d'un dossier, ecrit l'historique si le
  * statut change, et met a jour le miroir dans users a l'activation.
  *
@@ -1411,16 +1441,7 @@ function recomputeStatus(db, uid, actor) {
     if (status !== rules.STATUSES.ACTIVE) {
       return null;
     }
-    // update() cible, jamais set() : un set sans merge effacerait
-    // orderRequestData et inProgressOrderID, donc une course en cours.
-    return db.collection('users').doc(uid).update({
-      isActive: true,
-      isDocumentVerify: true
-    }).catch((e) => {
-      // Le document users peut ne pas exister pour une candidature web pure.
-      console.log('[DRIVER_PROGRAM] miroir users impossible pour ' + uid + ' : ' + e.message);
-      return null;
-    });
+    return mirrorActivationToUsers(db, uid);
   }).then(() => {
     return { status: status, activation: activation, changed: status !== previousStatus };
   });
