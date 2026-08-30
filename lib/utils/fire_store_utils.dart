@@ -90,7 +90,19 @@ class FireStoreUtils {
     // et renvoie false, ce qui déconnecterait un utilisateur simplement hors-ligne
     // (pas de cache local) au démarrage. On laisse l'erreur remonter pour que
     // SplashController.redirectScreen() applique son fallback offline-aware.
-    final value = await fireStore.collection(CollectionName.users).doc(FirebaseAuth.instance.currentUser!.uid).get();
+    final DocumentSnapshot<Map<String, dynamic>> value = await fireStore.collection(CollectionName.users).doc(FirebaseAuth.instance.currentUser!.uid).get();
+    if (!value.exists && value.metadata.isFromCache) {
+      // Hors ligne, un document absent du cache revient avec exists == false
+      // SANS lever : c'est indistinguable d'un compte reellement supprime. On ne
+      // peut donc rien conclure, et la session Firebase Auth persistee localement
+      // fait foi.
+      //
+      // Sans cette garde, rouvrir l'app hors ligne renvoyait au login alors que
+      // la session etait intacte — et le repli hors-ligne de
+      // SplashController.redirectScreen() ne s'armait jamais, puisqu'il vit dans
+      // un catch et qu'aucune erreur n'etait levee.
+      return true;
+    }
     return value.exists;
   }
 
