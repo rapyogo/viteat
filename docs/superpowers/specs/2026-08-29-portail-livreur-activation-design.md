@@ -387,8 +387,17 @@ ce que le portail est fait pour absorber, et c'est de cette file que sortiront l
 visées.
 
 Le script est exécuté d'abord sur un seul compte de chaque population, vérifié, puis sur le reste.
-Il alloue 383 `driverCode` : la transaction de séquence doit être testée sous charge avant, pas
-pendant.
+
+**Il alloue 383 `driverCode` séquentiellement, jamais en parallèle.** Ce n'est pas une précaution
+de style : les 383 allocations tirent sur un **document compteur unique**, et Firestore plafonne
+les écritures soutenues sur un document isolé autour d'une par seconde. Mesuré sur l'émulateur le
+2026-08-30 : vingt transactions concurrentes sur ce même document prennent 7,7 à 12,4 secondes et
+ont produit deux `Transaction lock timeout`, dont un sur un émulateur démarré à froid. La
+transaction elle-même est correcte — c'est l'appelant qui ne doit pas la marteler.
+
+Le script de reprise traite donc les comptes **un par un**, avec une pause entre chacun, et
+journalise sa progression pour pouvoir reprendre après interruption sans réallouer. Une reprise
+de 383 comptes prend ainsi quelques minutes : c'est le prix d'identifiants sans doublon.
 
 ### Le catalogue de documents est celui du template indien
 
