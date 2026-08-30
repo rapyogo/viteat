@@ -1052,8 +1052,27 @@ git commit --allow-empty -m "feat: allocation atomique des identifiants livreur"
 Ajouter à `store.test.js` :
 
 ```js
+// Les tests ci-dessous ecrivent avec .add(), qui cree un document neuf a
+// chaque appel. Sans nettoyage prealable, une deuxieme execution sur le meme
+// emulateur accumule les documents et fait echouer les assertions de comptage
+// (2 !== 1, puis 3 !== 1). Comme l'emulateur reste vivant entre le run ROUGE et
+// le run VERT, et d'une tache a la suivante, chaque test doit partir d'un etat
+// connu plutot que de supposer une base vierge.
+async function resetDriverFixtures(uid) {
+  const collections = ['driver_documents', 'driver_signatures', 'driver_program_history'];
+  const snaps = await Promise.all(
+    collections.map((c) => db.collection(c).where('driverId', '==', uid).get())
+  );
+  const deletions = [];
+  snaps.forEach((s) => {
+    s.docs.forEach((d) => { deletions.push(d.ref.delete()); });
+  });
+  await Promise.all(deletions);
+}
+
 test('loadDossier assemble les six sources en un seul objet', async () => {
   const uid = 'u_test_dossier';
+  await resetDriverFixtures(uid);
   await db.collection('driver_program').doc(uid).set({
     driverCode: 'VT-LVR-000001',
     profile: { firstName: 'Amani', primaryZoneId: 'goma' }
@@ -1083,6 +1102,7 @@ test('loadDossier rend un dossier vide et non nul pour un inconnu', async () => 
 });
 
 test('appendHistory ecrit une ligne horodatee', async () => {
+  await resetDriverFixtures('u_hist');
   await store.appendHistory(db, {
     driverId: 'u_hist', driverCode: 'VT-LVR-000002',
     from: 'CANDIDATURE', to: 'DOSSIER_A_VERIFIER',
