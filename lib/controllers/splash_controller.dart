@@ -37,29 +37,41 @@ class SplashController extends GetxController {
     } catch (e) {
       log("SplashController.redirectScreen error :: $e");
 
+      // Une session Firebase Auth persistee localement fait foi. Tant qu'elle
+      // existe, un echec de LECTURE ne doit JAMAIS renvoyer au login : on ne
+      // sait pas distinguer "compte supprime" de "pas pu verifier", et se
+      // tromper deconnecte un utilisateur parfaitement valide.
+      //
+      // Les vraies deconnexions (compte inactif, mauvais role) passent par le
+      // chemin nominal de _redirectScreen(), qui appelle signOut() explicitement
+      // sur une reponse serveur — jamais par ce catch.
+      final bool hasLocalSession = FirebaseAuth.instance.currentUser != null;
+      if (!hasLocalSession) {
+        Get.offAll(const LoginScreen());
+        return;
+      }
+
       // Le device peut se croire "en ligne" (connectivity_plus voit du signal)
       // alors que le backend Firestore est injoignable/lent (10s+ de timeout) —
-      // c'est le cas réel le plus fréquent, pas seulement le mode avion.
+      // c'est le cas reel le plus frequent, pas seulement le mode avion.
       final bool deviceOffline = Get.isRegistered<ConnectivityService>() && Get.find<ConnectivityService>().isOffline;
+      // getUserProfile() avale ses erreurs et _redirectScreen() relaie son echec
+      // par une Exception nue : elle n'est donc pas une FirebaseException et ne
+      // matchait aucun code connu. C'est ce trou qui renvoyait au login hors
+      // ligne malgre une session valide.
       final bool transientBackendError = e is FirebaseException && const {'unavailable', 'deadline-exceeded', 'network-request-failed', 'cancelled'}.contains(e.code);
-      final bool hasLocalSession = FirebaseAuth.instance.currentUser != null;
 
-      if ((deviceOffline || transientBackendError) && hasLocalSession) {
-        // Session Firebase Auth déjà persistée localement — ne pas renvoyer
-        // vers le login pour un simple problème réseau, l'app fonctionnera
-        // en mode cache une fois sur le dashboard.
+      if (deviceOffline || transientBackendError || retryCount >= 1) {
+        // Hors ligne, erreur backend connue, ou deuxieme echec consecutif :
+        // inutile d'insister. L'app fonctionne en mode cache sur le dashboard.
         Get.offAll(const DashBoardScreen());
         return;
       }
 
-      if (retryCount < 1) {
-        // Transient Firestore/network failure right at startup (e.g. connectivity
-        // not fully up yet) — retry once instead of leaving the splash stuck forever.
-        await Future.delayed(const Duration(seconds: 2));
-        await redirectScreen(retryCount: retryCount + 1);
-      } else {
-        Get.offAll(const LoginScreen());
-      }
+      // Premier echec sans cause identifiee : laisser au reseau une chance de
+      // s'etablir avant de conclure.
+      await Future.delayed(const Duration(seconds: 2));
+      await redirectScreen(retryCount: retryCount + 1);
     }
   }
 
