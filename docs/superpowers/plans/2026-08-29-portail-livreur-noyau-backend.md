@@ -1572,17 +1572,36 @@ function applyAsDriver(db, uid, profileInput, referralCode) {
     }
     return store.allocateDriverCodes(db, settings);
   }).then((codes) => {
-    return db.collection('driver_program').doc(uid).set({
-      driverCode: codes.driverCode,
-      referralCode: codes.referralCode,
-      referredBy: referralCode || null,
-      level: 1,
-      status: rules.STATUSES.CANDIDATURE,
-      profile: pickProfile(profileInput),
-      qrToken: crypto.randomBytes(16).toString('hex'),
-      activation: {},
-      dates: { appliedAt: admin.firestore.FieldValue.serverTimestamp() }
-    }).then(() => codes);
+    const ref = db.collection('driver_program').doc(uid);
+    // Le controle d'existence ci-dessus ne suffit pas seul : deux appels
+    // simultanes — un double-clic, un rejeu reseau — peuvent le franchir tous
+    // les deux avant qu'aucun n'ait ecrit, et le second ecraserait le dossier du
+    // premier, identifiant VT-LVR- compris. La transaction refait le controle au
+    // moment meme de l'ecriture, ce qui rend cet ecrasement impossible.
+    //
+    // L'allocation des codes se fait AVANT la transaction, deliberement :
+    // Firestore interdit d'imbriquer une transaction dans une autre. Le perdant
+    // d'une course perd donc son numero — gaspiller un identifiant coute
+    // infiniment moins cher qu'ecraser le dossier de quelqu'un.
+    return db.runTransaction((tx) => {
+      return tx.get(ref).then((fresh) => {
+        if (fresh.exists === true) {
+          throw new Error('Un dossier existe deja pour ce compte.');
+        }
+        tx.set(ref, {
+          driverCode: codes.driverCode,
+          referralCode: codes.referralCode,
+          referredBy: referralCode || null,
+          level: 1,
+          status: rules.STATUSES.CANDIDATURE,
+          profile: pickProfile(profileInput),
+          qrToken: crypto.randomBytes(16).toString('hex'),
+          activation: {},
+          dates: { appliedAt: admin.firestore.FieldValue.serverTimestamp() }
+        });
+        return codes;
+      });
+    });
   }).then((codes) => {
     return recomputeStatus(db, uid, { id: uid, type: 'driver' }).then(() => codes);
   });
