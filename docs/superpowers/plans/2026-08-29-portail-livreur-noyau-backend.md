@@ -1292,8 +1292,14 @@ async function dossierActivable(uid) {
 
 test('recomputeStatus active le dossier et preserve la course en cours', async () => {
   const uid = 'u_jamais_false';
+  // userBankDetails est indispensable : sans lui la condition payoutAccount reste
+  // fausse, le dossier plafonne a PENDING_ACTIVATION et la branche du miroir n'est
+  // jamais atteinte — le test ne prouverait alors plus rien.
   await db.collection('users').doc(uid).set({
-    isActive: false, orderRequestData: ['course_en_cours'], inProgressOrderID: ['cmd_42']
+    isActive: false,
+    orderRequestData: ['course_en_cours'],
+    inProgressOrderID: ['cmd_42'],
+    userBankDetails: { accountNumber: '1' }
   });
   await dossierActivable(uid);
 
@@ -1311,7 +1317,11 @@ test('recomputeStatus active le dossier et preserve la course en cours', async (
 
 test('recomputeStatus ne remet jamais isActive a false quand le dossier regresse', async () => {
   const uid = 'u_regression';
-  await db.collection('users').doc(uid).set({ isActive: true, orderRequestData: ['course'] });
+  await db.collection('users').doc(uid).set({
+    isActive: true,
+    orderRequestData: ['course'],
+    userBankDetails: { accountNumber: '1' }
+  });
   await dossierActivable(uid);
   await program.recomputeStatus(db, uid, ACTOR);
 
