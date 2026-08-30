@@ -483,6 +483,26 @@ test('computeActivation refuse une signature de version perimee', () => {
   assert.strictEqual(a.agreement, false);
 });
 
+test('computeActivation refuse un accord jamais signe', () => {
+  const d = dossierComplet();
+  d.signatures = [];
+  const a = rules.computeActivation(d, SET9);
+  assert.strictEqual(a.agreement, false);
+});
+
+// Le seul test qui exerce reellement l'echec ferme. Les deux precedents ne
+// vident qu'un cote de la comparaison et passent meme avec un code fautif ;
+// il faut les deux cotes absents pour que `undefined !== undefined` se
+// revele faux et declare l'accord signe alors que rien ne l'est.
+test('computeActivation refuse un accord dont aucune version n est en vigueur', () => {
+  const d = dossierComplet();
+  d.agreementVersions = {};
+  d.signatures = [];
+  const a = rules.computeActivation(d, SET9);
+  assert.strictEqual(a.agreement, false,
+    'comparer deux undefined les trouverait egaux et activerait sans signature');
+});
+
 test('computeActivation refuse un module requis non termine', () => {
   const d = dossierComplet();
   d.training.modules[0].completedAt = null;
