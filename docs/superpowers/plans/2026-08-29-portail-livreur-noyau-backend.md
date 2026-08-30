@@ -757,6 +757,15 @@ const STATUSES = {
  * idempotente : le statut n'est jamais « avance » par une transition, il est
  * toujours recalcule depuis le dossier. Un dossier qui regresse (piece expiree)
  * revient donc naturellement en arriere.
+ *
+ * Le statut est la PREMIERE etape non franchie de l'entonnoir, jamais la
+ * derniere franchie. La nuance est decisive : les neuf conditions de
+ * computeActivation sont independantes, si bien qu'un dossier peut porter une
+ * signature valide et une formation inachevee. Chercher la derniere condition
+ * vraie annoncerait alors « en attente d'activation » a un candidat qui n'a pas
+ * commence sa formation. Chercher la premiere condition fausse dit toujours au
+ * livreur ce qu'il doit faire maintenant — et c'est la seule chose que cet
+ * ecran doit lui apprendre.
  */
 function computeStatus(dossier, activation, settings) {
   if (dossier.adminStatus === STATUSES.SUSPENDU || dossier.adminStatus === STATUSES.REJETE) {
@@ -767,25 +776,28 @@ function computeStatus(dossier, activation, settings) {
   if (allTrue === true) {
     return STATUSES.ACTIVE;
   }
-  if (activation.agreement === true) {
-    return STATUSES.PENDING_ACTIVATION;
+
+  if (activation.documents !== true) {
+    const documents = dossier.documents || [];
+    return documents.length > 0 ? STATUSES.DOSSIER_A_VERIFIER : STATUSES.CANDIDATURE;
   }
-  if (activation.certification === true) {
-    return STATUSES.CERTIFIE;
-  }
-  if (activation.theoryTest === true) {
-    return STATUSES.SIMULATION_PRATIQUE;
-  }
-  if (activation.training === true) {
-    return STATUSES.TEST;
-  }
-  if (activation.documents === true) {
+  if (activation.training !== true) {
     const modules = (dossier.training || {}).modules || [];
     return modules.length > 0 ? STATUSES.FORMATION : STATUSES.DOCUMENTS_VALIDES;
   }
+  if (activation.theoryTest !== true) {
+    return STATUSES.TEST;
+  }
+  if (activation.practicalTest !== true || activation.certification !== true) {
+    return STATUSES.SIMULATION_PRATIQUE;
+  }
+  if (activation.agreement !== true) {
+    return STATUSES.CERTIFIE;
+  }
 
-  const documents = dossier.documents || [];
-  return documents.length > 0 ? STATUSES.DOSSIER_A_VERIFIER : STATUSES.CANDIDATURE;
+  // L'entonnoir est franchi mais une condition transverse manque encore —
+  // typiquement le compte de paiement ou un champ de profil.
+  return STATUSES.PENDING_ACTIVATION;
 }
 ```
 
