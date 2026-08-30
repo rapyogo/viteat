@@ -334,6 +334,26 @@ Une republication doit donc être une décision explicite, jamais une correction
 - Réglages du programme (§64, périmètre livreur)
 - Fiche livreur : timeline (§36) et journal d'audit (§37)
 
+### Contrainte découverte le 2026-08-31 : l'Admin Panel ne peut pas lire ces collections
+
+Les règles réservent la lecture des collections `driver_*` au titulaire du dossier et à
+`request.auth.token.role == 'admin'`. Or **personne ne porte ce claim aujourd'hui** : l'Admin
+Panel n'a aucune identité Firebase — c'est le point dur relevé par la spec de sécurisation, où
+161 vues écrivent en anonyme.
+
+Conséquence directe pour les vues décrites ci-dessus : elles **ne peuvent pas** lire
+`driver_documents` ou `driver_program` depuis le navigateur comme le font les vues existantes.
+Deux issues, à trancher au moment d'écrire le plan 1C :
+
+- faire passer les vues du programme par des **Cloud Functions callable** de lecture, qui
+  utilisent le SDK admin et ignorent les règles — cohérent avec le reste de ce chantier, et
+  indépendant du calendrier du chantier sécurité ;
+- ou attendre que le palier 1 de la sécurisation donne à l'Admin Panel une identité Firebase
+  portant le claim `admin`, ce qui rendrait les lectures directes possibles.
+
+Le défaut est **fermé** : sans le claim, l'accès est refusé, jamais accordé par erreur. Rien
+n'est exposé ; c'est une fonctionnalité qui manquera, pas une fuite.
+
 ### RBAC (§39)
 
 La table `role` ne contient qu'un rôle. Ce chantier en ajoute trois, les seuls dont il a besoin :
