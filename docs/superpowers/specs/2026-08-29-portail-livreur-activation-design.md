@@ -506,6 +506,33 @@ Le PITR de 7 jours, activé le 2026-08-29, couvre le reste.
 
 ## 14. Suite
 
-Une fois ce chantier livré et le palier 2 des règles déployé : chantier 2 — KPI, score Viteat,
-niveaux et badges, qui s'appuie sur les données de courses et requiert d'abord leur horodatage
-côté serveur.
+**Ordre révisé le 2026-08-31, à la demande de l'utilisateur : l'administration passe avant le
+portail livreur.**
+
+| Plan | Contenu | Ordre |
+|---|---|---|
+| **1A** | Noyau backend : fonctions pures, Cloud Functions `v1_*`, règles Firestore | en cours |
+| **1C** | **Admin Panel** : vues de validation, trois rôles RBAC, reprise des comptes | **suivant** |
+| **1B** | Portail livreur : les dix écrans, connexion Firebase Auth | après |
+
+Le raisonnement tient : rien ne sert d'ouvrir la candidature aux livreurs tant que personne ne
+peut valider un dossier. L'entonnoir se remplirait sans que rien n'en sorte. L'administration
+d'abord, le guichet ensuite.
+
+### Ce que ce réordonnancement rend urgent
+
+La contrainte relevée plus haut — l'Admin Panel n'a aucune identité Firebase, donc ne peut pas
+lire les collections `driver_*` depuis le navigateur — cesse d'être un point à trancher plus
+tard : elle devient le **premier problème à résoudre** du plan 1C.
+
+Le plan 1A ne prévoit que des fonctions d'**écriture** pour l'administration (`v1_reviewDocument`
+et les autres). Il n'en prévoit aucune de **lecture**. Or les vues d'administration doivent
+afficher la file des dossiers, les pièces déposées, la timeline, le journal d'audit — et aucune
+de ces lectures n'est possible aujourd'hui.
+
+Le plan 1C devra donc ouvrir par des fonctions callable de lecture : file des dossiers filtrable
+par statut et par zone, dossier complet d'un livreur, pièces d'un dossier, historique. C'est du
+travail non prévu au chiffrage initial, et il conditionne toutes les vues.
+
+Ensuite seulement : chantier 2 — KPI, score Viteat, niveaux et badges, qui s'appuie sur les
+données de courses et requiert d'abord leur horodatage côté serveur.

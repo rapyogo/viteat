@@ -2482,19 +2482,28 @@ function reviewDocument(db, documentId, decision, reason, actor) {
   });
 }
 
+// Chaque fonction ci-dessous lit l'etat AVANT d'ecrire, pour que le journal
+// d'audit porte la vraie valeur precedente. Un `oldValue: null` code en dur
+// serait pire qu'une absence : il affiche une information fausse a l'agent
+// support qui consulte l'historique d'une suspension ou d'un rejet.
+
 function recordPracticalTest(db, uid, score, notes, actor) {
   let settings = null;
+  let previousPractical = null;
   return callables.loadSettings(db).then((s) => {
     settings = s;
     return db.collection('driver_training').doc(uid).get();
   }).then((snap) => {
     const data = snap.exists === true ? snap.data() : {};
+    previousPractical = data.practical || null;
     const theory = data.theory || {};
     const theoryOk = (theory.bestScore || 0) >= settings.theoryPassScore;
     const practicalOk = score >= settings.practicalPassScore;
     const patch = {
       practical: { score: score, ratedBy: actor.id, ratedAt: Date.now(), notes: notes || '' }
     };
+    // La certification n'est posee qu'au franchissement, jamais re-posee :
+    // reecrire certifiedAt changerait la date d'une certification acquise.
     if (theoryOk === true && practicalOk === true && (data.certifiedAt === null || data.certifiedAt === undefined)) {
       patch.certifiedAt = Date.now();
       patch.certificateNumber = 'VT-CERT-' + uid.substring(0, 8).toUpperCase();
@@ -2504,7 +2513,8 @@ function recordPracticalTest(db, uid, score, notes, actor) {
     return store.appendAudit(db, {
       actorId: actor.id, actorType: actor.type, action: 'record_practical_test',
       entity: 'driver_training', entityId: uid,
-      oldValue: null, newValue: score, ip: actor.ip || null
+      oldValue: previousPractical === null ? null : previousPractical.score,
+      newValue: score, ip: actor.ip || null
     });
   }).then(() => {
     return callables.recomputeStatus(db, uid, actor);
@@ -2515,16 +2525,20 @@ function setAdminStatus(db, uid, adminStatus, reason, actor, action) {
   if (adminStatus !== null && (reason === null || reason === undefined || String(reason).trim() === '')) {
     return Promise.reject(new Error('Un motif est obligatoire.'));
   }
-  return db.collection('driver_program').doc(uid).set({ adminStatus: adminStatus }, { merge: true })
-    .then(() => {
-      return store.appendAudit(db, {
-        actorId: actor.id, actorType: actor.type, action: action,
-        entity: 'driver_program', entityId: uid,
-        oldValue: null, newValue: adminStatus, ip: actor.ip || null
-      });
-    }).then(() => {
-      return callables.recomputeStatus(db, uid, actor);
+  const ref = db.collection('driver_program').doc(uid);
+  let previous = null;
+  return ref.get().then((snap) => {
+    previous = snap.exists === true ? (snap.data().adminStatus || null) : null;
+    return ref.set({ adminStatus: adminStatus }, { merge: true });
+  }).then(() => {
+    return store.appendAudit(db, {
+      actorId: actor.id, actorType: actor.type, action: action,
+      entity: 'driver_program', entityId: uid,
+      oldValue: previous, newValue: adminStatus, ip: actor.ip || null
     });
+  }).then(() => {
+    return callables.recomputeStatus(db, uid, actor);
+  });
 }
 
 function suspendDriver(db, uid, reason, actor) {
@@ -2537,15 +2551,20 @@ function reinstateDriver(db, uid, reason, actor) {
   if (reason === null || reason === undefined || String(reason).trim() === '') {
     return Promise.reject(new Error('Un motif est obligatoire.'));
   }
-  return db.collection('driver_program').doc(uid).set({ adminStatus: null }, { merge: true })
-    .then(() => {
-      return store.appendAudit(db, {
-        actorId: actor.id, actorType: actor.type, action: 'reinstate_driver',
-        entity: 'driver_program', entityId: uid, oldValue: null, newValue: null, ip: actor.ip || null
-      });
-    }).then(() => {
-      return callables.recomputeStatus(db, uid, actor);
+  const ref = db.collection('driver_program').doc(uid);
+  let previous = null;
+  return ref.get().then((snap) => {
+    previous = snap.exists === true ? (snap.data().adminStatus || null) : null;
+    return ref.set({ adminStatus: null }, { merge: true });
+  }).then(() => {
+    return store.appendAudit(db, {
+      actorId: actor.id, actorType: actor.type, action: 'reinstate_driver',
+      entity: 'driver_program', entityId: uid,
+      oldValue: previous, newValue: null, ip: actor.ip || null
     });
+  }).then(() => {
+    return callables.recomputeStatus(db, uid, actor);
+  });
 }
 
 function updateProgramSettings(db, patch, actor) {
