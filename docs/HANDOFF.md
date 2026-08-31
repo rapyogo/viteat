@@ -928,3 +928,97 @@ avant qu'un seul livreur soit invité à signer.
 Admin Panel **avant** portail livreur : rien ne sert d'ouvrir la candidature tant que personne ne
 peut valider un dossier. Le plan 1C devra commencer par des **fonctions callable de lecture** —
 le chantier 1A n'a produit que des fonctions d'écriture pour l'administration.
+
+---
+
+## Session 2026-08-31 (2) — sept callables de lecture pour l'administration, déployées
+
+Répond au point bloquant relevé en fin de session précédente : le chantier 1A n'avait produit
+aucune fonction de **lecture**, alors que les futures vues d'administration (plan 1C) doivent
+afficher la file des dossiers, une fiche, la timeline, le journal d'audit, les réglages, les
+modules et la banque de questions. Conception validée par l'utilisateur (brainstorming complet),
+spec et plan écrits et suivis en TDD strict, tâche par tâche.
+
+- Spec : `customer/docs/superpowers/specs/2026-08-31-callables-lecture-admin-design.md`
+- Plan : `customer/docs/superpowers/plans/2026-08-31-callables-lecture-admin.md`
+- Code : branche `feat/callables-lecture-admin` de **`Order Tracking Firebase Function/`** (dépôt
+  git séparé), 15 commits, tous testés et lintés avant commit.
+
+### Ce qui est livré, déployé et vérifié en production sur `rapyogo-2bccd`
+
+Sept fonctions callable, toutes `requireAdmin` (claim `role === 'admin'`), toutes lecture seule :
+`v1_listDriverDossiers` (file, filtrable statut/zone, cherchable nom/code/téléphone, paginée),
+`v1_getDriverDossier` (fiche complète, statut et checklist **mémorisés**, jamais recalculés),
+`v1_listDriverHistory`, `v1_listDriverAudit` (global ou filtré par dossier), `v1_getProgramSettings`,
+`v1_listTrainingModules`, `v1_listTrainingQuestions` (seul chemin par lequel le corrigé sort du
+backend, réservé au claim admin).
+
+Deux retouches d'écriture minimes et assumées, sur l'existant du chantier 1A :
+- `driver_program.searchName` — champ normalisé (minuscules, accents retirés, espaces écrasés),
+  maintenu à `applyAsDriver` et `updateProfile`. **Sans lui, la recherche par nom de la file est
+  muette.**
+- `driver_audit_log.driverId` — ajouté aux 4 écritures d'audit portant sur un dossier
+  (`reviewDocument`, `recordPracticalTest`, `suspendDriver`/`rejectApplication`,
+  `reinstateDriver`). Sans lui, filtrer le journal par dossier exigerait une jointure artificielle.
+  Les lignes d'audit antérieures à cette session (tests du chantier 1A) restent invisibles du
+  filtre par dossier — visibles seulement du journal global. Assumé, le programme n'est pas encore
+  ouvert.
+
+Sept index composites déployés (`Firebase Indexing/firestore_indexes.json`, sauvegarde datée dans
+le même dossier) : `driver_program` ×5 (un par filtre d'égalité — `status`, `profile.primaryZoneId`,
+`searchName`, `driverCode`, `profile.phone` — chacun composé avec `dates.appliedAt` puis
+`__name__`), `driver_program_history` et `driver_audit_log` filtrés par `driverId` + `at` desc.
+
+**Découverte en déployant** : deux index « nus » envisagés par prudence (un seul champ +
+`__name__`, pour la file sans filtre et le journal global) ont été **rejetés par Firestore**
+(`HTTP 400 : this index is not necessary, configure using single field index controls`) —
+l'indexation automatique par champ les couvre déjà. Retirés avant le déploiement réussi. À ne pas
+reproduire : un `orderBy` sur un seul champ, sans clause d'égalité, ne demande jamais de composite.
+
+**65 tests unitaires purs verts** (`node --test test/driver_program/rules.test.js
+test/driver_program/read_models.test.js`), 0 erreur ESLint. **`store.test.js` et
+`test/rules/*.test.js` n'ont pas pu être exécutés cette session** : ils exigent l'émulateur
+Firestore (`127.0.0.1:8080`), absent de la machine (le JDK 21 portable des sessions précédentes a
+disparu, cf. norme déjà connue). Aucune régression attendue — ni `store.js` ni les règles
+Firestore n'ont été modifiés en substance (seul un champ ajouté à `appendAudit`) — mais **à
+revérifier avec l'émulateur dès qu'un JDK 21+ durable est installé.**
+
+**Vérifié de bout en bout en production** (`functions/verify_read_callables.js`, script conservé
+comme test de fumée réutilisable) : jeton personnalisé → échange Firebase Auth → 10 appels
+couvrant les sept fonctions, y compris le filtre par statut, la fiche d'un dossier, la timeline et
+le journal filtré par dossier. **10/10 passent.**
+
+### Piège d'environnement payé cette session
+
+Le premier appel authentifié à une fonction **fraîchement créée** a échoué en `HTTP 401
+Unauthorized` au niveau de l'infrastructure Google (page HTML, pas une erreur de la fonction) —
+alors que le même appel **sans** jeton atteignait déjà le code applicatif (`HTTP 400` JSON). Cause :
+propagation de la politique IAM (`allUsers` invoker) après création d'une fonction 1st gen, pas un
+bug de code ni de permission réellement absente. Résolu en attendant quelques minutes et en
+relançant — confirmé par comparaison avec une fonction du chantier 1A déjà en service (même
+comportement transitoire probable à l'époque, non documenté alors). **Ne pas diagnostiquer un 401
+avec jeton sur une fonction tout juste déployée comme un problème IAM permanent : réessayer
+d'abord.**
+
+Autre limite rencontrée : le compte de service (`serviceAccountKey.json`) n'a pas le rôle
+`cloudfunctions.functions.getIamPolicy` — impossible d'inspecter ou corriger une politique IAM
+avec ces identifiants si le problème avait été permanent. À garder en tête si un vrai blocage IAM
+survient un jour : il faudra les identifiants d'un compte avec un rôle plus large (Éditeur/Owner),
+ou `gcloud` authentifié en interactif (absent de cette machine).
+
+### Pistes ouvertes issues de cette session
+
+- **`store.test.js` et les tests de règles Firestore à revérifier** dès qu'un JDK 21+ durable est
+  installé (prérequis de l'émulateur, cf. pistes déjà connues).
+- **Le déploiement des fonctions a nécessité l'autorisation explicite de l'utilisateur** : le mode
+  auto bloque par défaut `firebase deploy --only functions:...` comme action à fort impact sur la
+  production partagée. Normal et attendu — à redemander à chaque futur déploiement de fonctions.
+- **Prérequis posé à la reprise des 383 comptes (plan 1C)** : chaque dossier repris doit recevoir
+  `dates.appliedAt` **et** `searchName`, sinon il est respectivement invisible de la file et
+  introuvable par la recherche — une requête ordonnée sur un champ absent exclut silencieusement
+  le document, elle ne le classe pas en dernier.
+- Aucune fonction d'**écriture** pour l'éditeur de contenu (modules/questions) n'existe encore —
+  périmètre volontairement exclu de cette session (décision explicite : lecture seule), à couvrir
+  quand les vues d'édition seront construites.
+- Le plan 1C peut maintenant démarrer : les lectures qui manquaient sont livrées, testées et
+  vérifiées en production.
