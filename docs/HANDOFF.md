@@ -844,3 +844,87 @@ les autres travaux. La conception est prête et n'a plus qu'à être relue puis 
    `Admin Panel/.petmpF2C3B8/Admin Panel - Restaurant Panel - Website Panel - Landing Panel/`
    contenant des copies complètes des quatre panels. Il pèse **297 Mo**, daté du 21/08 — utile
    à récupérer mais pas suffisant à lui seul. **Rien n’a été supprimé** — décision de l’utilisateur.
+
+---
+
+## Session 2026-08-29 → 31 — Viteat Driver OS, chantier 1A : noyau backend du programme livreur
+
+### Ce qui existe maintenant, et qui n'existait pas
+
+Un programme Partenaires Livreurs complet côté backend, **déployé sur `rapyogo-2bccd`** :
+13 Cloud Functions, 12 collections Firestore neuves, 82 tests verts.
+
+- **`Order Tracking Firebase Function/` est désormais un dépôt git** (branche `master`, 26 commits).
+  Il n'en avait aucun. `serviceAccountKey.json` et `node_modules/` sont exclus.
+- `functions/products/driver_program/` : `rules.js` (fonctions **pures**, aucune importation
+  Firebase — c'est ce qui rend le métier testable sans émulateur), `store.js` (accès Firestore),
+  `callables.js` (7 fonctions livreur), `admin_callables.js` (6 fonctions d'administration).
+- `firestore.rules` : règles strictes sur les 12 collections `driver_*`. **Écrit, testé, NON déployé.**
+
+Documents : `docs/superpowers/specs/2026-08-29-viteat-driver-os-audit.md` (audit + matrice des 73
+sections du brief), `.../2026-08-29-portail-livreur-activation-design.md` (spec du chantier),
+`docs/superpowers/plans/2026-08-29-portail-livreur-noyau-backend.md` (plan, 16 tâches).
+
+### Les trois choses à savoir avant de toucher à ce chantier
+
+**1. Le programme ne peut activer personne aujourd'hui.** Les 6 fonctions d'administration
+exigent `request.auth.token.role === 'admin'`. **Personne ne porte ce claim** — l'Admin Panel n'a
+aucune identité Firebase. Or la validation d'une pièce est le seul chemin qui pose `APPROVED`, et
+la note de simulation le seul qui pose `certifiedAt`. Un candidat plafonne donc à
+`DOSSIER_A_VERIFIER`. Le défaut est fermé (accès refusé, jamais accordé par erreur) mais c'est le
+**premier problème à résoudre** du chantier suivant.
+
+**2. Les règles Firestore ne sont pas déployées, et ce n'est plus un statu quo neutre.** Avant ce
+chantier, écrire dans une collection `driver_*` n'avait aucune conséquence. Maintenant, tout
+utilisateur authentifié peut forger ses documents « approuvés », sa certification et sa signature,
+écrire `users.userBankDetails`, puis appeler `v1_updateProfile` (qui n'exige qu'une connexion) pour
+déclencher `recomputeStatus` → `users.isActive = true`. Il reçoit alors de vraies courses.
+Le fichier de règles corrige exactement cela et attend un feu vert.
+
+**3. L'accord de partenariat en production porte un texte provisoire** — littéralement
+« À REMPLACER par le texte juridique validé », `hash: 'v1-provisoire'`. À publier en `version: 2`
+avant qu'un seul livreur soit invité à signer.
+
+### Faits de terrain relevés, qui invalident des hypothèses courantes
+
+- **383 comptes `role: "driver"` en base, dont 8 seulement `isActive`.** L'objectif de 30 livreurs
+  est un objectif d'**activation**, pas un effectif. **341 comptes n'ont aucun `zoneId`** et ne
+  peuvent structurellement recevoir aucune course, `deliveryDispatch` exigeant l'égalité des zones.
+- **Les trois bases MySQL (`monsite1` site web, `monsite2` restaurant, `monsite3` admin) ne
+  contiennent aucune donnée métier** — uniquement la plomberie Laravel, les comptes de connexion et
+  les rôles. Tout le métier est dans Firestore.
+- **Firestore évalue les règles en OU logique**, pas « la plus spécifique gagne ». Un joker
+  `allow read, write: if true` rend décorative toute règle restrictive écrite à côté. Le joker de
+  `firestore.rules` **exclut donc nommément** les 12 collections `driver_*` ; un test de
+  synchronisation (`driver_program.wildcard_sync.test.js`) échoue si l'on ajoute une collection
+  sans l'inscrire dans cette liste.
+- **`documents_verify.documents[].documentId` contient les auto-ids Firestore réels** de la
+  collection `documents` (`wNsq0pdDbbmjXkHKwtNv` = ID Proof, `tsTemfO52potrI6knLeO` = Driving
+  License), et son `status` est une **chaîne minuscule**. Y écrire un nom symbolique ou un booléen
+  casse l'app livreur. `rebuildMirror` fusionne pièce par pièce et ne remplace jamais le tableau.
+- **firebase-tools 15.27 exige Java ≥ 21.** Java 17 ne suffit pas pour l'émulateur. Un JDK 21
+  portable a servi pour cette session ; **installer un JDK 21+ durable** avant de relancer les tests.
+- `node --test test/` **ne fonctionne pas** — le lanceur charge le dossier comme un module. La forme
+  correcte est `node --test` sans argument.
+- Le déploiement échoue parfois avec « An unexpected error has occurred » à l'étape de découverte.
+  **C'est transitoire** : relancer suffit, aucun changement de code nécessaire.
+
+### Ce qui reste ouvert
+
+- Tâches 14 et 15 du plan reportées : vérification publique du QR, expiration planifiée des
+  documents. Ni câblées ni déployées.
+- Le catalogue `documents` est celui du template indien (`RC Book`, `FSSAI Certificate`), sans
+  aucune date d'expiration configurée. À redéfinir pour la RDC — décision d'exploitation.
+- La collection `zone` porte un doublon `Worldwide` / `World Wide`.
+- Constats de la revue finale non traités : `submitDocument` ne reconstruit pas le miroir ; les
+  pièces des 383 livreurs existants sont invisibles du programme et réciproquement ; aucun test de
+  règles ne prouve que le livreur ne peut pas écrire `driver_documents` / `driver_training` /
+  `driver_signatures` — les trois écritures qui, forgées, donnent l'activation.
+- La reprise des 383 comptes devra allouer les identifiants **un par un** : Firestore plafonne les
+  écritures soutenues sur un document unique à environ une par seconde, et le compteur en est un.
+
+### Ordre décidé pour la suite
+
+Admin Panel **avant** portail livreur : rien ne sert d'ouvrir la candidature tant que personne ne
+peut valider un dossier. Le plan 1C devra commencer par des **fonctions callable de lecture** —
+le chantier 1A n'a produit que des fonctions d'écriture pour l'administration.
