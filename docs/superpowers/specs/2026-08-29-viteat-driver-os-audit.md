@@ -92,11 +92,25 @@ sécurité, à condition de ne jamais considérer une donnée comme fiable avant
 | Support | Contenu | Volume |
 |---|---|---|
 | **Firestore `rapyogo-2bccd`** | **La totalité du métier** | 33 collections déclarées, 19 utilisées par l'app livreur |
-| **MySQL (Admin Panel)** | Authentification et RBAC des administrateurs **uniquement** | **7 tables** |
-| **MySQL (Restaurant Panel)** | Idem pour les restaurateurs | base `monsite2` |
+| **MySQL `monsite3`** (Admin Panel) | Authentification et RBAC des administrateurs | **7 tables** |
+| **MySQL `monsite2`** (Restaurant Panel) | Authentification des restaurateurs | **6 tables** |
+| **MySQL `monsite1`** (Website Panel) | Authentification | **6 tables** |
 
-Les 7 tables MySQL : `failed_jobs`, `migrations`, `password_resets`, `permissions`,
-`personal_access_tokens`, `role`, `users`.
+**Il existe bien trois bases SQL, une par panel.** Vérifié le 2026-08-31 non sur les dumps
+d'installation mais sur le répertoire de données MySQL vivant, `C:\xampp\xampp\mysql\data`
+(le serveur était arrêté ; chaque base y est un répertoire, chaque table un fichier).
+
+Leur contenu, exhaustivement :
+
+- `monsite3` : `failed_jobs`, `migrations`, `password_resets`, `permissions`,
+  `personal_access_tokens`, `role`, `users`
+- `monsite2` et `monsite1` : `failed_jobs`, `migrations`, `password_resets`,
+  `personal_access_tokens`, `users`, `vendor_users`
+
+Ce sont, à la table près, la plomberie de Laravel plus les comptes de connexion et les rôles.
+**Aucune donnée métier** : ni commande, ni restaurant, ni plat, ni livreur, ni paiement. Le
+métier vit intégralement dans Firestore, et ces trois bases ne servent qu'à ouvrir une session
+dans un panel.
 
 **Conséquence sur le §67.** Le brief demande une trentaine de tables (`drivers`, `deliveries`,
 `financial_transactions`, `kpis`…). Il n'existe aucune base relationnelle métier où les créer.
