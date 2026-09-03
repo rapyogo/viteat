@@ -63,6 +63,7 @@ Dernière mise à jour : 2026-10-04
 - Ne pas déployer les déclencheurs wallet avant publication des nouvelles apps et des panels (sinon double crédit).
 - App client : branche `feat/contrats-restaurant-clean` (worktree `customer-clean`, repartie de origin/master ; la branche `feat/contrats-restaurant` locale contient 35 commits étrangers, ne pas la fusionner). Filtre isLive, badge, mise à jour forcée (`settings/Version.minCustomerBuildNumber`), wallet/push par callables. Flutter 3.47.5 : `C:/src/flutter-3.47`. versionCode à incrémenter seulement à la publication.
 Dernière mise à jour : 2026-08-29
+Dernière mise à jour : 2026-09-03
 
 ## Contexte projet
 - App Flutter cliente d'une plateforme de livraison de repas multi-vendeurs, marque "Rapyogo" (package Android `com.rapyogo.client`).
@@ -1022,3 +1023,218 @@ ou `gcloud` authentifié en interactif (absent de cette machine).
   quand les vues d'édition seront construites.
 - Le plan 1C peut maintenant démarrer : les lectures qui manquaient sont livrées, testées et
   vérifiées en production.
+
+## Session 2026-09-03 — WhatsApp : mise en production, agent conversationnel, neuf bugs bloquants et nettoyage des données de démo
+
+Reprise du chantier WhatsApp (implémentation déjà livrée en amont, voir commit `9e9bed9` et le
+carnet de notes `VITEAT Whats/NEXT_SESSION.md`, qui reste le journal détaillé au jour le jour de ce
+chantier). Objectif de la session : sortir de la configuration et obtenir un premier message réel
+qui fonctionne de bout en bout, puis polir l'expérience conversationnelle.
+
+### Déploiement initial sur `rapyogo-2bccd`
+
+- Secrets Firebase posés (`firebase functions:secrets:set`) : `WHATSAPP_VERIFY_TOKEN` (généré
+  aléatoirement cette session), `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`, `GEMINI_API_KEY`.
+- Paramètres dans `Order Tracking Firebase Function/functions/.env` : `WHATSAPP_PHONE_NUMBER_ID`,
+  `WHATSAPP_GRAPH_VERSION=v24.0`, `GEMINI_MODEL=gemini-2.5-flash`, `WHATSAPP_ORDER_STATUS_TEMPLATE`
+  (vide jusqu'à validation du template, voir plus bas).
+- `firestore.rules` déployé, puis les 29 fonctions du dépôt déployées **ciblées par nom**
+  (`--only functions:x,functions:y,...`), jamais `--only functions` seul — le projet porte deux
+  fonctions d'origine inconnue (`helloWorld`, `sendNewOrderNotification`, déjà documentées comme
+  volontairement intouchées section 5 de la session du 2026-08-24) que Firebase CLI propose de
+  supprimer en mode non interactif dès qu'elles ne figurent pas dans la cible explicite.
+- **Piège machine découvert et résolu** : disque C: à 100 % (51 Mo libres) pendant tout le début du
+  déploiement, cause des échecs `ConnectTimeoutError` / `Failed to make request` aléatoires sur des
+  endpoints Google API différents à chaque tentative (jamais le même deux fois — signature typique
+  d'un disque saturé, pas d'un vrai problème réseau : des tests manuels `curl`/`node fetch` vers les
+  mêmes hôtes réussissaient instantanément). Nettoyage `npm cache clean --force` +
+  `~/.gradle/caches` (12 Go) → 9,6 Go libérés, déploiements ensuite stables. Mémoire dédiée écrite :
+  `disque-plein-firebase-cli-flaky` dans `~/.claude/projects/.../VITEAT Whats/memory/`.
+
+### Deux incidents de configuration Meta, découverts en testant un vrai message
+
+Le webhook répondait correctement au challenge de vérification Meta (`GET` avec `hub.mode`), mais
+deux problèmes n'étaient visibles qu'en poussant jusqu'à l'envoi réel :
+
+1. **Jeton d'accès invalide dès le départ** — le premier `WHATSAPP_ACCESS_TOKEN` fourni retournait
+   `OAuthException code 190 / error_subcode 460` (« session invalidée, mot de passe changé ou reset
+   sécurité Facebook ») dès le premier appel Graph API (`GET /{waba-id}/subscribed_apps`).
+   Remplacé par un jeton **System User** (Meta Business Settings → Utilisateurs système → générer,
+   scope `whatsapp_business_management` + `whatsapp_business_messaging`), qui n'expire pas
+   (`expires_at: 0` confirmé via `debug_token`). **Si `OAuthException 190` réapparaît**, vérifier le
+   jeton en premier, avant de chercher ailleurs.
+2. **`WHATSAPP_PHONE_NUMBER_ID` ne correspondait à aucune ressource Graph API valide.** Cause :
+   **il existe deux comptes WhatsApp Business (WABA) distincts** sur ce compte Meta —
+   `489365247599928` (« Rapyogo service client », 0 numéro de téléphone rattaché, probablement un
+   WABA de test ou legacy) et **`245013482026261`** (« RAPYOGO », le vrai, avec le numéro
+   **+243 902 487 457** / `phone_number_id: 224177927451561`, `quality_rating: GREEN`). Corrigé dans
+   `.env` et fonctions WhatsApp redéployées. **Si un futur ID Meta (WABA, phone_number_id) ne
+   résout pas via l'API, ne pas assumer un problème de permissions : vérifier d'abord qu'il n'existe
+   pas un deuxième WABA sur le même Business Manager.**
+
+Après ces deux corrections : webhook vérifié par un vrai message entrant, réponse envoyée avec
+succès. L'app y est abonnée (`subscribed_apps` confirmé côté du bon WABA).
+
+### Aucun MCP Meta connecté — mais l'API Graph suffit
+
+Vérifié explicitement (`ToolSearch`) : aucun serveur MCP Meta/WhatsApp/Facebook n'est disponible
+dans cet environnement, et Meta ne fournit pas de CLI officielle comme `firebase`/`gh`/`stripe`.
+Le jeton System User portant le scope `whatsapp_business_management`, tout ce qui semblait
+nécessiter le dashboard Meta a en réalité été fait par `curl` direct vers l'API Graph :
+consultation des WABA/numéros, vérification du jeton, abonnement de l'app, **et soumission d'un
+template de message** (`POST /{waba-id}/message_templates`) — seule la revue automatique de Meta
+après soumission (minutes à ~24h) échappe à l'automatisation, pas la soumission elle-même.
+
+### Template Utility soumis via API
+
+`viteat_order_status`, catégorie `UTILITY`, langue `fr`, id Meta `1379585607060857`, statut
+`PENDING` à la fin de la session. **Piège de format découvert** : la première tentative
+(`"Votre commande {{1}} est maintenant : {{2}}."`) a été rejetée
+(`error_subcode 2388299`, *« Les variables ne peuvent pas se trouver au début ou à la fin du
+modèle »*) — la ponctuation seule après `{{2}}` ne compte pas comme texte réel. Corrigé en
+ajoutant une phrase de clôture : `"... Merci de votre confiance !"`. **À refaire pour tout futur
+template Meta : toujours du texte substantiel avant la première et après la dernière variable.**
+Reste à faire : vérifier le statut (`GET /1379585607060857?fields=status`), puis renseigner
+`WHATSAPP_ORDER_STATUS_TEMPLATE=viteat_order_status` dans `.env` et redéployer
+`notifyWhatsAppOrderStatus` une fois `APPROVED`.
+
+### Polish UX conversationnel (codé et déployé, testé une première fois en réel)
+
+Demandé explicitement par l'utilisateur : ton chaleureux et encourageant partout (y compris le
+prompt système Gemini dans `whatsapp/gemini.js`), et cinq améliorations produit :
+
+- **Photo + description** du restaurant à l'ouverture du menu (`sendImage` avant la liste — les
+  messages liste WhatsApp ne supportent pas d'image par ligne, limite native de l'API) et du plat
+  sélectionné (image en en-tête du message à boutons, `interactive.header.image`).
+- **Demande de position native WhatsApp** (`location_request_message`, bouton natif) déclenchée au
+  choix « Livraison » si la session n'a pas encore de position, **suivie d'une question texte
+  obligatoire** (quartier/avenue/repère) avant de continuer — décision produit : garder ce repère
+  texte même avec le GPS, l'adressage à Goma étant peu fiable. Stocké dans
+  `orderAddress().landmark`, réutilisé pour les commandes suivantes sans re-demander.
+- **Salutation par prénom** pour un compte déjà lié (`users/{id}.firstName`), au menu d'accueil et
+  à la confirmation de liaison de compte.
+- **Contact support direct** (`info@rapyogo.com` / `+243 973 604 485`) dans le bouton Assistance et
+  le prompt Gemini.
+- Fichiers touchés : `sender.js`, `catalog.js`, `router.js`, `checkout.js`, `repository.js`,
+  `gemini.js`. Les 18 tests unitaires `test/whatsapp/*.test.js` passent tous (aucun ne couvre ces
+  chemins de code, donc pas de régression détectable par les tests — validation faite par lecture
+  de code + un premier test manuel réel réussi côté restaurant/plat/position).
+
+### Question tranchée : catalogue natif WhatsApp (icône panier)
+
+L'utilisateur a demandé si l'expérience catalogue natif (icône panier, vue catalogue intégrée dans
+le chat) était possible. Réponse donnée et **non implémentée par choix** : techniquement faisable
+(Commerce Manager + synchronisation Firestore → Catalog API + nouveau type de message `order` à
+gérer dans `parser.js`/`router.js`), mais le catalogue natif WhatsApp est conçu pour **un seul
+marchand** — le représenter proprement pour un marketplace multi-restaurants comme Viteat demande
+un contournement, pas un usage naturel. Recommandation faite : garder l'approche actuelle (listes
+et boutons personnalisés, contrôle total multi-restaurants) sauf demande client répétée qui
+justifierait le chantier. **À reconsidérer seulement si ce signal apparaît.**
+
+### Agent conversationnel (Phase 1) — livré et déployé
+
+Constat de départ : `gemini.js#processFreeText` recevait **uniquement le message courant**
+(`contents: text`), et `router.js` ne lui transmettait même pas l'état de session. Gemini ne savait
+donc rien de ce que le client venait de dire ni de l'avancement de sa commande.
+
+**Décision structurante** : le pipeline déterministe (boutons) reste la **source de vérité**.
+Gemini devient *conscient de l'étape* mais ne la *pilote jamais* — un LLM ne doit pas pouvoir
+décider qu'un paiement est passé. L'étape est recalculée depuis Firestore à chaque tour, jamais
+mémorisée par le modèle. Corollaire assumé : pas de tool `get_conversation_state`, l'état est
+injecté automatiquement, ce qui est plus fiable qu'un appel dont le modèle prend l'initiative.
+
+- `whatsapp/pipeline.js` (nouveau, module feuille — **ne doit jamais importer `cart.js` ni
+  `sender.js`**, cycle de require) : `computeStage` (8 étapes), `buttonsForStage`,
+  `describeKnownFacts`, `loadStageContext`.
+- Mémoire : 30 derniers messages via `repository.js#getRecentMessages(sessionId)`, index composite
+  `whatsappMessages` (`sessionId` ASC + `createdAt` DESC) ajouté à `Firebase Indexing` et déployé.
+  L'appel est en `.catch(() => [])` : si l'index tombe, Gemini répond sans historique au lieu de
+  planter.
+- Tools ajoutés : `update_customer_notes` (allergies, préférences, résumé — plafonnés à 8 entrées)
+  et `list_restaurants` (avec horaires réels et `openNow`).
+- Boutons contextuels selon l'étape, **sans aucun nouvel identifiant à router**. Accueil conscient
+  de l'état, handoff automatique après 3 échecs Gemini avec ticket enrichi.
+- **Piège documenté dans les tests** : `session.activeOrderId` n'est jamais effacé par
+  `checkout.js`. Sans le TTL de 6 h sur `ORDER_ENDED`, une commande livrée il y a trois semaines
+  ferait éternellement répondre « votre commande a été livrée ».
+
+Plan complet : `~/.claude/plans/bright-herding-summit.md`.
+
+### Parcours de commande complété
+
+- **Panier** : modification des quantités, suppression, vidage avec confirmation. La fiche article
+  est une **liste** et non des boutons : Meta plafonne à 3 boutons, or il fallait aussi une porte
+  de sortie.
+- **Annulation de commande** : automatique uniquement en Cash et avant acceptation du restaurant
+  (stock restitué). Mobile Money déjà encaissé ou restaurant engagé → support humain, car
+  `products/flexpay.js` **n'expose ni `refund` ni `cancel`** — ne jamais promettre un remboursement
+  que le système ne sait pas exécuter.
+- **Portes de sortie** ajoutées à chaque étape où le client pouvait rester bloqué.
+
+### Neuf bugs bloquants trouvés en production — aucun détecté par les tests automatisés
+
+Tous sont sortis de vrais échanges WhatsApp relus dans le journal admin. C'est la méthode qui a
+fonctionné cette session ; les 46 tests unitaires n'en ont attrapé aucun.
+
+| Bug | Cause réelle | Impact |
+| --- | --- | --- |
+| Panier à usage unique | `createOrderForCheckout` laisse le panier en `CHECKED_OUT`, l'id du panier est stable par client, `addProduct` refusait tout statut ≠ `ACTIVE` | **Tout client ayant commandé une fois ne pouvait plus jamais rien commander** |
+| Liaison de compte | `createWhatsAppLinkCode` lisait `phoneNumber` sans `countryCode`, stockés séparément | Les 28 comptes congolais réels, sans exception |
+| Recherche produits | `.limit(100)` sans `orderBy` sur 156 produits | Gemini niait l'existence de produits réels |
+| Position sans nom | `label: undefined` refusé par Firestore | Crash + rejeu du webhook par Meta en boucle |
+| Image produit | Parenthèses non échappées dans l'URL Storage | Meta rejetait l'envoi (erreur 131053) |
+| Taxes | `TAX_COUNTRY_REQUIRED` levé sans issue possible | Boucle infinie : rien n'enregistre de pays de livraison |
+| Format de date | Regex trop stricte | « 2026-09-6 14h01 » rejeté, sans porte de sortie |
+| Impasses | Aucun bouton de retour | Client bloqué dès qu'il changeait d'avis |
+| Régression `createdAt` | En repartant d'un panier `CHECKED_OUT`, `current` était un objet neuf sans `createdAt` alors que `cartSnap.exists` restait vrai | Ajout au panier impossible — **régression introduite le jour même en corrigeant le bug précédent** |
+
+⚠️ **`undefined` dans une écriture Firestore a cassé le bot deux fois dans la même journée**
+(`deliveryLocation.label`, puis `createdAt`). Firestore refuse catégoriquement `undefined`, et
+l'erreur remonte comme un message générique qui masque la cause. Option non retenue faute
+d'accord : `admin.firestore().settings({ ignoreUndefinedProperties: true })` — supprimerait la
+classe de bug mais masquerait de vraies erreurs, et affecterait aussi les fonctions du programme
+livreur.
+
+### Nettoyage des données de démo (destructif, sauvegardé)
+
+La base contenait **21 restaurants dont un seul réel** (ROOSTY☑️, coordonnées de Goma). Les 15
+autres visibles étaient des restaurants du template en Inde, Malaisie, Suisse, Texas — et l'ajout
+de `list_restaurants` allait les faire proposer aux clients de Goma.
+
+Supprimés sur décision explicite de l'utilisateur, **après sauvegarde JSON locale** dans
+`Order Tracking Firebase Function/` : 20 restaurants, 122 produits, 4 coupons, puis 21 produits
+orphelins (rattachés à des vendeurs inexistants). **167 documents**, deux fichiers de sauvegarde
+`backup-donnees-demo-2026-09-03.json` et `backup-produits-orphelins-2026-09-03.json`.
+
+Vérification faite avant suppression : 3 vendeurs sans nom ni coordonnées ont été contrôlés
+individuellement (titres vides, `reststatus: false`, numéros +91 et +966, créés en 2023-2024) —
+des inscriptions abandonnées du template, pas des restaurants congolais sans GPS.
+
+**Reste à nettoyer** : le menu de ROOSTY lui-même est majoritairement composé de plats du template
+à des prix invraisemblables (Margherita Pizza 450 $, Miso Ramen 420 $, Steak Tacos 350 $), avec des
+doublons (`Classic Beef Burger` ×2, `Steak Tacos` ×2, `Poulet entier` / `Poulet Entier `). Seul le
+restaurant sait ce qu'il sert réellement — à faire depuis le Restaurant Panel.
+
+### État git
+
+Tout est commité et mergé sur `master` de `Order Tracking Firebase Function` : `5471be0` (agent
+conversationnel, 14 fichiers, +1188/-107) puis `e655bb5` (correctif de la régression `createdAt`).
+**Ce dépôt n'a aucun remote** — sauvegarde locale uniquement, rien n'est poussé.
+
+### Pistes ouvertes issues de cette session
+
+- **Décision fiscale à trancher** : la seule taxe réelle est `TVA 16% — country: "DR Congo"`, mais
+  l'app Flutter compare ce champ au nom de pays renvoyé par le géocodeur (localisé : « RD Congo »,
+  « Democratic Republic of the Congo »…), qui n'égale quasiment jamais cette chaîne.
+  **Conséquence : Viteat ne facture aucune TVA, sur aucun canal.** Forcer la correspondance côté
+  WhatsApp seulement créerait deux prix pour le même repas — à trancher puis appliquer partout.
+- 20 des 21 taxes restantes sont des taxes de démo (Inde, États-Unis, Canada, Grèce, Australie).
+- Template `viteat_order_status` (id `1379585607060857`) toujours `PENDING` côté Meta. Une fois
+  `APPROVED` : renseigner `WHATSAPP_ORDER_STATUS_TEMPLATE` et redéployer `notifyWhatsAppOrderStatus`.
+- Le bouton « Ma commande » renvoie le statut brut Firestore (`In Transit`…), sans traduction ni
+  estimation de temps.
+- Hors périmètre de la Phase 1, à reprendre si besoin : filtrage réel par allergène (bloqué —
+  `vendor_products` n'a aucun champ allergène), détection fiable des contradictions, résumé
+  automatique au-delà de 30 messages, visibilité des nouveaux champs de session dans le panel admin.
+- `store.test.js` et les tests de règles Firestore toujours non exécutables (émulateur absent,
+  piste connue depuis le 2026-08-31).
