@@ -1,4 +1,5 @@
 import 'package:customer/services/location_service.dart';
+import 'package:customer/app/profile_screen/whatsapp_link_screen.dart';
 import 'package:customer/app/auth_screen/login_screen.dart';
 import 'package:customer/app/cashback_screen/cashback_offers_list.dart';
 import 'package:customer/app/change%20langauge/change_language_screen.dart';
@@ -100,6 +101,10 @@ class ProfileScreen extends StatelessWidget {
                                         : cardDecoration(themeChange, controller, "assets/images/ic_profile.svg", "Profile Information", () {
                                             Get.to(const EditProfileScreen());
                                           }),
+                                    if (Constant.userModel != null)
+                                      cardDecoration(themeChange, controller, "assets/icons/ic_share.svg", "Link WhatsApp", () {
+                                        Get.to(const WhatsAppLinkScreen());
+                                      }),
                                     if (Constant.isEnabledForCustomer == true)
                                       cardDecoration(themeChange, controller, "assets/images/ic_dinin.svg", "Dine-In", () {
                                         Get.to(const DineInScreen());
