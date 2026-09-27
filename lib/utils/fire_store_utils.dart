@@ -7,6 +7,7 @@ import 'package:customer/app/chat_screens/ChatVideoContainer.dart';
 import 'package:customer/constant/collection_name.dart';
 import 'package:customer/constant/constant.dart';
 import 'package:customer/services/location_service.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:customer/constant/show_toast_dialog.dart';
 import 'package:customer/controllers/gift_cards_model.dart';
 import 'package:customer/firebase_options.dart';
@@ -111,6 +112,25 @@ class FireStoreUtils {
     // SplashController.redirectScreen() applique son fallback offline-aware.
     final value = await fireStore.collection(CollectionName.users).doc(FirebaseAuth.instance.currentUser!.uid).get();
     return value.exists;
+  }
+
+  /// Renvoie l'URL du store si la version installee est plus ancienne que
+  /// `settings/Version.minCustomerBuildNumber`, sinon null. Ne bloque jamais
+  /// sur une erreur : une lecture ratee laisse passer l'utilisateur.
+  static Future<String?> requiredUpdateStoreUrl() async {
+    try {
+      final doc = await fireStore.collection(CollectionName.settings).doc('Version').get();
+      final int minBuild = int.tryParse('${doc.data()?['minCustomerBuildNumber'] ?? ''}') ?? 0;
+      if (minBuild <= 0) return null;
+      final PackageInfo info = await PackageInfo.fromPlatform();
+      final int currentBuild = int.tryParse(info.buildNumber) ?? 0;
+      if (currentBuild >= minBuild) return null;
+      final String url = '${doc.data()?['customerStoreUrl'] ?? ''}';
+      return url.isNotEmpty ? url : 'https://play.google.com/store/apps/details?id=${info.packageName}';
+    } catch (e) {
+      log("requiredUpdateStoreUrl error :: $e");
+      return null;
+    }
   }
 
   static Future<bool> isMaintenanceMode() async {

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:developer';
 import 'package:customer/app/auth_screen/login_screen.dart';
 import 'package:customer/app/dash_board_screens/dash_board_screen.dart';
+import 'package:customer/app/force_update_screen/force_update_screen.dart';
 import 'package:customer/app/help_support_screen/help_support_screen.dart';
 import 'package:customer/app/location_permission_screen/location_permission_screen.dart';
 import 'package:customer/app/maintenance_mode_screen/maintenance_mode_screen.dart';
@@ -65,13 +66,20 @@ class SplashController extends GetxController {
   Future<void> _redirectScreen() async {
     // isMaintenanceMode() et isLogin() sont indépendants — seule la logique de
     // branchement ci-dessous dépend de leurs résultats, pas leur exécution.
-    final List<bool> results = await Future.wait([
+    final List<Object?> results = await Future.wait<Object?>([
       FireStoreUtils.isMaintenanceMode(),
       FireStoreUtils.isLogin(),
+      FireStoreUtils.requiredUpdateStoreUrl(),
     ]);
-    final bool maintenanceMode = results[0];
-    final bool isLoginResult = results[1];
+    final bool maintenanceMode = results[0] == true;
+    final bool isLoginResult = results[1] == true;
+    final String? updateStoreUrl = results[2] as String?;
 
+    if (updateStoreUrl != null) {
+      // Version trop ancienne (ex. sans filtre des restaurants hors ligne).
+      Get.offAll(() => ForceUpdateScreen(storeUrl: updateStoreUrl));
+      return;
+    }
     if (maintenanceMode == true) {
       Get.offAll(() => MaintenanceModeScreen());
       return;
