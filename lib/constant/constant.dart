@@ -74,7 +74,6 @@ class Constant {
   static String placeHolderImage = "";
 
   static String senderId = '347811382179';
-  static String jsonNotificationFileURL = '';
 
   static bool isCashbackActive = false;
   static String defaultCountryCode = '';

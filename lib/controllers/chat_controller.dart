@@ -99,13 +99,8 @@ class ChatController extends GetxController {
     }
 
     await FireStoreUtils.addChat(conversationModel);
-    print("sendChatFcmMessage ::11:: ${receivedName.value} :: ${conversationModel.message} :: ${receiverUser?.fcmToken}");
-    print("sendChatFcmMessage ::22:: ${inboxModel.type} :: ${inboxModel.chatType} :: $orderId :: ${conversationModel.senderId}");
-    await SendNotification.sendChatFcmMessage(
-        title: receivedName.value,
-        message: conversationModel.message.toString(),
-        token: receiverUser?.fcmToken ?? '',
-        payload: {'type': inboxModel.type, 'chatType': inboxModel.chatType, 'orderId': orderId, 'senderId': conversationModel.senderId});
+    await SendNotification.chat(
+        targetUserId: receivedId.value, message: conversationModel.message.toString(), chatType: inboxModel.chatType, orderId: orderId.value);
   }
 
   final ImagePicker imagePicker = ImagePicker();

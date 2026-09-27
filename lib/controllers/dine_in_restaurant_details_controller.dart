@@ -79,7 +79,7 @@ class DineInRestaurantDetailsController extends GetxController {
           totalGuest: noOfQuantity.value.toString(),
           firstVisit: firstVisit.value);
       await FireStoreUtils.setBookedOrder(dineInBookingModel);
-      await SendNotification.sendFcmMessage(Constant.dineInPlaced, vendorModel.value.fcmToken.toString(), {});
+      await SendNotification.dineInPlaced(bookingId: dineInBookingModel.id.toString());
       ShowToastDialog.closeLoader();
       Get.back();
       selectedDate.value = Timestamp.now();

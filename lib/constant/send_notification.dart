@@ -1,142 +1,34 @@
-// ignore_for_file: non_constant_identifier_names
+import 'package:customer/services/server_api.dart';
 
-import 'dart:convert';
-import 'package:customer/constant/constant.dart';
-import 'package:customer/models/notification_model.dart';
-import 'package:customer/utils/fire_store_utils.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:googleapis_auth/auth_io.dart';
-import 'package:http/http.dart' as http;
-
+/// Façade des notifications push.
+///
+/// Les push FCM sont désormais envoyés par le serveur via la callable
+/// `v1_sendPush` : l'application ne télécharge plus la clé du compte de
+/// service (`serviceJson`) et ne contacte plus directement l'API FCM. Le
+/// titre et le corps sont construits côté serveur à partir du type, de la
+/// commande / réservation et des modèles de notification.
 class SendNotification {
-  static final _scopes = ['https://www.googleapis.com/auth/firebase.messaging'];
+  SendNotification._();
 
-  static Future getCharacters() {
-    return http.get(Uri.parse(Constant.jsonNotificationFileURL.toString()));
+  /// Nouvelle commande (client → restaurant) ; `scheduled` pour une commande
+  /// programmée.
+  static Future<bool> orderPlaced({required String orderId, bool scheduled = false}) {
+    return ServerApi.sendPush(type: scheduled ? 'schedule_order' : 'order_placed', orderId: orderId);
   }
 
-  static Future<String> getAccessToken() async {
-    Map<String, dynamic> jsonData = {};
-
-    await getCharacters().then((response) {
-      jsonData = json.decode(response.body);
-    });
-    final serviceAccountCredentials = ServiceAccountCredentials.fromJson(jsonData);
-    final client = await clientViaServiceAccount(serviceAccountCredentials, _scopes);
-    return client.credentials.accessToken.data;
+  /// Annulation d'une commande par le client (client → restaurant).
+  static Future<bool> customerCancelled({required String orderId}) {
+    return ServerApi.sendPush(type: 'customer_cancelled', orderId: orderId);
   }
 
-  static Future<bool> sendFcmMessage(String type, String token, Map<String, dynamic>? payload) async {
-    print(type);
-    try {
-      final String accessToken = await getAccessToken();
-      debugPrint("accessToken=======>");
-      debugPrint(accessToken);
-      NotificationModel? notificationModel = await FireStoreUtils.getNotificationContent(type);
-
-      final response = await http.post(
-        Uri.parse('https://fcm.googleapis.com/v1/projects/${Constant.senderId}/messages:send'),
-        headers: <String, String>{
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $accessToken',
-        },
-        body: jsonEncode(
-          <String, dynamic>{
-            'message': {
-              'token': token,
-              'notification': {'body': notificationModel?.message ?? '', 'title': notificationModel?.subject ?? ''},
-              'data': payload,
-            }
-          },
-        ),
-      );
-
-      debugPrint("Notification=======>");
-      debugPrint(response.statusCode.toString());
-      debugPrint(response.body);
-      return true;
-    } catch (e) {
-      debugPrint(e.toString());
-      return false;
-    }
+  /// Nouvelle réservation dine-in (client → restaurant).
+  static Future<bool> dineInPlaced({required String bookingId}) {
+    return ServerApi.sendPush(type: 'dinein_placed', bookingId: bookingId);
   }
 
-  static Future<bool> sendOneNotification({required String token, required String title, required String body, required Map<String, dynamic> payload}) async {
-    try {
-      final String accessToken = await getAccessToken();
-      debugPrint("accessToken=======>");
-      debugPrint(accessToken);
-
-      final response = await http.post(
-        Uri.parse('https://fcm.googleapis.com/v1/projects/${Constant.senderId}/messages:send'),
-        headers: <String, String>{
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $accessToken',
-        },
-        body: jsonEncode(
-          <String, dynamic>{
-            'message': {
-              'token': token,
-              'notification': {'body': body, 'title': title},
-              'data': payload,
-            }
-          },
-        ),
-      );
-
-      debugPrint("Notification=======>");
-      debugPrint(response.statusCode.toString());
-      debugPrint(response.body);
-      return true;
-    } catch (e) {
-      debugPrint(e.toString());
-      return false;
-    }
-  }
-
-  static Future<bool> sendChatFcmMessage({
-    required String title,
-    required String message,
-    required String token,
-    Map<String, dynamic>? payload,
-  }) async {
-    try {
-      final accessToken = await getAccessToken();
-
-      final uri = Uri.parse(
-        'https://fcm.googleapis.com/v1/projects/${Constant.senderId}/messages:send',
-      );
-
-      final body = {
-        'message': {
-          'token': token,
-          'notification': {
-            'title': title,
-            'body': message,
-          },
-          if (payload != null && payload.isNotEmpty) 'data': payload.map((k, v) => MapEntry(k, v.toString())),
-        }
-      };
-
-      final response = await http
-          .post(
-            uri,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
-            },
-            body: jsonEncode(body),
-          )
-          .timeout(const Duration(seconds: 10));
-
-      debugPrint('FCM Status Code: ${response.statusCode}');
-      debugPrint('FCM Response: ${response.body}');
-
-      return response.statusCode == 200;
-    } catch (e, stack) {
-      debugPrint('sendChatFcmMessage error: $e');
-      debugPrintStack(stackTrace: stack);
-      return false;
-    }
+  /// Message de chat : `targetUserId` = uid du destinataire ou id du
+  /// restaurant ; message tronqué à 500 caractères.
+  static Future<bool> chat({required String targetUserId, required String message, String? chatType, String? orderId}) {
+    return ServerApi.sendPush(type: 'chat', targetUserId: targetUserId, message: message, chatType: chatType, orderId: orderId);
   }
 }
