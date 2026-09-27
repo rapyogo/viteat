@@ -95,8 +95,13 @@ class SignupController extends GetxController {
         }
       });
 
-      await FireStoreUtils.updateUser(userModel.value).then(
+      await FireStoreUtils.createUser(userModel.value).then(
         (value) {
+          if (value != true) {
+            ShowToastDialog.closeLoader();
+            ShowToastDialog.showToast("Something went wrong, please try again.");
+            return;
+          }
           if (userModel.value.shippingAddress != null && userModel.value.shippingAddress!.isNotEmpty) {
             if (userModel.value.shippingAddress!.where((element) => element.isDefault == true).isNotEmpty) {
               Constant.selectedLocation = userModel.value.shippingAddress!.where((element) => element.isDefault == true).single;
@@ -141,8 +146,13 @@ class SignupController extends GetxController {
             }
           });
 
-          await FireStoreUtils.updateUser(userModel.value).then(
+          await FireStoreUtils.createUser(userModel.value).then(
             (value) async {
+              if (value != true) {
+                ShowToastDialog.closeLoader();
+                ShowToastDialog.showToast("Something went wrong, please try again.");
+                return;
+              }
               if (userModel.value.shippingAddress != null && userModel.value.shippingAddress!.isNotEmpty) {
                 if (userModel.value.shippingAddress!.where((element) => element.isDefault == true).isNotEmpty) {
                   Constant.selectedLocation = userModel.value.shippingAddress!.where((element) => element.isDefault == true).single;

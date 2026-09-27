@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:math' as maths;
 import 'package:cloud_firestore/cloud_firestore.dart' hide Constant;
+import 'package:customer/services/server_api.dart';
 import 'package:customer/app/cart_screen/oder_placing_screens.dart';
 import 'package:customer/app/wallet_screen/wallet_screen.dart';
 import 'package:customer/constant/constant.dart';
@@ -41,7 +42,6 @@ import 'package:customer/models/payment_model/xendit.dart';
 import 'package:customer/models/product_model.dart';
 import 'package:customer/models/user_model.dart';
 import 'package:customer/models/vendor_model.dart';
-import 'package:customer/models/wallet_transaction_model.dart';
 import 'package:customer/payment/MercadoPagoScreen.dart';
 import 'package:customer/payment/PayFastScreen.dart';
 import 'package:customer/payment/flexpay_payment_screen.dart';
@@ -689,13 +689,14 @@ class CartController extends GetxController {
     ShowToastDialog.closeLoader();
     ShowToastDialog.showLoader("Please wait");
     if ((Constant.isSubscriptionModelApplied == true || Constant.adminCommission?.isEnabled == true) && vendorModel.value.subscriptionPlan != null) {
-      await FireStoreUtils.getVendorById(vendorModel.value.id!).then((vender) async {
-        if (vender?.subscriptionTotalOrders == '0' || vender?.subscriptionTotalOrders == null) {
-          ShowToastDialog.closeLoader();
-          ShowToastDialog.showToast("This vendor has reached their maximum order capacity. Please select a different vendor or try again later.");
-          return;
-        }
-      });
+      // Correctif : le `return` était dans un `then` et ne stoppait pas
+      // setOrder — la commande était créée malgré la capacité atteinte.
+      final vender = await FireStoreUtils.getVendorById(vendorModel.value.id!);
+      if (vender?.subscriptionTotalOrders == '0' || vender?.subscriptionTotalOrders == null) {
+        ShowToastDialog.closeLoader();
+        ShowToastDialog.showToast("This vendor has reached their maximum order capacity. Please select a different vendor or try again later.");
+        return;
+      }
     }
 
     for (CartProductModel cartProduct in cartItem) {
@@ -741,25 +742,27 @@ class CartController extends GetxController {
     orderModel.isPosOrder = false;
     orderModel.vendor?.packagingCharge = packagingCharge.value.toString();
 
-    if (selectedPaymentMethod.value == PaymentGateway.wallet.name) {
-      WalletTransactionModel transactionModel = WalletTransactionModel(
-          id: Constant.getUuid(),
-          amount: double.parse(totalAmount.value.toString()),
-          date: Timestamp.now(),
-          paymentMethod: PaymentGateway.wallet.name,
-          transactionUser: "user",
-          userId: FireStoreUtils.getCurrentUid(),
-          isTopup: false,
-          orderId: orderModel.id,
-          note: "Order Amount debited",
-          paymentStatus: "success");
-
-      await FireStoreUtils.setWalletTransaction(transactionModel).then((value) async {
-        if (value == true) {
-          await FireStoreUtils.updateUserWallet(amount: "-${totalAmount.value.toString()}", userId: FireStoreUtils.getCurrentUid()).then((value) {});
-        }
-      });
+    // 1) Création de la commande D'ABORD (statut Order Placed).
+    final bool? isOrderCreated = await FireStoreUtils.setOrder(orderModel);
+    if (isOrderCreated != true) {
+      ShowToastDialog.closeLoader();
+      ShowToastDialog.showToast("Something went wrong, please try again.");
+      return;
     }
+
+    // 2) Paiement wallet par le serveur (débit + transaction). En cas
+    // d'échec, la commande est supprimée et l'erreur affichée.
+    if (selectedPaymentMethod.value == PaymentGateway.wallet.name) {
+      try {
+        await ServerApi.walletPayOrder(orderModel.id.toString());
+      } catch (e) {
+        await FireStoreUtils.deleteOrder(orderModel.id.toString());
+        ShowToastDialog.closeLoader();
+        ShowToastDialog.showToast(ServerApi.errorMessage(e));
+        return;
+      }
+    }
+
     for (int i = 0; i < tempProduc.length; i++) {
       await FireStoreUtils.getProductById(tempProduc[i].id!.split('~').first).then((value) async {
         ProductModel? productModel = value;
@@ -797,23 +800,10 @@ class CartController extends GetxController {
       await FireStoreUtils.setCashbackRedeemModel(cashbackRedeemModel);
     }
     Constant.sendOrderEmail(orderModel: orderModel);
-    await FireStoreUtils.getUserProfile(orderModel.vendor!.author.toString()).then(
-      (value) async {
-        if (value != null) {
-          if (orderModel.scheduleTime != null) {
-            SendNotification.sendFcmMessage(Constant.scheduleOrder, value.fcmToken ?? '', {});
-          } else {
-            SendNotification.sendFcmMessage(Constant.newOrderPlaced, value.fcmToken ?? '', {});
-          }
-        }
-      },
-    );
-    await FireStoreUtils.setOrder(orderModel).then(
-      (value) async {
-        ShowToastDialog.closeLoader();
-        Get.off(const OrderPlacingScreen(), arguments: {"orderModel": orderModel});
-      },
-    );
+    // Push au restaurant envoyé par le serveur (la commande existe déjà).
+    SendNotification.orderPlaced(orderId: orderModel.id.toString(), scheduled: orderModel.scheduleTime != null);
+    ShowToastDialog.closeLoader();
+    Get.off(const OrderPlacingScreen(), arguments: {"orderModel": orderModel});
   }
 
   Rx<WalletSettingModel> walletSettingModel = WalletSettingModel().obs;

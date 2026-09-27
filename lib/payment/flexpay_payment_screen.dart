@@ -27,7 +27,19 @@ class FlexPayPaymentScreen extends StatefulWidget {
   // retour de cet écran : on ne retarde pas la redirection automatique.
   final bool isWalletTopUp;
 
-  const FlexPayPaymentScreen({super.key, required this.flexPaySettings, required this.amount, required this.currency, this.isWalletTopUp = false});
+  /// Finalité transmise à `initiateMobileMoneyPayment` : 'order',
+  /// 'wallet_topup', 'subscription' ou 'giftcard'. Par défaut : 'wallet_topup'
+  /// si [isWalletTopUp], sinon 'order'.
+  final String? purpose;
+
+  /// Appelé avec la référence FlexPay une fois le paiement confirmé
+  /// (nécessaire pour `v1_walletTopUpConfirm` / `v1_walletBuyGiftCard`).
+  final ValueChanged<String>? onReference;
+
+  const FlexPayPaymentScreen(
+      {super.key, required this.flexPaySettings, required this.amount, required this.currency, this.isWalletTopUp = false, this.purpose, this.onReference});
+
+  String get effectivePurpose => purpose ?? (isWalletTopUp ? 'wallet_topup' : 'order');
 
   @override
   State<FlexPayPaymentScreen> createState() => _FlexPayPaymentScreenState();
@@ -102,6 +114,8 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
 
   void _onSuccess() {
     _timeoutTimer?.cancel();
+    if (_state == _FlexPayState.success) return;
+    if (_reference != null) widget.onReference?.call(_reference!);
     setState(() => _state = _FlexPayState.success);
     _successRedirectTimer?.cancel();
     _successRedirectTimer = Timer(Duration(seconds: widget.isWalletTopUp ? 30 : 2), () {
@@ -148,6 +162,7 @@ class _FlexPayPaymentScreenState extends State<FlexPayPaymentScreen> {
         'phone': phone,
         'amount': widget.amount,
         'currency': widget.currency,
+        'purpose': widget.effectivePurpose,
       });
 
       final reference = result.data['reference'] as String;

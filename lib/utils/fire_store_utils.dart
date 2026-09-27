@@ -214,30 +214,34 @@ class FireStoreUtils {
     return userModel;
   }
 
-  static Future<bool?> updateUserWallet({required String amount, required String userId}) async {
-    bool isAdded = false;
-    await getUserProfile(userId).then((value) async {
-      if (value != null) {
-        UserModel userModel = value;
-        userModel.walletAmount = (double.parse(userModel.walletAmount.toString()) + double.parse(amount));
-        await FireStoreUtils.updateUser(userModel).then((value) {
-          isAdded = value;
-        });
-      }
-    });
-    return isAdded;
+  /// Mise à jour du profil de l'utilisateur courant : `update()` des seuls
+  /// champs de profil (les champs serveur role, vendorID, active,
+  /// employeePermissionId, wallet_amount, isDocumentVerify ne sont jamais
+  /// envoyés — règle `users` stricte).
+  static Future<bool> updateUser(UserModel userModel) async {
+    try {
+      await fireStore.collection(CollectionName.users).doc(userModel.id).update(userModel.toProfileJson());
+      Constant.userModel = userModel;
+      return true;
+    } catch (error) {
+      log("Failed to update user: $error");
+      return false;
+    }
   }
 
-  static Future<bool> updateUser(UserModel userModel) async {
-    bool isUpdate = false;
-    await fireStore.collection(CollectionName.users).doc(userModel.id).set(userModel.toJson()).whenComplete(() {
+  /// Création du document `users` d'un nouveau client (role customer,
+  /// active true, sans champ serveur).
+  static Future<bool> createUser(UserModel userModel) async {
+    try {
+      userModel.role = Constant.userRoleCustomer;
+      userModel.active = true;
+      await fireStore.collection(CollectionName.users).doc(userModel.id).set(userModel.toCreateJson());
       Constant.userModel = userModel;
-      isUpdate = true;
-    }).catchError((error) {
-      log("Failed to update user: $error");
-      isUpdate = false;
-    });
-    return isUpdate;
+      return true;
+    } catch (error) {
+      log("Failed to create user: $error");
+      return false;
+    }
   }
 
   static Future<List<OnBoardingModel>> getOnBoardingList() async {
@@ -265,17 +269,6 @@ class FireStoreUtils {
       }
     });
     return giftCardModelList;
-  }
-
-  static Future<bool?> setWalletTransaction(WalletTransactionModel walletTransactionModel) async {
-    bool isAdded = false;
-    await fireStore.collection(CollectionName.wallet).doc(walletTransactionModel.id).set(walletTransactionModel.toJson()).then((value) {
-      isAdded = true;
-    }).catchError((error) {
-      log("Failed to update user: $error");
-      isAdded = false;
-    });
-    return isAdded;
   }
 
   static Future<void> getSettings() async {
@@ -445,12 +438,8 @@ class FireStoreUtils {
         }
       });
 
-      fireStore.collection(CollectionName.settings).doc("notification_setting").snapshots().listen((event) {
-        if (event.exists) {
-          Constant.senderId = event.data()?["projectId"];
-          Constant.jsonNotificationFileURL = event.data()?["serviceJson"];
-        }
-      });
+      // Les notifications push sont envoyées par le serveur (v1_sendPush) :
+      // plus de lecture de la clé de compte de service (serviceJson).
     } catch (e) {
       log(e.toString());
     }
@@ -1121,6 +1110,17 @@ class FireStoreUtils {
     return isAdded;
   }
 
+  /// Suppression d'une commande dont le paiement wallet a échoué.
+  static Future<bool> deleteOrder(String orderId) async {
+    try {
+      await fireStore.collection(CollectionName.restaurantOrders).doc(orderId).delete();
+      return true;
+    } catch (error) {
+      log("Failed to delete order: $error");
+      return false;
+    }
+  }
+
   static Future<bool?> setCashbackRedeemModel(CashbackRedeemModel cashbackRedeemModel) async {
     bool isAdded = false;
     await fireStore.collection(CollectionName.cashbackRedeem).doc(cashbackRedeemModel.id).set(cashbackRedeemModel.toJson()).then((value) {
@@ -1254,22 +1254,9 @@ class FireStoreUtils {
     return giftCardModelList;
   }
 
-  static Future<GiftCardsOrderModel> placeGiftCardOrder(GiftCardsOrderModel giftCardsOrderModel) async {
-    print("=====>");
-    print(giftCardsOrderModel.toJson());
-    await fireStore.collection(CollectionName.giftPurchases).doc(giftCardsOrderModel.id).set(giftCardsOrderModel.toJson());
-    return giftCardsOrderModel;
-  }
-
-  static Future<GiftCardsOrderModel?> checkRedeemCode(String giftCode) async {
-    GiftCardsOrderModel? giftCardsOrderModel;
-    await fireStore.collection(CollectionName.giftPurchases).where("giftCode", isEqualTo: giftCode).get().then((value) {
-      if (value.docs.isNotEmpty) {
-        giftCardsOrderModel = GiftCardsOrderModel.fromJson(value.docs.first.data());
-      }
-    });
-    return giftCardsOrderModel;
-  }
+  // placeGiftCardOrder / checkRedeemCode supprimés : l'achat et le rachat
+  // de cartes cadeaux passent par v1_walletBuyGiftCard / v1_walletRedeemGiftCard
+  // (écriture client interdite sur gift_purchases).
 
   static Future<EmailTemplateModel?> getEmailTemplates(String type) async {
     EmailTemplateModel? emailTemplateModel;

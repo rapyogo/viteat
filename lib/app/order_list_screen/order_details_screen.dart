@@ -1,8 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart' hide Constant;
+import 'package:customer/services/server_api.dart';
 import 'package:customer/app/chat_screens/chat_screen.dart';
 import 'package:customer/app/order_list_screen/live_tracking_screen.dart';
 import 'package:customer/app/rate_us_screen/rate_product_screen.dart';
-import 'package:customer/constant/collection_name.dart';
 import 'package:customer/constant/constant.dart';
 import 'package:customer/constant/send_notification.dart';
 import 'package:customer/constant/show_toast_dialog.dart';
@@ -10,7 +9,6 @@ import 'package:customer/controllers/order_details_controller.dart';
 import 'package:customer/models/cart_product_model.dart';
 import 'package:customer/models/user_model.dart';
 import 'package:customer/models/vendor_model.dart';
-import 'package:customer/models/wallet_transaction_model.dart';
 import 'package:customer/themes/app_them_data.dart';
 import 'package:customer/themes/responsive.dart';
 import 'package:customer/themes/round_button_fill.dart';
@@ -24,7 +22,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:timelines_plus/timelines_plus.dart';
-import 'package:uuid/uuid.dart';
 
 class OrderDetailsScreen extends StatelessWidget {
   const OrderDetailsScreen({super.key});
@@ -1285,28 +1282,28 @@ class OrderDetailsScreen extends StatelessWidget {
                         height: 5,
                         onPress: () async {
                           ShowToastDialog.showLoader('Please wait...');
-                          controller.orderModel.value.status = Constant.orderCancelled;
-                          await FireStoreUtils.setOrder(controller.orderModel.value);
-                          UserModel? vendorUserModel = await FireStoreUtils.getUserProfile(controller.orderModel.value.vendor?.author ?? '');
-                          SendNotification.sendFcmMessage(Constant.customerCancelled, vendorUserModel?.fcmToken ?? '', {});
-                          if (controller.orderModel.value.paymentMethod!.toLowerCase() != 'cod') {
-                            WalletTransactionModel historyModel = WalletTransactionModel(
-                                amount: controller.totalAmount.value,
-                                id: const Uuid().v4(),
-                                orderId: controller.orderModel.value.id,
-                                userId: controller.orderModel.value.author?.id,
-                                date: Timestamp.now(),
-                                isTopup: true,
-                                paymentMethod: "Wallet",
-                                paymentStatus: "success",
-                                note: "Order Refund success",
-                                transactionUser: "user");
-
-                            await FireStoreUtils.fireStore.collection(CollectionName.wallet).doc(historyModel.id).set(historyModel.toJson());
-                            await FireStoreUtils.updateUserWallet(amount: controller.totalAmount.value.toString(), userId: controller.orderModel.value.author!.id.toString());
+                          // Annulation + remboursement wallet faits par le serveur :
+                          // on n'écrit PAS le statut avant (le serveur pose Order Cancelled).
+                          final String orderId = controller.orderModel.value.id.toString();
+                          Map<String, dynamic> refund;
+                          try {
+                            refund = await ServerApi.walletRefundOrder(orderId);
+                          } catch (e) {
+                            ShowToastDialog.closeLoader();
+                            ShowToastDialog.showToast(ServerApi.errorMessage(e));
+                            return;
                           }
+                          controller.orderModel.value.status = (refund['status'] ?? Constant.orderCancelled).toString();
+                          SendNotification.customerCancelled(orderId: orderId);
                           ShowToastDialog.closeLoader();
-                          ShowToastDialog.showToast("You have successfully canceled your order.");
+                          if (refund['manualRefundRequired'] == true) {
+                            ShowToastDialog.showToast(
+                                "Your order has been cancelled. Your payment will be refunded manually by our team.");
+                          } else if (refund['refunded'] == true || refund['alreadyRefunded'] == true) {
+                            ShowToastDialog.showToast("You have successfully canceled your order. The amount has been refunded to your wallet.");
+                          } else {
+                            ShowToastDialog.showToast("You have successfully canceled your order.");
+                          }
                           Get.back(result: true);
                         },
                       ),

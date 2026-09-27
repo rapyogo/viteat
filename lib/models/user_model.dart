@@ -160,6 +160,27 @@ class UserModel {
     data['isAutoVerify'] = isAutoVerify;
     return data;
   }
+
+  /// Champs de `users` gérés exclusivement par le serveur : les règles
+  /// Firestore refusent toute écriture client qui les modifie.
+  static const List<String> serverManagedFields = ['role', 'vendorID', 'active', 'employeePermissionId', 'wallet_amount', 'isDocumentVerify'];
+
+  /// Champs de profil modifiables par le client (mise à jour de son propre
+  /// document) : sans les champs serveur.
+  Map<String, dynamic> toProfileJson() {
+    final Map<String, dynamic> data = toJson();
+    data.removeWhere((key, value) => serverManagedFields.contains(key));
+    return data;
+  }
+
+  /// Document de création d'un compte client : role customer, active true,
+  /// sans vendorID / employeePermissionId / isDocumentVerify / wallet_amount.
+  Map<String, dynamic> toCreateJson() {
+    final Map<String, dynamic> data = toProfileJson();
+    data['role'] = Constant.userRoleCustomer;
+    data['active'] = true;
+    return data;
+  }
 }
 
 class UserLocation {
