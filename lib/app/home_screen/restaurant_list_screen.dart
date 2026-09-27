@@ -10,6 +10,7 @@ import 'package:customer/utils/fire_store_utils.dart';
 import 'package:customer/widget/restaurant_image_view.dart';
 import 'package:flutter/material.dart';
 import 'package:customer/widget/translated_text.dart';
+import 'package:customer/widget/verified_badge.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
@@ -270,16 +271,23 @@ class RestaurantListScreen extends StatelessWidget {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        TranslatedText(
-                                          vendorModel.title.toString(),
-                                          textAlign: TextAlign.start,
-                                          maxLines: 1,
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            overflow: TextOverflow.ellipsis,
-                                            fontFamily: AppThemeData.semiBold,
-                                            color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                                          ),
+                                        Row(
+                                          children: [
+                                            Flexible(
+                                              child: TranslatedText(
+                                                vendorModel.title.toString(),
+                                                textAlign: TextAlign.start,
+                                                maxLines: 1,
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  fontFamily: AppThemeData.semiBold,
+                                                  color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                                                ),
+                                              ),
+                                            ),
+                                            VerifiedBadge(isVerified: vendorModel.isVerified, size: 16),
+                                          ],
                                         ),
                                         TranslatedText(
                                           vendorModel.location.toString(),

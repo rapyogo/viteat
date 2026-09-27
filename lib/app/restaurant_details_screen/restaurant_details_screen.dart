@@ -22,6 +22,7 @@ import 'package:customer/utils/fire_store_utils.dart';
 import 'package:customer/utils/network_image_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:customer/widget/translated_text.dart';
+import 'package:customer/widget/verified_badge.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
@@ -304,17 +305,24 @@ class RestaurantDetailsScreen extends StatelessWidget {
                                           mainAxisAlignment: MainAxisAlignment.start,
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            TranslatedText(
-                                              controller.vendorModel.value.title.toString(),
-                                              textAlign: TextAlign.start,
-                                              maxLines: 1,
-                                              style: TextStyle(
-                                                fontSize: 22,
-                                                overflow: TextOverflow.ellipsis,
-                                                fontFamily: AppThemeData.semiBold,
-                                                fontWeight: FontWeight.w600,
-                                                color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                                              ),
+                                            Row(
+                                              children: [
+                                                Flexible(
+                                                  child: TranslatedText(
+                                                    controller.vendorModel.value.title.toString(),
+                                                    textAlign: TextAlign.start,
+                                                    maxLines: 1,
+                                                    style: TextStyle(
+                                                      fontSize: 22,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      fontFamily: AppThemeData.semiBold,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                                                    ),
+                                                  ),
+                                                ),
+                                                VerifiedBadge(isVerified: controller.vendorModel.value.isVerified, size: 18),
+                                              ],
                                             ),
                                             SizedBox(
                                               width: Responsive.width(78, context),

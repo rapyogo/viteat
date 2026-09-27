@@ -44,6 +44,7 @@ import 'package:customer/widget/restaurant_image_view.dart';
 import 'package:customer/widget/video_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:customer/widget/translated_text.dart';
+import 'package:customer/widget/verified_badge.dart';
 import 'package:flutter_map/flutter_map.dart' as flutterMap;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
@@ -977,16 +978,23 @@ class PopularRestaurant extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TranslatedText(
-                          vendorModel.title.toString(),
-                          textAlign: TextAlign.start,
-                          maxLines: 1,
-                          style: TextStyle(
-                            fontSize: 18,
-                            overflow: TextOverflow.ellipsis,
-                            fontFamily: AppThemeData.semiBold,
-                            color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: TranslatedText(
+                                vendorModel.title.toString(),
+                                textAlign: TextAlign.start,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  overflow: TextOverflow.ellipsis,
+                                  fontFamily: AppThemeData.semiBold,
+                                  color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                                ),
+                              ),
+                            ),
+                            VerifiedBadge(isVerified: vendorModel.isVerified, size: 16),
+                          ],
                         ),
                         TranslatedText(
                           vendorModel.location.toString(),
@@ -1254,16 +1262,23 @@ class AllRestaurant extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TranslatedText(
-                          vendorModel.title.toString(),
-                          textAlign: TextAlign.start,
-                          maxLines: 1,
-                          style: TextStyle(
-                            fontSize: 18,
-                            overflow: TextOverflow.ellipsis,
-                            fontFamily: AppThemeData.semiBold,
-                            color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: TranslatedText(
+                                vendorModel.title.toString(),
+                                textAlign: TextAlign.start,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  overflow: TextOverflow.ellipsis,
+                                  fontFamily: AppThemeData.semiBold,
+                                  color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                                ),
+                              ),
+                            ),
+                            VerifiedBadge(isVerified: vendorModel.isVerified, size: 16),
+                          ],
                         ),
                         TranslatedText(
                           vendorModel.location.toString(),
@@ -1400,16 +1415,23 @@ class NewArrival extends StatelessWidget {
                     const SizedBox(
                       height: 5,
                     ),
-                    TranslatedText(
-                      vendorModel.title.toString(),
-                      textAlign: TextAlign.start,
-                      maxLines: 1,
-                      style: TextStyle(
-                        fontSize: 16,
-                        overflow: TextOverflow.ellipsis,
-                        fontFamily: AppThemeData.semiBold,
-                        color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: TranslatedText(
+                            vendorModel.title.toString(),
+                            textAlign: TextAlign.start,
+                            maxLines: 1,
+                            style: TextStyle(
+                              fontSize: 16,
+                              overflow: TextOverflow.ellipsis,
+                              fontFamily: AppThemeData.semiBold,
+                              color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50,
+                            ),
+                          ),
+                        ),
+                        VerifiedBadge(isVerified: vendorModel.isVerified, size: 14),
+                      ],
                     ),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -1795,16 +1817,23 @@ class OfferView extends StatelessWidget {
                     const SizedBox(
                       height: 5,
                     ),
-                    TranslatedText(
-                      vendorModel.title.toString(),
-                      textAlign: TextAlign.start,
-                      maxLines: 1,
-                      style: TextStyle(
-                        fontSize: 16,
-                        overflow: TextOverflow.ellipsis,
-                        fontFamily: AppThemeData.semiBold,
-                        color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: TranslatedText(
+                            vendorModel.title.toString(),
+                            textAlign: TextAlign.start,
+                            maxLines: 1,
+                            style: TextStyle(
+                              fontSize: 16,
+                              overflow: TextOverflow.ellipsis,
+                              fontFamily: AppThemeData.semiBold,
+                              color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                            ),
+                          ),
+                        ),
+                        VerifiedBadge(isVerified: vendorModel.isVerified, size: 14),
+                      ],
                     ),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -2221,16 +2250,23 @@ class StoryView extends StatelessWidget {
                                           mainAxisAlignment: MainAxisAlignment.start,
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            TranslatedText(
-                                              vendorModel.title.toString(),
-                                              textAlign: TextAlign.center,
-                                              maxLines: 1,
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 12,
-                                                overflow: TextOverflow.ellipsis,
-                                                fontWeight: FontWeight.w700,
-                                              ),
+                                            Row(
+                                              children: [
+                                                Flexible(
+                                                  child: TranslatedText(
+                                                    vendorModel.title.toString(),
+                                                    textAlign: TextAlign.center,
+                                                    maxLines: 1,
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 12,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      fontWeight: FontWeight.w700,
+                                                    ),
+                                                  ),
+                                                ),
+                                                VerifiedBadge(isVerified: vendorModel.isVerified, size: 12),
+                                              ],
                                             ),
                                             Row(
                                               children: [
@@ -2557,16 +2593,23 @@ class MapView extends StatelessWidget {
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  TranslatedText(
-                                                    vendorModel.title.toString(),
-                                                    textAlign: TextAlign.start,
-                                                    maxLines: 1,
-                                                    style: TextStyle(
-                                                      fontSize: 18,
-                                                      overflow: TextOverflow.ellipsis,
-                                                      fontFamily: AppThemeData.semiBold,
-                                                      color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                                                    ),
+                                                  Row(
+                                                    children: [
+                                                      Flexible(
+                                                        child: TranslatedText(
+                                                          vendorModel.title.toString(),
+                                                          textAlign: TextAlign.start,
+                                                          maxLines: 1,
+                                                          style: TextStyle(
+                                                            fontSize: 18,
+                                                            overflow: TextOverflow.ellipsis,
+                                                            fontFamily: AppThemeData.semiBold,
+                                                            color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      VerifiedBadge(isVerified: vendorModel.isVerified, size: 16),
+                                                    ],
                                                   ),
                                                   TranslatedText(
                                                     vendorModel.location.toString(),
