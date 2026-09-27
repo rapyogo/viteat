@@ -1359,6 +1359,12 @@ class CartScreen extends StatelessWidget {
                                       ShowToastDialog.showToast("The total price must be greater than or equal to the special discount value for the code to apply. Please review your cart total.");
                                       return;
                                     }
+                                    // Restaurant mis hors ligne (isLive == false) depuis l'ajout au panier :
+                                    // on bloque AVANT tout paiement (jamais apres, sinon client debite sans commande).
+                                    if (!Constant.isVendorLive(controller.vendorModel.value)) {
+                                      ShowToastDialog.showToast("This restaurant is not available at the moment.");
+                                      return;
+                                    }
                                     if (Constant.statusCheckOpenORClose(vendorModel: controller.vendorModel.value) != true) {
                                       ShowToastDialog.showToast("The restaurant is closed at the moment. Please try placing your order later.");
                                       return;

@@ -674,6 +674,7 @@ class FireStoreUtils {
         for (var document in documentList) {
           final data = document.data() as Map<String, dynamic>;
           VendorModel vendorModel = VendorModel.fromJson(data);
+          if (!Constant.isVendorLive(vendorModel)) continue; // restaurant hors ligne
           if ((Constant.isSubscriptionModelApplied == true || Constant.adminCommission?.isEnabled == true) && vendorModel.subscriptionPlan != null) {
             if (vendorModel.subscriptionTotalOrders == "-1") {
               vendorList.add(vendorModel);
@@ -727,6 +728,7 @@ class FireStoreUtils {
         for (var document in documentList) {
           final data = document.data() as Map<String, dynamic>;
           VendorModel vendorModel = VendorModel.fromJson(data);
+          if (!Constant.isVendorLive(vendorModel)) continue; // restaurant hors ligne
           if ((Constant.isSubscriptionModelApplied == true || Constant.adminCommission?.isEnabled == true) && vendorModel.subscriptionPlan != null) {
             if (vendorModel.subscriptionTotalOrders == "-1") {
               vendorList.add(vendorModel);
@@ -1509,7 +1511,14 @@ class FireStoreUtils {
   }
 
   static Future<VendorModel?> updateVendor(VendorModel vendor) async {
-    return await fireStore.collection(CollectionName.vendors).doc(vendor.id).set(vendor.toJson()).then((document) {
+    // isLive / isVerified sont geres par le backend (regles Firestore : le client
+    // ne peut pas en changer la valeur). On ne les renvoie pas — une valeur lue
+    // en cache pourrait etre perimee et faire rejeter l'ecriture — et on fusionne
+    // (merge) pour ne jamais effacer ces champs ni ceux que le modele ignore.
+    final Map<String, dynamic> data = vendor.toJson()
+      ..remove('isLive')
+      ..remove('isVerified');
+    return await fireStore.collection(CollectionName.vendors).doc(vendor.id).set(data, SetOptions(merge: true)).then((document) {
       return vendor;
     });
   }

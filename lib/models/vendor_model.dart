@@ -47,6 +47,13 @@ class VendorModel {
   bool? isSelfDelivery;
   String? packagingCharge;
 
+  /// Visibilite calculee par le backend (contrats, KYC, suspension...).
+  /// null (champ absent) = visible ; seul `false` masque le restaurant.
+  bool? isLive;
+
+  /// Badge bleu « Restaurant verifie par Viteat ».
+  bool? isVerified;
+
   VendorModel(
       {this.author,
       this.dineInActive,
@@ -90,7 +97,9 @@ class VendorModel {
       this.subscriptionPlan,
       this.subscriptionTotalOrders,
       this.isSelfDelivery,
-      this.packagingCharge});
+      this.packagingCharge,
+      this.isLive,
+      this.isVerified});
 
   VendorModel.fromJson(Map<String, dynamic> json) {
     author = json['author'];
@@ -146,6 +155,8 @@ class VendorModel {
     subscriptionTotalOrders = json['subscriptionTotalOrders'];
     isSelfDelivery = json['isSelfDelivery'] ?? false;
     packagingCharge = json['packagingCharge'] ?? "0";
+    isLive = json['isLive'] is bool ? json['isLive'] as bool : null;
+    isVerified = json['isVerified'] is bool ? json['isVerified'] as bool : null;
   }
 
   Map<String, dynamic> toJson() {
@@ -205,6 +216,10 @@ class VendorModel {
     data['latitude'] = latitude;
     data['isSelfDelivery'] = isSelfDelivery ?? false;
     data['packagingCharge'] = packagingCharge;
+    // Champs geres par le backend : les regles Firestore refusent qu'un client
+    // en change la valeur. On ne les ecrit que s'ils ont ete lus, a l'identique.
+    if (isLive != null) data['isLive'] = isLive;
+    if (isVerified != null) data['isVerified'] = isVerified;
     return data;
   }
 }

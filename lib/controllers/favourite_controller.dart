@@ -48,7 +48,7 @@ class FavouriteController extends GetxController {
       );
       List<VendorModel> favouriteVendorData = [];
       for (final value in vendorResults) {
-        if (value != null) {
+        if (value != null && Constant.isVendorLive(value)) {
           if ((Constant.isSubscriptionModelApplied == true || Constant.adminCommission?.isEnabled == true) && value.subscriptionPlan != null) {
             if (value.subscriptionTotalOrders == "-1") {
               favouriteVendorData.add(value);
@@ -84,6 +84,8 @@ class FavouriteController extends GetxController {
     favouriteFoodList.value = removeDuplicateFoods(favouriteFoodData);
     favouriteVendorList.value = removeDuplicateVendor(favouriteVendorData);
     await _loadFoodVendorCache();
+    // Plats dont le restaurant est hors ligne (isLive == false) : non proposes.
+    favouriteFoodList.removeWhere((p) => !Constant.isVendorLive(foodVendorCache[p.vendorID]));
     isLoading.value = false;
   }
 

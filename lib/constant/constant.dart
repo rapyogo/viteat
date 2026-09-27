@@ -904,6 +904,14 @@ class Constant {
     return "${estimatedTime.toStringAsFixed(2)} minutes";
   }
 
+  /// Visibilite d'un restaurant pour le client (champ `isLive` ecrit par le backend :
+  /// contrats, KYC, suspension...). Seul `isLive == false` masque le restaurant :
+  /// un champ absent (null) = visible, pour rester compatible avec les documents
+  /// existants. A utiliser partout ou un restaurant est propose au client.
+  static bool isVendorLive(VendorModel? vendorModel) {
+    return vendorModel?.isLive != false;
+  }
+
   static bool statusCheckOpenORClose({required VendorModel vendorModel}) {
     final now = DateTime.now();
     var day = DateFormat('EEEE', 'en_US').format(now);

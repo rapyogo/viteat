@@ -401,7 +401,8 @@ class OrderScreen extends StatelessWidget {
                                   // perime) au lieu d'un FutureBuilder qui refetch a chaque rebuild de la liste.
                                   return Builder(builder: (context) {
                                     final VendorModel? vendorModel = controller.vendorCache[orderModel.vendorID];
-                                    if (vendorModel == null) {
+                                    // Restaurant hors ligne (isLive == false) : pas de re-commande.
+                                    if (vendorModel == null || !Constant.isVendorLive(vendorModel)) {
                                       return const SizedBox();
                                     } else {
                                       if ((Constant.isSubscriptionModelApplied == true || Constant.adminCommission?.isEnabled == true) && vendorModel.subscriptionPlan != null) {
