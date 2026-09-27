@@ -192,7 +192,10 @@ class PaymentListScreen extends StatelessWidget {
                       ShowToastDialog.showToast("Please Enter Amount");
                     } else {
                       log("controller.selectedPaymentMethod.value :: ${controller.selectedPaymentMethod.value} ");
-                      if (double.parse(controller.topUpAmountController.value.text) >= double.parse(Constant.minimumAmountToDeposit.toString())) {
+                      if (!controller.isTopUpMethodSupported) {
+                        // Recharge confirmée par le serveur : FlexPay uniquement.
+                        ShowToastDialog.showToast(WalletController.topUpUnsupportedMessage);
+                      } else if (double.parse(controller.topUpAmountController.value.text) >= double.parse(Constant.minimumAmountToDeposit.toString())) {
                         if (controller.selectedPaymentMethod.value == PaymentGateway.stripe.name) {
                           controller.stripeMakePayment(amount: controller.topUpAmountController.value.text);
                         } else if (controller.selectedPaymentMethod.value == PaymentGateway.paypal.name) {

@@ -204,6 +204,10 @@ class SelectGiftPaymentScreen extends StatelessWidget {
                                   visible: controller.payMongoModel.value.enable == true,
                                   child: cardDecoration(controller, PaymentGateway.payMongo, themeChange, "assets/images/payMongo.png"),
                                 ),
+                                Visibility(
+                                  visible: controller.flexPayModel.value.enable == true,
+                                  child: cardDecoration(controller, PaymentGateway.flexPay, themeChange, "assets/images/mtnmom.png"),
+                                ),
                               ],
                             ),
                           ),
@@ -225,7 +229,15 @@ class SelectGiftPaymentScreen extends StatelessWidget {
                 textColor: AppThemeData.grey50,
                 fontSizes: 16,
                 onPress: () async {
-                  if (controller.selectedPaymentMethod.value == PaymentGateway.stripe.name) {
+                  // Achat de carte cadeau : seuls le portefeuille et FlexPay
+                  // sont supportés par le serveur (v1_walletBuyGiftCard).
+                  if (!controller.isSupportedGiftPaymentMethod) {
+                    ShowToastDialog.showToast("Gift cards can only be purchased with your wallet or Mobile Money.");
+                    return;
+                  }
+                  if (controller.selectedPaymentMethod.value == PaymentGateway.flexPay.name) {
+                    controller.flexPayMakePayment(amount: controller.amountController.value.text);
+                  } else if (controller.selectedPaymentMethod.value == PaymentGateway.stripe.name) {
                     controller.stripeMakePayment(amount: controller.amountController.value.text);
                   } else if (controller.selectedPaymentMethod.value == PaymentGateway.paypal.name) {
                     controller.paypalPaymentSheet(controller.amountController.value.text, context);

@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:math' as maths;
 
-import 'package:cloud_firestore/cloud_firestore.dart' hide Constant;
+import 'package:customer/app/wallet_screen/wallet_screen.dart';
 import 'package:customer/constant/constant.dart';
 import 'package:customer/constant/show_toast_dialog.dart';
 import 'package:customer/controllers/cashfree_service_controller.dart';
@@ -33,6 +33,7 @@ import 'package:customer/models/wallet_transaction_model.dart';
 import 'package:customer/payment/MercadoPagoScreen.dart';
 import 'package:customer/payment/PayFastScreen.dart';
 import 'package:customer/payment/flexpay_payment_screen.dart';
+import 'package:customer/services/server_api.dart';
 import 'package:customer/payment/getPaytmTxtToken.dart';
 import 'package:customer/payment/midtrans_screen.dart';
 import 'package:customer/payment/mtn_momo_payment_screen.dart';
@@ -153,31 +154,33 @@ class WalletController extends GetxController {
     isLoading.value = false;
   }
 
-  Future<void> walletTopUp() async {
-    WalletTransactionModel transactionModel = WalletTransactionModel(
-        id: Constant.getUuid(),
-        amount: double.parse(topUpAmountController.value.text),
-        date: Timestamp.now(),
-        paymentMethod: selectedPaymentMethod.value,
-        transactionUser: "user",
-        userId: FireStoreUtils.getCurrentUid(),
-        isTopup: true,
-        note: "Wallet Top-up",
-        paymentStatus: "success");
-
-    final isTransactionAdded = await FireStoreUtils.setWalletTransaction(transactionModel);
-    if (isTransactionAdded == true) {
-      await FireStoreUtils.updateUserWallet(
-        amount: topUpAmountController.value.text,
-        userId: FireStoreUtils.getCurrentUid(),
-      );
-      await FireStoreUtils.sendTopUpMail(amount: topUpAmountController.value.text, paymentMethod: selectedPaymentMethod.value, tractionId: transactionModel.id ?? '');
+  /// Recharge du portefeuille : uniquement via FlexPay, confirmée par le
+  /// serveur (`v1_walletTopUpConfirm`) qui vérifie le paiement et crédite.
+  /// Les autres passerelles ne sont pas supportées pour la recharge (aucune
+  /// écriture client dans `wallet` ni dans users.wallet_amount).
+  Future<void> walletTopUp({String? reference}) async {
+    if (reference == null || reference.isEmpty) {
+      ShowToastDialog.closeLoader();
+      ShowToastDialog.showToast(topUpUnsupportedMessage);
+      return;
+    }
+    ShowToastDialog.showLoader("Please wait");
+    try {
+      await ServerApi.walletTopUpConfirm(reference);
       await getWalletTransaction();
       ShowToastDialog.closeLoader();
       Get.back();
       ShowToastDialog.showToast("Amount Top-up successfully");
+    } catch (e) {
+      ShowToastDialog.closeLoader();
+      ShowToastDialog.showToast(ServerApi.errorMessage(e));
     }
   }
+
+  static const String topUpUnsupportedMessage = "Wallet top-up is only available with Mobile Money (FlexPay).";
+
+  /// Seule FlexPay est supportée par le serveur pour la recharge.
+  bool get isTopUpMethodSupported => selectedPaymentMethod.value == PaymentGateway.flexPay.name;
 
   // Strip
   Future<void> stripeMakePayment({required String amount}) async {
@@ -854,15 +857,18 @@ class WalletController extends GetxController {
 
   Future<void> flexPayMakePayment({required String amount}) async {
     ShowToastDialog.closeLoader();
+    String? reference;
     Get.to(FlexPayPaymentScreen(
       flexPaySettings: flexPayModel.value,
       amount: double.parse(amount),
       currency: flexPayModel.value.currency ?? 'USD',
       isWalletTopUp: true,
+      purpose: 'wallet_topup',
+      onReference: (value) => reference = value,
     ))?.then((value) {
       if (value == true) {
         ShowToastDialog.showToast("Payment Successful!!");
-        walletTopUp();
+        walletTopUp(reference: reference);
       } else {
         ShowToastDialog.showToast("Payment UnSuccessful!!");
       }

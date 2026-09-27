@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math' as maths;
 import 'dart:math';
 
-import 'package:cloud_firestore/cloud_firestore.dart' hide Constant;
 import 'package:customer/app/gift_card/history_gift_card.dart';
 import 'package:customer/app/wallet_screen/wallet_screen.dart';
 import 'package:customer/constant/constant.dart';
@@ -13,7 +12,6 @@ import 'package:customer/controllers/gift_cards_model.dart';
 import 'package:customer/controllers/instamojo_service_controller.dart';
 import 'package:customer/controllers/mtnmomo_controller.dart';
 import 'package:customer/controllers/paymongo_controller.dart';
-import 'package:customer/models/gift_cards_order_model.dart';
 import 'package:customer/models/payment_model/cashfree_model.dart';
 import 'package:customer/models/payment_model/cod_setting_model.dart';
 import 'package:customer/models/payment_model/flutter_wave_model.dart';
@@ -34,7 +32,9 @@ import 'package:customer/models/payment_model/stripe_model.dart';
 import 'package:customer/models/payment_model/wallet_setting_model.dart';
 import 'package:customer/models/payment_model/xendit.dart';
 import 'package:customer/models/user_model.dart';
-import 'package:customer/models/wallet_transaction_model.dart';
+import 'package:customer/models/payment_model/flexpay_model.dart';
+import 'package:customer/payment/flexpay_payment_screen.dart';
+import 'package:customer/services/server_api.dart';
 import 'package:customer/payment/MercadoPagoScreen.dart';
 import 'package:customer/payment/PayFastScreen.dart';
 import 'package:customer/payment/getPaytmTxtToken.dart';
@@ -105,59 +105,67 @@ class GiftCardController extends GetxController {
     await getPaymentSettings();
   }
 
-  Future<void> placeOrder() async {
+  /// Moyens de paiement supportés par le serveur pour l'achat d'une carte
+  /// cadeau : portefeuille ou FlexPay (Mobile Money).
+  bool get isSupportedGiftPaymentMethod =>
+      selectedPaymentMethod.value == PaymentGateway.wallet.name || selectedPaymentMethod.value == PaymentGateway.flexPay.name;
+
+  Future<void> placeOrder({String? reference}) async {
     if (selectedPaymentMethod.value == PaymentGateway.wallet.name) {
       if (double.parse(userModel.value.walletAmount.toString()) >= double.parse(amountController.value.text)) {
         setOrder();
       } else {
         ShowToastDialog.showToast("You don't have sufficient wallet balance to purchase gift card");
       }
+    } else if (selectedPaymentMethod.value == PaymentGateway.flexPay.name && reference != null) {
+      setOrder(reference: reference);
     } else {
-      setOrder();
+      ShowToastDialog.closeLoader();
+      ShowToastDialog.showToast("Gift cards can only be purchased with your wallet or Mobile Money.");
     }
   }
 
-  Future<void> setOrder() async {
+  /// Achat par le serveur (`v1_walletBuyGiftCard`) : le serveur débite le
+  /// portefeuille ou vérifie le paiement FlexPay, génère code/PIN et crée
+  /// l'achat. Plus aucune écriture client dans `wallet` / `gift_purchases`.
+  Future<void> setOrder({String? reference}) async {
     ShowToastDialog.closeLoader();
     ShowToastDialog.showLoader("Please wait");
-    GiftCardsOrderModel giftCardsOrderModel = GiftCardsOrderModel();
-    giftCardsOrderModel.id = const Uuid().v4();
-    giftCardsOrderModel.giftId = selectedGiftCard.value.id.toString();
-    giftCardsOrderModel.giftTitle = selectedGiftCard.value.title.toString();
-    giftCardsOrderModel.price = amountController.value.text;
-    giftCardsOrderModel.redeem = false;
-    giftCardsOrderModel.message = messageController.value.text;
-    giftCardsOrderModel.giftPin = generateGiftPin();
-    giftCardsOrderModel.giftCode = generateGiftCode();
-    giftCardsOrderModel.paymentType = selectedPaymentMethod.value;
-    giftCardsOrderModel.createdDate = Timestamp.now();
-    DateTime dateTime = DateTime.now().add(Duration(days: int.parse(selectedGiftCard.value.expiryDay ?? "2")));
-    giftCardsOrderModel.expireDate = Timestamp.fromDate(dateTime);
-    giftCardsOrderModel.userid = FireStoreUtils.getCurrentUid();
-
-    if (selectedPaymentMethod.value == PaymentGateway.wallet.name) {
-      WalletTransactionModel transactionModel = WalletTransactionModel(
-          id: Constant.getUuid(),
-          amount: double.parse(amountController.value.text),
-          date: Timestamp.now(),
-          paymentMethod: PaymentGateway.wallet.name,
-          transactionUser: "user",
-          userId: FireStoreUtils.getCurrentUid(),
-          isTopup: false,
-          orderId: giftCardsOrderModel.id,
-          note: "Gift card purchase amount debited",
-          paymentStatus: "success");
-
-      await FireStoreUtils.setWalletTransaction(transactionModel).then((value) async {
-        if (value == true) {
-          await FireStoreUtils.updateUserWallet(amount: "-${amountController.value.text.toString()}", userId: FireStoreUtils.getCurrentUid()).then((value) {});
-        }
-      });
+    try {
+      final result = await ServerApi.walletBuyGiftCard(
+        giftId: selectedGiftCard.value.id.toString(),
+        amount: num.parse(amountController.value.text),
+        message: messageController.value.text,
+        paymentMethod: reference != null ? 'flexpay' : 'wallet',
+        reference: reference,
+        requestId: ServerApi.newRequestId(),
+      );
+      debugPrint("v1_walletBuyGiftCard => ${result['id']}");
+      ShowToastDialog.closeLoader();
+      Get.off(const HistoryGiftCard());
+      ShowToastDialog.showToast("Gift card Purchases successfully");
+    } catch (e) {
+      ShowToastDialog.closeLoader();
+      ShowToastDialog.showToast(ServerApi.errorMessage(e));
     }
-    await FireStoreUtils.placeGiftCardOrder(giftCardsOrderModel);
+  }
+
+  Future<void> flexPayMakePayment({required String amount}) async {
     ShowToastDialog.closeLoader();
-    Get.off(const HistoryGiftCard());
-    ShowToastDialog.showToast("Gift card Purchases successfully");
+    String? reference;
+    Get.to(FlexPayPaymentScreen(
+      flexPaySettings: flexPayModel.value,
+      amount: double.parse(amount),
+      currency: flexPayModel.value.currency ?? 'USD',
+      purpose: 'giftcard',
+      onReference: (value) => reference = value,
+    ))?.then((value) {
+      if (value == true && reference != null) {
+        placeOrder(reference: reference);
+      } else {
+        ShowToastDialog.showToast("Payment UnSuccessful!!");
+      }
+    });
   }
 
   String generateGiftCode() {
@@ -194,6 +202,7 @@ class GiftCardController extends GetxController {
   Rx<Foloosi> foloosiModel = Foloosi().obs;
   Rx<PayMongo> payMongoModel = PayMongo().obs;
   Rx<Cashfree> cashfreeModel = Cashfree().obs;
+  Rx<FlexPay> flexPayModel = FlexPay().obs;
 
   Rx<MidTrans> midTransModel = MidTrans().obs;
   Rx<OrangeMoney> orangeMoneyModel = OrangeMoney().obs;
@@ -221,6 +230,7 @@ class GiftCardController extends GetxController {
         foloosiModel.value = Foloosi.fromJson(jsonDecode(Preferences.getString(Preferences.foloosiSettings)));
         payMongoModel.value = PayMongo.fromJson(jsonDecode(Preferences.getString(Preferences.payMongoSettings)));
         cashfreeModel.value = Cashfree.fromJson(jsonDecode(Preferences.getString(Preferences.cashFreeSettings)));
+        flexPayModel.value = FlexPay.fromJson(jsonDecode(Preferences.getString(Preferences.flexPaySettings, defaultValue: '{}')));
         isLoadingPayment.value = false;
         walletSettingModel.value = WalletSettingModel.fromJson(jsonDecode(Preferences.getString(Preferences.walletSettings)));
         if (walletSettingModel.value.isEnabled == true) {

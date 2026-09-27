@@ -1,16 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart' hide Constant;
 import 'package:customer/app/dash_board_screens/dash_board_screen.dart';
 import 'package:customer/constant/constant.dart';
 import 'package:customer/constant/show_toast_dialog.dart';
 import 'package:customer/controllers/dash_board_controller.dart';
 import 'package:customer/controllers/redeem_gift_card_controller.dart';
-import 'package:customer/models/gift_cards_order_model.dart';
-import 'package:customer/models/wallet_transaction_model.dart';
 import 'package:customer/themes/app_them_data.dart';
 import 'package:customer/themes/round_button_fill.dart';
 import 'package:customer/themes/text_field_widget.dart';
 import 'package:customer/utils/dark_theme_provider.dart';
-import 'package:customer/utils/fire_store_utils.dart';
+import 'package:customer/services/server_api.dart';
 import 'package:flutter/material.dart';
 import 'package:customer/widget/translated_text.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -104,54 +101,24 @@ class RedeemGiftCardScreen extends StatelessWidget {
                       ShowToastDialog.showToast("Please Enter Gift Pin");
                     } else {
                       ShowToastDialog.showLoader("Please wait");
-                      await FireStoreUtils.checkRedeemCode(controller.giftCodeController.value.text.replaceAll(" ", "")).then((value) async {
-                        if (value != null) {
-                          GiftCardsOrderModel giftCodeModel = value;
-                          if (giftCodeModel.redeem == true) {
-                            ShowToastDialog.closeLoader();
-                            ShowToastDialog.showToast("Gift voucher already redeemed");
-                          } else if (giftCodeModel.giftPin != controller.giftPinController.value.text) {
-                            ShowToastDialog.closeLoader();
-                            ShowToastDialog.showToast("Gift Pin Invalid");
-                          } else if (giftCodeModel.expireDate!.toDate().isBefore(DateTime.now())) {
-                            ShowToastDialog.closeLoader();
-                            ShowToastDialog.showToast("Gift Voucher expire");
-                          } else {
-                            giftCodeModel.redeem = true;
-
-                            WalletTransactionModel transactionModel = WalletTransactionModel(
-                                id: Constant.getUuid(),
-                                amount: double.parse(giftCodeModel.price.toString()),
-                                date: Timestamp.now(),
-                                paymentMethod: "Wallet",
-                                transactionUser: "user",
-                                userId: FireStoreUtils.getCurrentUid(),
-                                isTopup: true,
-                                note: "Gift Voucher",
-                                paymentStatus: "success");
-
-                            await FireStoreUtils.setWalletTransaction(transactionModel).then((value) async {
-                              if (value == true) {
-                                await FireStoreUtils.updateUserWallet(amount: giftCodeModel.price.toString(), userId: FireStoreUtils.getCurrentUid()).then((value) async {
-                                  await FireStoreUtils.sendTopUpMail(paymentMethod: "Gift Voucher", amount: giftCodeModel.price.toString(), tractionId: transactionModel.id.toString());
-                                  await FireStoreUtils.placeGiftCardOrder(giftCodeModel).then((value) {
-                                    ShowToastDialog.closeLoader();
-                                    if (Constant.walletSetting == true) {
-                                      Get.offAll(const DashBoardScreen());
-                                      DashBoardController controller = Get.put(DashBoardController());
-                                      controller.selectedIndex.value = 2;
-                                    }
-                                    ShowToastDialog.showToast("Voucher redeem successfully");
-                                  });
-                                });
-                              }
-                            });
-                          }
-                        } else {
-                          ShowToastDialog.closeLoader();
-                          ShowToastDialog.showToast("Invalid Gift Code");
+                      // Vérification (code, PIN, expiration, déjà utilisé) et
+                      // crédit du portefeuille faits par le serveur.
+                      try {
+                        await ServerApi.walletRedeemGiftCard(
+                          code: controller.giftCodeController.value.text.replaceAll(" ", ""),
+                          pin: controller.giftPinController.value.text.trim(),
+                        );
+                        ShowToastDialog.closeLoader();
+                        if (Constant.walletSetting == true) {
+                          Get.offAll(const DashBoardScreen());
+                          DashBoardController controller = Get.put(DashBoardController());
+                          controller.selectedIndex.value = 2;
                         }
-                      });
+                        ShowToastDialog.showToast("Voucher redeem successfully");
+                      } catch (e) {
+                        ShowToastDialog.closeLoader();
+                        ShowToastDialog.showToast(ServerApi.errorMessage(e));
+                      }
                     }
                   },
                 ),
