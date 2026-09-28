@@ -29,26 +29,9 @@ import 'package:customer/models/inbox_model.dart';
 import 'package:customer/models/notification_model.dart';
 import 'package:customer/models/on_boarding_model.dart';
 import 'package:customer/models/order_model.dart';
-import 'package:customer/models/payment_model/cashfree_model.dart';
 import 'package:customer/models/payment_model/cod_setting_model.dart';
-import 'package:customer/models/payment_model/flutter_wave_model.dart';
-import 'package:customer/models/payment_model/foloosi_model.dart';
 import 'package:customer/models/payment_model/flexpay_model.dart';
-import 'package:customer/models/payment_model/instamojo_model.dart';
-import 'package:customer/models/payment_model/mercado_pago_model.dart';
-import 'package:customer/models/payment_model/midtrans_model.dart';
-import 'package:customer/models/payment_model/mtnmomo_model.dart';
-import 'package:customer/models/payment_model/orange_money.dart';
-import 'package:customer/models/payment_model/pay_fast_model.dart';
-import 'package:customer/models/payment_model/pay_stack_model.dart';
-import 'package:customer/models/payment_model/paymongo_model.dart';
-import 'package:customer/models/payment_model/paypal_model.dart';
-import 'package:customer/models/payment_model/paytm_model.dart';
-import 'package:customer/models/payment_model/phonepe_model.dart';
-import 'package:customer/models/payment_model/razorpay_model.dart';
-import 'package:customer/models/payment_model/stripe_model.dart';
 import 'package:customer/models/payment_model/wallet_setting_model.dart';
-import 'package:customer/models/payment_model/xendit.dart';
 import 'package:customer/models/platform_fee_model.dart';
 import 'package:customer/models/product_model.dart';
 import 'package:customer/models/rating_model.dart';
@@ -506,122 +489,43 @@ class FireStoreUtils {
     return walletTransactionList;
   }
 
+  /// Réglages de paiement lus par l'app : uniquement les moyens vérifiés par
+  /// le serveur (wallet, paiement à la livraison, FlexPay). Les documents des
+  /// autres passerelles (Stripe, PayPal, Razorpay…) contenaient des secrets :
+  /// ils ne sont plus lus, et le cache local éventuel est écrasé par '{}'
+  /// (modèle vide => passerelle désactivée, jsonDecode reste valide).
   static Future getPaymentSettingsData() async {
-    await fireStore.collection(CollectionName.settings).doc("payFastSettings").get().then((value) async {
-      if (value.exists) {
-        PayFastModel payFastModel = PayFastModel.fromJson(value.data()!);
-        await Preferences.setString(Preferences.payFastSettings, jsonEncode(payFastModel.toJson()));
-      }
-    });
-    await fireStore.collection(CollectionName.settings).doc("MercadoPago").get().then((value) async {
-      if (value.exists) {
-        MercadoPagoModel mercadoPagoModel = MercadoPagoModel.fromJson(value.data()!);
-        await Preferences.setString(Preferences.mercadoPago, jsonEncode(mercadoPagoModel.toJson()));
-      }
-    });
-    await fireStore.collection(CollectionName.settings).doc("paypalSettings").get().then((value) async {
-      if (value.exists) {
-        PayPalModel payPalModel = PayPalModel.fromJson(value.data()!);
-        await Preferences.setString(Preferences.paypalSettings, jsonEncode(payPalModel.toJson()));
-      }
-    });
-    await fireStore.collection(CollectionName.settings).doc("stripeSettings").get().then((value) async {
-      if (value.exists) {
-        StripeModel stripeModel = StripeModel.fromJson(value.data()!);
-        await Preferences.setString(Preferences.stripeSettings, jsonEncode(stripeModel.toJson()));
-      }
-    });
-    await fireStore.collection(CollectionName.settings).doc("flutterWave").get().then((value) async {
-      if (value.exists) {
-        FlutterWaveModel flutterWaveModel = FlutterWaveModel.fromJson(value.data()!);
-        await Preferences.setString(Preferences.flutterWave, jsonEncode(flutterWaveModel.toJson()));
-      }
-    });
-    await fireStore.collection(CollectionName.settings).doc("payStack").get().then((value) async {
-      if (value.exists) {
-        PayStackModel payStackModel = PayStackModel.fromJson(value.data()!);
-        await Preferences.setString(Preferences.payStack, jsonEncode(payStackModel.toJson()));
-      }
-    });
-    await fireStore.collection(CollectionName.settings).doc("PaytmSettings").get().then((value) async {
-      if (value.exists) {
-        PaytmModel paytmModel = PaytmModel.fromJson(value.data()!);
-        await Preferences.setString(Preferences.paytmSettings, jsonEncode(paytmModel.toJson()));
-      }
-    });
+    for (final String key in [
+      Preferences.payFastSettings,
+      Preferences.mercadoPago,
+      Preferences.paypalSettings,
+      Preferences.stripeSettings,
+      Preferences.flutterWave,
+      Preferences.payStack,
+      Preferences.paytmSettings,
+      Preferences.razorpaySettings,
+      Preferences.midTransSettings,
+      Preferences.orangeMoneySettings,
+      Preferences.xenditSettings,
+      Preferences.mtnMomoSettings,
+      Preferences.phonePaySettings,
+      Preferences.foloosiSettings,
+      Preferences.cashFreeSettings,
+      Preferences.payMongoSettings,
+      Preferences.instamojoSettings,
+    ]) {
+      await Preferences.setString(key, '{}');
+    }
     await fireStore.collection(CollectionName.settings).doc("walletSettings").get().then((value) async {
       if (value.exists) {
         WalletSettingModel walletSettingModel = WalletSettingModel.fromJson(value.data()!);
         await Preferences.setString(Preferences.walletSettings, jsonEncode(walletSettingModel.toJson()));
       }
     });
-    await fireStore.collection(CollectionName.settings).doc("razorpaySettings").get().then((value) async {
-      if (value.exists) {
-        RazorPayModel razorPayModel = RazorPayModel.fromJson(value.data()!);
-        await Preferences.setString(Preferences.razorpaySettings, jsonEncode(razorPayModel.toJson()));
-      }
-    });
     await fireStore.collection(CollectionName.settings).doc("CODSettings").get().then((value) async {
       if (value.exists) {
         CodSettingModel codSettingModel = CodSettingModel.fromJson(value.data()!);
         await Preferences.setString(Preferences.codSettings, jsonEncode(codSettingModel.toJson()));
-      }
-    });
-
-    await fireStore.collection(CollectionName.settings).doc("midtrans_settings").get().then((value) async {
-      if (value.exists) {
-        MidTrans midTrans = MidTrans.fromJson(value.data()!);
-        await Preferences.setString(Preferences.midTransSettings, jsonEncode(midTrans.toJson()));
-      }
-    });
-
-    await fireStore.collection(CollectionName.settings).doc("orange_money_settings").get().then((value) async {
-      if (value.exists) {
-        OrangeMoney orangeMoney = OrangeMoney.fromJson(value.data()!);
-        await Preferences.setString(Preferences.orangeMoneySettings, jsonEncode(orangeMoney.toJson()));
-      }
-    });
-
-    await fireStore.collection(CollectionName.settings).doc("xendit_settings").get().then((value) async {
-      if (value.exists) {
-        Xendit xendit = Xendit.fromJson(value.data()!);
-        await Preferences.setString(Preferences.xenditSettings, jsonEncode(xendit.toJson()));
-      }
-    });
-    await fireStore.collection(CollectionName.settings).doc("mtnMomo_settings").get().then((value) async {
-      if (value.exists) {
-        MtnMomo mtnMomo = MtnMomo.fromJson(value.data()!);
-        await Preferences.setString(Preferences.mtnMomoSettings, jsonEncode(mtnMomo.toJson()));
-      }
-    });
-    await fireStore.collection(CollectionName.settings).doc("phonepay_settings").get().then((value) async {
-      if (value.exists) {
-        PhonePe phonePe = PhonePe.fromJson(value.data()!);
-        await Preferences.setString(Preferences.phonePaySettings, jsonEncode(phonePe.toJson()));
-      }
-    });
-    await fireStore.collection(CollectionName.settings).doc("foloosi_settings").get().then((value) async {
-      if (value.exists) {
-        Foloosi foloosi = Foloosi.fromJson(value.data()!);
-        await Preferences.setString(Preferences.foloosiSettings, jsonEncode(foloosi.toJson()));
-      }
-    });
-    await fireStore.collection(CollectionName.settings).doc("cashfree_settings").get().then((value) async {
-      if (value.exists) {
-        Cashfree cashfree = Cashfree.fromJson(value.data()!);
-        await Preferences.setString(Preferences.cashFreeSettings, jsonEncode(cashfree.toJson()));
-      }
-    });
-    await fireStore.collection(CollectionName.settings).doc("paymongo_settings").get().then((value) async {
-      if (value.exists) {
-        PayMongo payMongo = PayMongo.fromJson(value.data()!);
-        await Preferences.setString(Preferences.payMongoSettings, jsonEncode(payMongo.toJson()));
-      }
-    });
-    await fireStore.collection(CollectionName.settings).doc("instamojo_settings").get().then((value) async {
-      if (value.exists) {
-        Instamojo instamojo = Instamojo.fromJson(value.data()!);
-        await Preferences.setString(Preferences.instamojoSettings, jsonEncode(instamojo.toJson()));
       }
     });
     await fireStore.collection(CollectionName.settings).doc("flexpay_settings").get().then((value) async {
