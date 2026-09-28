@@ -21,13 +21,11 @@ import 'package:customer/models/conversation_model.dart';
 import 'package:customer/models/coupon_model.dart';
 import 'package:customer/models/currency_model.dart';
 import 'package:customer/models/dine_in_booking_model.dart';
-import 'package:customer/models/email_template_model.dart';
 import 'package:customer/models/favourite_item_model.dart';
 import 'package:customer/models/favourite_model.dart';
 import 'package:customer/models/free_delivery_model.dart';
 import 'package:customer/models/gift_cards_order_model.dart';
 import 'package:customer/models/inbox_model.dart';
-import 'package:customer/models/mail_setting.dart';
 import 'package:customer/models/notification_model.dart';
 import 'package:customer/models/on_boarding_model.dart';
 import 'package:customer/models/order_model.dart';
@@ -75,7 +73,6 @@ import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_compress/video_compress.dart';
 
@@ -412,13 +409,8 @@ class FireStoreUtils {
         log("getSettings placeHolderImage error :: $e");
       });
 
-      fireStore.collection(CollectionName.settings).doc("emailSetting").get().then((value) {
-        if (value.exists) {
-          Constant.mailSettings = MailSettings.fromJson(value.data()!);
-        }
-      }).catchError((e) {
-        log("getSettings emailSetting error :: $e");
-      });
+      // E-mails transactionnels envoyés par le serveur (email_outbox) :
+      // l'app ne lit plus settings/emailSetting (identifiants SMTP).
 
       fireStore.collection(CollectionName.settings).doc("specialDiscountOffer").get().then((dineinresult) {
         if (dineinresult.exists) {
@@ -1258,18 +1250,6 @@ class FireStoreUtils {
   // de cartes cadeaux passent par v1_walletBuyGiftCard / v1_walletRedeemGiftCard
   // (écriture client interdite sur gift_purchases).
 
-  static Future<EmailTemplateModel?> getEmailTemplates(String type) async {
-    EmailTemplateModel? emailTemplateModel;
-    await fireStore.collection(CollectionName.emailTemplates).where('type', isEqualTo: type).get().then((value) {
-      print("------>");
-      if (value.docs.isNotEmpty) {
-        print(value.docs.first.data());
-        emailTemplateModel = EmailTemplateModel.fromJson(value.docs.first.data());
-      }
-    });
-    return emailTemplateModel;
-  }
-
   static Future<List<GiftCardsOrderModel>> getGiftHistory() async {
     List<GiftCardsOrderModel> giftCardsOrderList = [];
     await fireStore.collection(CollectionName.giftPurchases).where("userid", isEqualTo: FireStoreUtils.getCurrentUid()).get().then((value) {
@@ -1279,19 +1259,6 @@ class FireStoreUtils {
       }
     });
     return giftCardsOrderList;
-  }
-
-  static Future<void> sendTopUpMail({required String amount, required String paymentMethod, required String tractionId}) async {
-    EmailTemplateModel? emailTemplateModel = await FireStoreUtils.getEmailTemplates(Constant.walletTopup);
-
-    String newString = emailTemplateModel!.message.toString();
-    newString = newString.replaceAll("{username}", Constant.userModel!.firstName.toString() + Constant.userModel!.lastName.toString());
-    newString = newString.replaceAll("{date}", DateFormat('yyyy-MM-dd').format(Timestamp.now().toDate()));
-    newString = newString.replaceAll("{amount}", Constant.amountShow(amount: amount));
-    newString = newString.replaceAll("{paymentmethod}", paymentMethod.toString());
-    newString = newString.replaceAll("{transactionid}", tractionId.toString());
-    newString = newString.replaceAll("{newwalletbalance}.", Constant.amountShow(amount: Constant.userModel!.walletAmount.toString()));
-    await Constant.sendMail(subject: emailTemplateModel.subject, isAdmin: emailTemplateModel.isSendToAdmin, body: newString, recipients: [Constant.userModel!.email]);
   }
 
   static Future<List> getVendorCuisines(String id) async {

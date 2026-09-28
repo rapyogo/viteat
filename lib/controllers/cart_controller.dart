@@ -799,7 +799,7 @@ class CartController extends GetxController {
       );
       await FireStoreUtils.setCashbackRedeemModel(cashbackRedeemModel);
     }
-    Constant.sendOrderEmail(orderModel: orderModel);
+    // E-mail « commande passée » : déposé par le serveur (email_outbox, modèle order_placed).
     // Push au restaurant envoyé par le serveur (la commande existe déjà).
     SendNotification.orderPlaced(orderId: orderModel.id.toString(), scheduled: orderModel.scheduleTime != null);
     ShowToastDialog.closeLoader();

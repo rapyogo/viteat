@@ -10,18 +10,14 @@ import 'package:customer/models/admin_commission.dart';
 import 'package:customer/models/cart_product_model.dart';
 import 'package:customer/models/coupon_model.dart';
 import 'package:customer/models/currency_model.dart';
-import 'package:customer/models/email_template_model.dart';
 import 'package:customer/models/free_delivery_model.dart';
 import 'package:customer/models/language_model.dart';
-import 'package:customer/models/mail_setting.dart';
-import 'package:customer/models/order_model.dart';
 import 'package:customer/models/platform_fee_model.dart';
 import 'package:customer/models/tax_model.dart';
 import 'package:customer/models/user_model.dart';
 import 'package:customer/models/vendor_model.dart';
 import 'package:customer/models/zone_model.dart';
 import 'package:customer/themes/app_them_data.dart';
-import 'package:customer/utils/fire_store_utils.dart';
 import 'package:customer/services/location_service.dart';
 import 'package:customer/utils/preferences.dart';
 import 'package:customer/widget/permission_dialog.dart';
@@ -35,8 +31,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:mailer/mailer.dart';
-import 'package:mailer/smtp_server.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
@@ -160,13 +154,10 @@ class Constant {
     return parts.join(', ');
   }
 
-  static MailSettings? mailSettings;
-  static String walletTopup = "wallet_topup";
   static String newVendorSignup = "new_vendor_signup";
   static String payoutRequestStatus = "payout_request_status";
   static String payoutRequest = "payout_request";
 
-  static String newOrderPlacedd = "new_order_placed";
   static String newOrderPlaced = "order_placed";
   static String scheduleOrder = "schedule_order";
   static String dineInPlaced = "dinein_placed";
@@ -564,40 +555,6 @@ class Constant {
     return (crossings % 2 != 0);
   }
 
-  static final smtpServer = SmtpServer(mailSettings!.host.toString(),
-      username: mailSettings!.userName.toString(), password: mailSettings!.password.toString(), port: 465, ignoreBadCertificate: false, ssl: true, allowInsecure: true);
-
-  static Future<void> sendMail({String? subject, String? body, bool? isAdmin = false, List<dynamic>? recipients}) async {
-    // Create our message.
-    if (mailSettings != null) {
-      if (isAdmin == true) {
-        recipients!.add(mailSettings!.userName.toString());
-      }
-      final message = Message()
-        ..from = Address(mailSettings!.userName.toString(), mailSettings!.fromName.toString())
-        ..recipients = recipients!
-        ..subject = subject
-        ..text = body
-        ..html = body;
-
-      try {
-        final sendReport = await send(message, smtpServer);
-        print('Message sent: $sendReport');
-      } on MailerException catch (e) {
-        print(e);
-        print('Message not sent.');
-        for (var p in e.problems) {
-          print('Problem: ${p.code}: ${p.msg}');
-        }
-      }
-    }
-
-    // var connection = PersistentConnection(smtpServer);
-    //
-    // // Send the first message
-    // await connection.send(message);
-  }
-
   static Uri createCoordinatesUrl(double latitude, double longitude, [String? label]) {
     Uri uri;
     if (kIsWeb) {
@@ -615,275 +572,6 @@ class Constant {
     }
 
     return uri;
-  }
-
-  static Future<void> sendOrderEmail({required OrderModel orderModel}) async {
-    double deliveryCharges = 0.0;
-    double deliveryTips = 0.0;
-    double subTotal = 0.0;
-    double packagingCharge = 0.0;
-    double platformFee = 0.0;
-    double couponAmount = 0.0;
-    double specialDiscountAmount = 0.0;
-    double productTaxAmount = 0.0;
-    double orderTaxAmount = 0.0;
-    double driverDeliveryTaxAmount = 0.0;
-    double packagingTaxAmount = 0.0;
-    double platformTaxAmount = 0.0;
-    double totalTaxAmount = 0.0;
-    double totalAmountData = 0.0;
-
-    for (var element in orderModel.products!) {
-      final double price = (double.parse(element.discountPrice.toString()) > 0) ? double.parse(element.discountPrice.toString()) : double.parse(element.price.toString());
-
-      final double qty = double.parse(element.quantity.toString());
-      final double extras = double.parse(element.extrasPrice.toString());
-
-      subTotal += (price * qty) + (extras * qty);
-    }
-
-    /// ---------------- DISCOUNTS ----------------
-    couponAmount = double.parse(orderModel.discount.toString());
-
-    if (orderModel.specialDiscount != null && orderModel.specialDiscount!['special_discount'] != null) {
-      specialDiscountAmount = double.parse(orderModel.specialDiscount!['special_discount'].toString());
-    }
-
-    final double totalDiscount = couponAmount + specialDiscountAmount;
-
-    /// ---------------- DISCOUNT RATIO ----------------
-    double discountRatio = 0.0;
-    if (subTotal > 0 && totalDiscount > 0) {
-      discountRatio = totalDiscount / subTotal;
-    }
-
-    /// ---------------- PRODUCT TAX (AFTER DISCOUNT) ----------------
-    if (orderModel.taxScope == "product") {
-      for (var element in orderModel.products!) {
-        final double price = (double.parse(element.discountPrice.toString()) > 0) ? double.parse(element.discountPrice.toString()) : double.parse(element.price.toString());
-
-        final double qty = double.parse(element.quantity.toString());
-        final double extras = double.parse(element.extrasPrice.toString());
-
-        final double itemAmount = (price * qty) + (extras * qty);
-
-        final double discountedItemAmount = itemAmount - (itemAmount * discountRatio);
-
-        for (var taxElement in element.taxSetting!) {
-          if (taxElement.type == "fix") {
-            productTaxAmount += Constant.calculateTax(
-                  amount: discountedItemAmount.toString(),
-                  taxModel: taxElement,
-                ) *
-                qty;
-          } else {
-            productTaxAmount += Constant.calculateTax(
-              amount: discountedItemAmount.toString(),
-              taxModel: taxElement,
-            );
-          }
-        }
-      }
-    }
-
-    /// ---------------- ORDER LEVEL TAX ----------------
-    if (orderModel.taxScope == "order") {
-      for (var taxElement in orderModel.taxSetting ?? []) {
-        orderTaxAmount += Constant.calculateTax(
-          amount: (subTotal - totalDiscount).toString(),
-          taxModel: taxElement,
-        );
-      }
-    }
-
-    /// ---------------- OTHER CHARGES ----------------
-    deliveryCharges = double.parse(orderModel.deliveryCharge.toString());
-
-    deliveryTips = double.parse(orderModel.tipAmount.toString());
-
-    packagingCharge = double.parse(orderModel.vendor!.packagingCharge.toString());
-
-    platformFee = double.parse(orderModel.platformFee ?? '0.0');
-
-    /// ---------------- DELIVERY TAX ----------------
-    if (orderModel.takeAway != true && orderModel.vendor?.isSelfDelivery != true) {
-      for (var taxElement in orderModel.driverDeliveryTax ?? []) {
-        driverDeliveryTaxAmount += Constant.calculateTax(
-          amount: deliveryCharges.toString(),
-          taxModel: taxElement,
-        );
-      }
-    }
-
-    /// ---------------- PACKAGING TAX ----------------
-    if (packagingCharge > 0) {
-      for (var taxElement in orderModel.packagingTax ?? []) {
-        packagingTaxAmount += Constant.calculateTax(
-          amount: packagingCharge.toString(),
-          taxModel: taxElement,
-        );
-      }
-    }
-
-    /// ---------------- PLATFORM TAX ----------------
-    if (platformFee > 0) {
-      for (var taxElement in orderModel.platformTax ?? []) {
-        platformTaxAmount += Constant.calculateTax(
-          amount: platformFee.toString(),
-          taxModel: taxElement,
-        );
-      }
-    }
-
-    /// ---------------- TOTAL TAX ----------------
-    totalTaxAmount = productTaxAmount + orderTaxAmount + driverDeliveryTaxAmount + packagingTaxAmount + platformTaxAmount;
-
-    /// ---------------- FINAL TOTAL ----------------
-    totalAmountData = (subTotal - totalDiscount) + totalTaxAmount + (orderModel.isFreeDelivery == false ? deliveryCharges + deliveryTips : 0) + packagingCharge + platformFee;
-
-    EmailTemplateModel? emailTemplateModel = await FireStoreUtils.getEmailTemplates(newOrderPlacedd);
-
-    if (emailTemplateModel != null) {
-      String firstHTML = """
-       <table style="width: 100%; border-collapse: collapse; border: 1px solid rgb(0, 0, 0);">
-    <thead>
-        <tr>
-            <th style="text-align: left; border: 1px solid rgb(0, 0, 0);">Product Name<br></th>
-            <th style="text-align: left; border: 1px solid rgb(0, 0, 0);">Quantity<br></th>
-            <th style="text-align: left; border: 1px solid rgb(0, 0, 0);">Price<br></th>
-            <th style="text-align: left; border: 1px solid rgb(0, 0, 0);">Extra Item Price<br></th>
-            <th style="text-align: left; border: 1px solid rgb(0, 0, 0);">Total<br></th>
-        </tr>
-    </thead>
-    <tbody>
-    """;
-
-      String newString = emailTemplateModel.message.toString();
-      newString = newString.replaceAll("{username}", "${Constant.userModel!.firstName} ${Constant.userModel!.lastName}");
-      newString = newString.replaceAll("{orderid}", orderModel.id.toString());
-      newString = newString.replaceAll("{date}", DateFormat('yyyy-MM-dd').format(orderModel.createdAt!.toDate()));
-      newString = newString.replaceAll(
-        "{address}",
-        orderModel.address?.getFullAddress() ?? '',
-      );
-      newString = newString.replaceAll(
-        "{paymentmethod}",
-        orderModel.paymentMethod.toString(),
-      );
-
-      double total = 0.0;
-      double specialDiscount = 0.0;
-      double discount = 0.0;
-
-      String specialLabel = '(${orderModel.specialDiscount!['special_discount_label']}${orderModel.specialDiscount!['specialType'] == "amount" ? currencyModel!.symbol : "%"})';
-      List<String> htmlList = [];
-
-      for (var element in orderModel.products!) {
-        if (element.extrasPrice != null && element.extrasPrice!.isNotEmpty && double.parse(element.extrasPrice!) != 0.0) {
-          total += double.parse(element.quantity.toString()) * double.parse(element.extrasPrice!);
-        }
-        total += double.parse(element.quantity.toString()) * double.parse(element.price.toString());
-
-        List<dynamic>? addon = element.extras;
-        String extrasDisVal = '';
-        for (int i = 0; i < addon!.length; i++) {
-          extrasDisVal += '${addon[i].toString().replaceAll("\"", "")} ${(i == addon.length - 1) ? "" : ","}';
-        }
-        String product = """
-        <tr>
-            <td style="width: 20%; border-top: 1px solid rgb(0, 0, 0);">${element.name}</td>
-            <td style="width: 20%; border: 1px solid rgb(0, 0, 0);" rowspan="2">${element.quantity}</td>
-            <td style="width: 20%; border: 1px solid rgb(0, 0, 0);" rowspan="2">${amountShow(amount: (double.parse(element.discountPrice.toString()) > 0.0 ? element.discountPrice : element.price.toString()))}</td>
-            <td style="width: 20%; border: 1px solid rgb(0, 0, 0);" rowspan="2">${amountShow(amount: element.extrasPrice.toString())}</td>
-            <td style="width: 20%; border: 1px solid rgb(0, 0, 0);" rowspan="2">${amountShow(amount: ((double.parse(element.quantity.toString()) * double.parse(element.extrasPrice!) + (double.parse(element.quantity.toString()) * (double.parse((double.parse(element.discountPrice.toString()) > 0.0 ? element.discountPrice! : element.price!))))).toString()))}</td>
-        </tr>
-        <tr>
-            <td style="width: 20%;">${extrasDisVal.isEmpty ? "" : "Extra Item : $extrasDisVal"}</td>
-        </tr>
-    """;
-        htmlList.add(product);
-      }
-
-      if (orderModel.specialDiscount!.isNotEmpty) {
-        specialDiscount = double.parse(orderModel.specialDiscount!['special_discount'].toString());
-      }
-
-      if (orderModel.couponId != null && orderModel.couponId!.isNotEmpty) {
-        discount = double.parse(orderModel.discount.toString());
-      }
-
-      List<String> taxHtmlList = [];
-      if (orderModel.taxScope == 'product') {
-        for (var element in orderModel.taxSetting ?? []) {
-          if (element.scope == 'product') {
-            String taxHtml =
-                """<span style="font-size: 1rem;">${element.title} ${'Tax on item total'}: ${amountShow(amount: calculateTax(amount: (total - discount - specialDiscount).toString(), taxModel: element).toString())}</span>""";
-            taxHtmlList.add(taxHtml);
-          }
-        }
-      }
-      if (orderModel.taxScope == "product") {
-        String taxHtml = """<br><span style="font-size: 1rem;">${'Tax on item total'}: ${amountShow(amount: productTaxAmount.toString())}</span>""";
-        taxHtmlList.add(taxHtml);
-      }
-
-      if (orderModel.taxScope == "order") {
-        String taxHtml = """<br><span style="font-size: 1rem;">${'Tax on Order Total'}: ${amountShow(amount: orderTaxAmount.toString())}</span>""";
-        taxHtmlList.add(taxHtml);
-      }
-
-      if (deliveryCharges > 0.0) {
-        for (var element in orderModel.driverDeliveryTax ?? []) {
-          if (element.scope == 'delivery') {
-            String taxHtml =
-                """<br><span style="font-size: 1rem;">${element.title} ${'Tax on Delivery Fee'}: ${amountShow(amount: calculateTax(amount: (orderModel.deliveryCharge).toString(), taxModel: element).toString())}</span>""";
-            taxHtmlList.add(taxHtml);
-          }
-        }
-      }
-
-      if (packagingCharge > 0.0) {
-        for (var element in orderModel.packagingTax ?? []) {
-          if (element.scope == 'packaging') {
-            String taxHtml =
-                """<br><span style="font-size: 1rem;">${element.title} ${'Tax on Packaging Fee'}: ${amountShow(amount: calculateTax(amount: (packagingCharge).toString(), taxModel: element).toString())}</span>""";
-            taxHtmlList.add(taxHtml);
-          }
-        }
-      }
-      if (platformFee > 0.0) {
-        for (var element in orderModel.platformTax ?? []) {
-          if (element.scope == 'platform') {
-            String taxHtml =
-                """<br><span style="font-size: 1rem;">${element.title} ${'Tax on Platform Fee'}: ${amountShow(amount: calculateTax(amount: (platformFee).toString(), taxModel: element).toString())}</span>""";
-            taxHtmlList.add(taxHtml);
-          }
-        }
-      }
-      taxHtmlList.add("""<br><span style="font-size: 1rem;"> Total Tax: ${amountShow(amount: totalTaxAmount.toString())}</span>""");
-
-      newString = newString.replaceAll("{subtotal}", amountShow(amount: subTotal.toString()));
-      newString = newString.replaceAll("{coupon}", orderModel.couponId ?? '');
-      newString = newString.replaceAll("{discountamount}", amountShow(amount: orderModel.discount.toString()));
-      newString = newString.replaceAll("{specialcoupon}", specialLabel);
-      newString = newString.replaceAll("{specialdiscountamount}", amountShow(amount: specialDiscount.toString()));
-      newString = newString.replaceAll("{shippingcharge}", amountShow(amount: deliveryCharges.toString()));
-      newString = newString.replaceAll("{packagingcharge}", amountShow(amount: packagingCharge.toString()));
-      newString = newString.replaceAll("{platformcharge}", amountShow(amount: platformFee.toString()));
-      newString = newString.replaceAll("{tipamount}", amountShow(amount: deliveryTips.toString()));
-      newString = newString.replaceAll("{totalAmount}", amountShow(amount: totalAmountData.toString()));
-
-      String tableHTML = htmlList.join();
-      String lastHTML = "</tbody></table>";
-      newString = newString.replaceAll("{productdetails}", firstHTML + tableHTML + lastHTML);
-      newString = newString.replaceAll("{taxdetails}", taxHtmlList.join());
-      newString = newString.replaceAll("{newwalletbalance}.", amountShow(amount: Constant.userModel!.walletAmount.toString()));
-
-      String subjectNewString = emailTemplateModel.subject.toString();
-      subjectNewString = subjectNewString.replaceAll("{orderid}", orderModel.id.toString());
-
-      await sendMail(subject: subjectNewString, isAdmin: emailTemplateModel.isSendToAdmin, body: newString, recipients: [Constant.userModel!.email]);
-    }
   }
 
   double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
