@@ -233,42 +233,13 @@ class GiftCardController extends GetxController {
         flexPayModel.value = FlexPay.fromJson(jsonDecode(Preferences.getString(Preferences.flexPaySettings, defaultValue: '{}')));
         isLoadingPayment.value = false;
         walletSettingModel.value = WalletSettingModel.fromJson(jsonDecode(Preferences.getString(Preferences.walletSettings)));
+        // Carte cadeau : wallet ou FlexPay seulement (décision : seuls moyens
+        // vérifiés par le serveur, v1_walletBuyGiftCard). Les autres passerelles
+        // ne sont plus affichées, donc jamais présélectionnées.
         if (walletSettingModel.value.isEnabled == true) {
           selectedPaymentMethod.value = PaymentGateway.wallet.name;
-        } else if (stripeModel.value.isEnabled == true) {
-          selectedPaymentMethod.value = PaymentGateway.stripe.name;
-        } else if (payPalModel.value.isEnabled == true) {
-          selectedPaymentMethod.value = PaymentGateway.paypal.name;
-        } else if (payStackModel.value.isEnable == true) {
-          selectedPaymentMethod.value = PaymentGateway.payStack.name;
-        } else if (mercadoPagoModel.value.isEnabled == true) {
-          selectedPaymentMethod.value = PaymentGateway.mercadoPago.name;
-        } else if (flutterWaveModel.value.isEnable == true) {
-          selectedPaymentMethod.value = PaymentGateway.flutterWave.name;
-        } else if (paytmModel.value.isEnabled == true) {
-          selectedPaymentMethod.value = PaymentGateway.paytm.name;
-        } else if (payFastModel.value.isEnable == true) {
-          selectedPaymentMethod.value = PaymentGateway.payFast.name;
-        } else if (razorPayModel.value.isEnabled == true) {
-          selectedPaymentMethod.value = PaymentGateway.razorpay.name;
-        } else if (midTransModel.value.enable == true) {
-          selectedPaymentMethod.value = PaymentGateway.midTrans.name;
-        } else if (orangeMoneyModel.value.enable == true) {
-          selectedPaymentMethod.value = PaymentGateway.orangeMoney.name;
-        } else if (xenditModel.value.enable == true) {
-          selectedPaymentMethod.value = PaymentGateway.xendit.name;
-        } else if (mtnMomoModel.value.enable == true) {
-          selectedPaymentMethod.value = PaymentGateway.mtnMomo.name;
-        } else if (phonePeModel.value.enable == true) {
-          selectedPaymentMethod.value = PaymentGateway.phonePe.name;
-        } else if (instamojoModel.value.enable == true) {
-          selectedPaymentMethod.value = PaymentGateway.instamojo.name;
-        } else if (foloosiModel.value.enable == true) {
-          selectedPaymentMethod.value = PaymentGateway.foloosi.name;
-        } else if (payMongoModel.value.enable == true) {
-          selectedPaymentMethod.value = PaymentGateway.payMongo.name;
-        } else if (cashfreeModel.value.enable == true) {
-          selectedPaymentMethod.value = PaymentGateway.cashfree.name;
+        } else if (flexPayModel.value.enable == true) {
+          selectedPaymentMethod.value = PaymentGateway.flexPay.name;
         }
         // Même garde que cart_controller.dart : une clé Stripe absente/vide
         // faisait planter le SDK natif à chaque initialisation.
