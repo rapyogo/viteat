@@ -1,6 +1,14 @@
 # HANDOFF — customer (app Flutter de livraison de repas)
 
-Dernière mise à jour : 2026-08-28
+Dernière mise à jour : 2026-09-28
+
+## Session 2026-09-27/28 — contrats restaurant, badge bleu, durcissement (branche NON fusionnée)
+
+- Rapport complet : `Admin Panel/docs/superpowers/reports/2026-09-28-rapport-contrats-restaurant.md` (dépôt viteat_admin_web, branche `feat/contrats-restaurant`). Spec : `Admin Panel/docs/superpowers/specs/2026-09-27-contrats-restaurant-design.md`.
+- Verdict `CONTRATS_RESTAURANT_STAGING_FIXES_REQUIRED` : 713/713 tests émulateurs, rien de déployé ni fusionné ; le code n'a jamais tourné en réel.
+- Consigne utilisateur : push autorisé, AUCUN merge ni déploiement prod avant les tests réels (§9 du rapport).
+- Ne pas déployer les déclencheurs wallet avant publication des nouvelles apps et des panels (sinon double crédit).
+- App client : branche `feat/contrats-restaurant-clean` (worktree `customer-clean`, repartie de origin/master ; la branche `feat/contrats-restaurant` locale contient 35 commits étrangers, ne pas la fusionner). Filtre isLive, badge, mise à jour forcée (`settings/Version.minCustomerBuildNumber`), wallet/push par callables. Flutter 3.47.5 : `C:/src/flutter-3.47`. versionCode à incrémenter seulement à la publication.
 
 ## Contexte projet
 - App Flutter cliente d'une plateforme de livraison de repas multi-vendeurs, marque "Rapyogo" (package Android `com.rapyogo.client`).
