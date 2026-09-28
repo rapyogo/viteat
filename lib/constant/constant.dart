@@ -37,6 +37,16 @@ import 'package:uuid/uuid.dart';
 RxList<CartProductModel> cartItem = <CartProductModel>[].obs;
 
 class Constant {
+  /// Moyens de paiement autorisés dans l'app : uniquement ceux dont le
+  /// règlement est vérifié par le serveur (FlexPay via le callable
+  /// initiateMobileMoneyPayment, paiement à la livraison, wallet débité par
+  /// le serveur). Les autres passerelles appelaient une API de paiement avec
+  /// un secret depuis le téléphone : elles restent masquées même si un admin
+  /// les active dans settings/*.
+  static const Set<String> serverVerifiedGateways = {'flexPay', 'cod', 'wallet'};
+
+  static bool isServerVerifiedGateway(String? name) => name != null && serverVerifiedGateways.contains(name);
+
   static String userRoleDriver = 'driver';
   static String userRoleCustomer = 'customer';
   static String userRoleVendor = 'vendor';

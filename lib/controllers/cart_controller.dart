@@ -830,6 +830,8 @@ class CartController extends GetxController {
   RxBool isLoading = true.obs;
 
   bool _isPaymentGatewayEnabled(String gatewayName) {
+    // Seuls FlexPay / COD / wallet (vérifiés serveur) sont sélectionnables.
+    if (!Constant.isServerVerifiedGateway(gatewayName)) return false;
     if (gatewayName == PaymentGateway.wallet.name) return walletSettingModel.value.isEnabled == true;
     if (gatewayName == PaymentGateway.cod.name) return cashOnDeliverySettingModel.value.isEnabled == true;
     if (gatewayName == PaymentGateway.stripe.name) return stripeModel.value.isEnabled == true;

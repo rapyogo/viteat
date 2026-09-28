@@ -93,7 +93,7 @@ class SelectGiftPaymentScreen extends StatelessWidget {
                                   child: Column(
                                     children: [
                                       Visibility(
-                                        visible: controller.walletSettingModel.value.isEnabled == true,
+                                        visible: Constant.isServerVerifiedGateway(PaymentGateway.wallet.name) && controller.walletSettingModel.value.isEnabled == true,
                                         child: cardDecoration(controller, PaymentGateway.wallet, themeChange, "assets/images/ic_wallet.png"),
                                       ),
                                     ],
@@ -137,7 +137,7 @@ class SelectGiftPaymentScreen extends StatelessWidget {
                             child: Column(
                               children: [
                                 Visibility(
-                                  visible: controller.flexPayModel.value.enable == true,
+                                  visible: Constant.isServerVerifiedGateway(PaymentGateway.flexPay.name) && controller.flexPayModel.value.enable == true,
                                   child: cardDecoration(controller, PaymentGateway.flexPay, themeChange, "assets/images/mtnmom.png"),
                                 ),
                               ],

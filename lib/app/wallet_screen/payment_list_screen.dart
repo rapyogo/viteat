@@ -98,7 +98,7 @@ class PaymentListScreen extends StatelessWidget {
                             child: Column(
                               children: [
                                 Visibility(
-                                  visible: controller.flexPayModel.value.enable == true,
+                                  visible: Constant.isServerVerifiedGateway(PaymentGateway.flexPay.name) && controller.flexPayModel.value.enable == true,
                                   child: cardDecoration(controller, PaymentGateway.flexPay, themeChange, "assets/images/mtnmom.png"),
                                 ),
                               ],
