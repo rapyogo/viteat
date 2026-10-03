@@ -548,11 +548,16 @@ class CartScreen extends StatelessWidget {
                                     controller.deliveryType.value = "schedule";
                                     BottomPicker.dateTime(
                                       onSubmit: (index) {
-                                        controller.scheduleDateTime.value = index;
+                                        if (index is DateTime) {
+                                          controller.scheduleDateTime.value = index;
+                                        }
                                       },
                                       minDateTime: DateTime.now(),
                                       displaySubmitButton: true,
-                                      pickerTitle: TranslatedText('Schedule Time'),
+                                      headerBuilder: (context) => Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        child: TranslatedText('Schedule Time'),
+                                      ),
                                       buttonSingleColor: AppThemeData.primary300,
                                     ).show(context);
                                   },
@@ -597,11 +602,16 @@ class CartScreen extends StatelessWidget {
                                             BottomPicker.dateTime(
                                               initialDateTime: controller.scheduleDateTime.value,
                                               onSubmit: (index) {
-                                                controller.scheduleDateTime.value = index;
+                                                if (index is DateTime) {
+                                                  controller.scheduleDateTime.value = index;
+                                                }
                                               },
                                               minDateTime: controller.scheduleDateTime.value,
                                               displaySubmitButton: true,
-                                              pickerTitle: TranslatedText('Schedule Time'),
+                                              headerBuilder: (context) => Padding(
+                                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                                child: TranslatedText('Schedule Time'),
+                                              ),
                                               buttonSingleColor: AppThemeData.primary300,
                                             ).show(context);
                                           },

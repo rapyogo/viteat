@@ -53,10 +53,10 @@ packages:
     dependency: "direct main"
     description:
       name: bottom_picker
-      sha256: "721b95e389b1c91e387832833fdcd0fa8658a1e3f9b9d75a966af9354bb24ada"
+      sha256: "9e710eafb33268d31241e6756b7566acf4471bb661aca6e179fe8f01ab45f3aa"
       url: "https://pub.dev"
     source: hosted
-    version: "4.1.1"
+    version: "4.2.0"
   built_collection:
     dependency: transitive
     description:
@@ -93,34 +93,34 @@ packages:
     dependency: transitive
     description:
       name: camera
-      sha256: "4142a19a38e388d3bab444227636610ba88982e36dff4552d5191a86f65dc437"
+      sha256: "3f30ca0ff376f91534f23afa2a7aea06ebb6c889fd9e260642437b37e3d9f753"
       url: "https://pub.dev"
     source: hosted
-    version: "0.11.4"
+    version: "0.12.1"
   camera_android_camerax:
     dependency: transitive
     description:
       name: camera_android_camerax
-      sha256: "8516fe308bc341a5067fb1a48edff0ddfa57c0d3cdcc9dbe7ceca3ba119e2577"
+      sha256: "47645ffd20c597cb0edab4de20f3c89447b7eca90425ee13683b746275b18e2b"
       url: "https://pub.dev"
     source: hosted
-    version: "0.6.30"
+    version: "0.7.5+1"
   camera_avfoundation:
     dependency: transitive
     description:
       name: camera_avfoundation
-      sha256: "11b4aee2f5e5e038982e152b4a342c749b414aa27857899d20f4323e94cb5f0b"
+      sha256: e409a731fad3fca10daa9567cf981720398659e6390f871a4e0f576058ff8940
       url: "https://pub.dev"
     source: hosted
-    version: "0.9.23+2"
+    version: "0.10.3+1"
   camera_platform_interface:
     dependency: transitive
     description:
       name: camera_platform_interface
-      sha256: "7ac852d77699acee79f0d438b793feee26721841e50973576419ff5c6d95e9b7"
+      sha256: "9365babc7488a9e93d0ed6dcccd917619fb12ea6f9e601519e1191d4890ee2fe"
       url: "https://pub.dev"
     source: hosted
-    version: "2.13.0"
+    version: "2.14.0"
   camera_web:
     dependency: transitive
     description:
@@ -1532,18 +1532,18 @@ packages:
     dependency: transitive
     description:
       name: qr_code_dart_decoder
-      sha256: "4044f13a071da6102f7e9bc44a6b1ce577604d7846bcbeb1be412a137b825017"
+      sha256: b0174b9653a7c98a0599f16947bfe947cbdcf7cc84a0f9d03ab37cda1193b4d4
       url: "https://pub.dev"
     source: hosted
-    version: "0.1.2"
+    version: "0.3.0"
   qr_code_dart_scan:
     dependency: "direct main"
     description:
       name: qr_code_dart_scan
-      sha256: "81443d940f8f27baaa4b9aeaa8d3d2155ad2c0b9842a9bacb03dab85c111e2f6"
+      sha256: "623e101b84d9cc2069ea97000e57beacff0dc5bd8ea73643ba5217aa981788a6"
       url: "https://pub.dev"
     source: hosted
-    version: "0.11.5"
+    version: "0.14.0"
   qr_flutter:
     dependency: "direct main"
     description:
@@ -1833,18 +1833,18 @@ packages:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
-      sha256: fe25aa8cf709f8e10c17c6f36019dd98bffad4218d9402f3c990156408cfd941
+      sha256: "85c1d4be09cfa5b74a026cd1b4c5c7c1a2b2bf709e5e61d4c2feee989ebb1da4"
       url: "https://pub.dev"
     source: hosted
-    version: "33.2.10"
+    version: "34.2.9"
   syncfusion_flutter_datepicker:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_datepicker
-      sha256: "36e080278a089aea7b7bc1cf56e07aba329234fc04b551a3014b7b211e1e7176"
+      sha256: "32ffab86ed3a212c5f2b0d60976fa34e35baaabbe7133c0efcf5d92a72c4553b"
       url: "https://pub.dev"
     source: hosted
-    version: "33.2.10"
+    version: "34.2.9"
   synchronized:
     dependency: transitive
     description:
