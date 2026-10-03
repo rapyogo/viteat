@@ -2,7 +2,7 @@ import 'package:customer/services/location_service.dart';
 import 'package:customer/constant/constant.dart';
 import 'package:customer/constant/show_toast_dialog.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:map_launcher/map_launcher.dart';
+import 'package:map_launcher/map_launcher.dart' as map_launcher;
 
 class Utils {
   /// Conserve en delegation le temps que les appelants migrent : cette version
@@ -14,79 +14,32 @@ class Utils {
     return LocationService.to.rawPosition();
   }
 
+  /// Ouvre l'itineraire dans l'application de cartes choisie par l'admin
+  /// (`Constant.mapType`). API map_launcher 6 (MapApp/TravelMode), reprise de Foodie 9.2.
   static redirectMap({required String name, required double latitude, required double longLatitude}) async {
-    if (Constant.mapType == "google") {
-      bool? isAvailable = await MapLauncher.isMapAvailable(MapType.google);
-      if (isAvailable == true) {
-        await MapLauncher.showDirections(
-          mapType: MapType.google,
-          directionsMode: DirectionsMode.driving,
-          destinationTitle: name,
-          destination: Coords(latitude, longLatitude),
-        );
-      } else {
-        ShowToastDialog.showToast("Google map is not installed");
-      }
-    } else if (Constant.mapType == "googleGo") {
-      bool? isAvailable = await MapLauncher.isMapAvailable(MapType.googleGo);
-      if (isAvailable == true) {
-        await MapLauncher.showDirections(
-          mapType: MapType.googleGo,
-          directionsMode: DirectionsMode.driving,
-          destinationTitle: name,
-          destination: Coords(latitude, longLatitude),
-        );
-      } else {
-        ShowToastDialog.showToast("Google Go map is not installed");
-      }
-    } else if (Constant.mapType == "waze") {
-      bool? isAvailable = await MapLauncher.isMapAvailable(MapType.waze);
-      if (isAvailable == true) {
-        await MapLauncher.showDirections(
-          mapType: MapType.waze,
-          directionsMode: DirectionsMode.driving,
-          destinationTitle: name,
-          destination: Coords(latitude, longLatitude),
-        );
-      } else {
-        ShowToastDialog.showToast("Waze is not installed");
-      }
-    } else if (Constant.mapType == "mapswithme") {
-      bool? isAvailable = await MapLauncher.isMapAvailable(MapType.mapswithme);
-      if (isAvailable == true) {
-        await MapLauncher.showDirections(
-          mapType: MapType.mapswithme,
-          directionsMode: DirectionsMode.driving,
-          destinationTitle: name,
-          destination: Coords(latitude, longLatitude),
-        );
-      } else {
-        ShowToastDialog.showToast("Mapswithme is not installed");
-      }
-    } else if (Constant.mapType == "yandexNavi") {
-      bool? isAvailable = await MapLauncher.isMapAvailable(MapType.yandexNavi);
-      if (isAvailable == true) {
-        await MapLauncher.showDirections(
-          mapType: MapType.yandexNavi,
-          directionsMode: DirectionsMode.driving,
-          destinationTitle: name,
-          destination: Coords(latitude, longLatitude),
-        );
-      } else {
-        ShowToastDialog.showToast("YandexNavi is not installed");
-      }
-    } else if (Constant.mapType == "yandexMaps") {
-      bool? isAvailable = await MapLauncher.isMapAvailable(MapType.yandexMaps);
-      if (isAvailable == true) {
-        await MapLauncher.showDirections(
-          mapType: MapType.yandexMaps,
-          directionsMode: DirectionsMode.driving,
-          destinationTitle: name,
-          destination: Coords(latitude, longLatitude),
-        );
-      } else {
-        ShowToastDialog.showToast("yandexMaps map is not installed");
-      }
+    const Map<String, (map_launcher.MapApp, String)> supported = {
+      "google": (map_launcher.MapApp.google, "Google map"),
+      "googleGo": (map_launcher.MapApp.googleGo, "Google Go map"),
+      "waze": (map_launcher.MapApp.waze, "Waze"),
+      "mapswithme": (map_launcher.MapApp.mapswithme, "Mapswithme"),
+      "yandexNavi": (map_launcher.MapApp.yandexNavi, "YandexNavi"),
+      "yandexMaps": (map_launcher.MapApp.yandexMaps, "yandexMaps map"),
+    };
+
+    final entry = supported[Constant.mapType];
+    if (entry == null) return;
+    final (mapApp, label) = entry;
+
+    final request = map_launcher.MapLauncher.directions(
+      map_launcher.Location.coords(latitude, longLatitude, title: name),
+      mode: map_launcher.TravelMode.driving,
+    );
+
+    final available = await request.getSupportedMaps([mapApp]);
+    if (available.isEmpty) {
+      ShowToastDialog.showToast("$label is not installed");
+      return;
     }
+    await request.show(map: mapApp);
   }
 }

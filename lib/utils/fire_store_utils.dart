@@ -933,7 +933,7 @@ class FireStoreUtils {
       if (latitude == null || longitude == null) {
         return taxList;
       }
-      List<Placemark> placeMarks = await placemarkFromCoordinates(latitude, longitude);
+      List<Placemark> placeMarks = await Geocoding().placemarkFromCoordinates(latitude, longitude);
       if (placeMarks.isEmpty) {
         return taxList;
       }

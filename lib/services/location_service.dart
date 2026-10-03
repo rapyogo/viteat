@@ -240,7 +240,7 @@ class LocationService extends GetxService {
     // dur. Ici on garde les coordonnees, seul le libelle manque.
     if (reverseGeocode) {
       try {
-        final List<Placemark> places = await placemarkFromCoordinates(position.latitude, position.longitude);
+        final List<Placemark> places = await Geocoding().placemarkFromCoordinates(position.latitude, position.longitude);
         if (places.isNotEmpty) {
           final Placemark p = places.first;
           address.locality = "${p.name}, ${p.subLocality}, ${p.locality}, ${p.administrativeArea}, ${p.postalCode}, ${p.country}";
