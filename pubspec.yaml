@@ -32,13 +32,13 @@ dependencies:
     sdk: flutter
 
   cupertino_icons: ^1.0.9
-  firebase_core: ^4.10.0
-  firebase_auth: ^6.5.2
-  cloud_firestore: ^6.5.0
-  firebase_database: ^12.4.2
-  firebase_storage: ^13.4.2
-  firebase_messaging: ^16.3.0
-  firebase_app_check: ^0.4.4+2
+  firebase_core: ^4.13.0
+  firebase_auth: ^6.5.7
+  cloud_firestore: ^6.8.0
+  firebase_database: ^12.4.7
+  firebase_storage: ^13.4.6
+  firebase_messaging: ^16.5.0
+  firebase_app_check: ^0.4.6
   cloud_functions: ^6.2.0
 
   qr_code_dart_scan: ^0.11.5
