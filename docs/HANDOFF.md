@@ -1,6 +1,33 @@
 # HANDOFF — customer (app Flutter de livraison de repas)
 
-Dernière mise à jour : 2026-09-28
+Dernière mise à jour : 2026-10-03
+
+## Session 2026-10-03 — étape 1 : dépendances alignées sur Foodie 9.2 (branche `feat/app-client-deps-9.2`, NON fusionnée)
+
+- **Base retenue : `customer-clean`** (et non une 9.2 vierge). Décision et comparaison détaillée : `~/.claude/plans/pasted-content-id-2fb8-audit-de-lucky-mango.md`. Raisons : la 9.2 apporte peu de fonctionnel ; une bonne part de son code contredit le contrat serveur en prod (écritures wallet, SMTP, FCM par compte de service, secrets, base `staging`) ; 62 écarts Viteat sont obligatoires ou passés côté serveur.
+- **Référence 9.2 = l'archive d'origine** : `Downloads/codecanyon-cAUCZ4xu-…zip` → `Applications.zip` → `foodie-9.2.zip` → `customer/`.
+  - La copie `MISE à jour templete/V9.2/customer` est **incomplète** : il lui manque 22 fichiers Dart, `AndroidManifest`, `MainActivity` et `res/`.
+  - Le dossier `customer/` présente les mêmes suppressions.
+  - L'archive passe `flutter analyze` sans erreur avec Flutter 3.47.5.
+- **Commits** (`30b80e6..b868e20`), chacun suivi de `pub get` (seuls les paquets du groupe et leurs dépendances transitives ont bougé) et de `flutter analyze` à 0 erreur, avec 22 avertissements, comme la référence :
+  - G1 `4aa9fce` : famille Firebase. Core 4.15, firestore 6.10, auth 6.7, messaging 16.7, storage 13.6, database 12.6, app_check 0.4.8, cloud_functions 6.5. Ces versions sont légèrement au-dessus du lockfile 9.2, sans changement de version majeure.
+  - G2 `d417726` : correctifs mineurs (12 paquets).
+  - G3 `f03a447` : flutter_local_notifications 22.3, flutter_easyloading 4. Aucun code modifié, canal `viteat-customer` inchangé.
+  - G4a `b436469` : geocoding 5, location 10, map_launcher 6, latlong2 0.10.
+    - `Utils.redirectMap` est reprise de la 9.2 (API MapApp/TravelMode, mêmes messages).
+    - Les appels `placemarkFromCoordinates` / `locationFromAddress` passent par `Geocoding()` (LocationService, fire_store_utils, place_picker).
+    - **Le repli 9.2 sur une position à Mumbai n'a pas été repris.**
+  - G4b `0ca573d` : bottom_picker 4.2 (`headerBuilder`, `onSubmit` typé), qr_code_dart_scan 0.14 (`ScanResult`), syncfusion 34. Les `.tr` et `TranslatedText` sont conservés. Il reste 6 infos de dépréciation sur `bottom_picker`, identiques à la 9.2 (à reprendre en phase 5).
+  - G5 `265d767` : flutter_stripe 14. Aucun code modifié ; la passerelle reste masquée.
+  - iOS `b868e20` : `IPHONEOS_DEPLOYMENT_TARGET` 13.0 → 15.0, aligné sur le Podfile.
+- **Volontairement non repris de la 9.2** :
+  - `googleapis_auth` et `mailer` (supprimés pour la sécurité) ;
+  - `flutter_email_sender` n'est pas monté : il n'est utilisé nulle part dans `lib/`, à supprimer au nettoyage.
+- **⚠️ Non fait : G6 Android natif** (AGP 8.9.1/8.3.0 → 8.11.1, Gradle 8.13 → 8.14.3, NDK 28.2 → 29.0.14033849, drapeaux `android.newDsl` / `builtInKotlin` de la 9.2).
+  - **Raison : aucun build APK n'est possible.** Le SDK Android (`%LOCALAPPDATA%\Android\Sdk`) est une jonction vers `D:\Dev\Android\Sdk`, et le disque D: n'était pas monté. Changer Gradle et le NDK sans build aurait poussé des modifications jamais vérifiées.
+  - **Aucun build APK n'a été fait sur cette branche** : seule l'analyse statique valide G1 à G5.
+  - **À faire dès que D: est branché** : `flutter build apk --debug --target-platform android-arm64` sur la branche telle quelle, puis G6, puis un test rapide sur appareil (plan, §« Vérification de bout en bout »).
+- `analysis_options.yaml` : modification locale de l'utilisateur, non commitée, laissée telle quelle.
 
 ## Session 2026-09-27/28 — contrats restaurant, badge bleu, durcissement (branche NON fusionnée)
 
