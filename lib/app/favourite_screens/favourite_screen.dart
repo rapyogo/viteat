@@ -126,11 +126,10 @@ class FavouriteScreen extends StatelessWidget {
                                                   child: Container(
                                                     decoration: controller.favouriteRestaurant.value == false
                                                         ? null
-                                                        : ShapeDecoration(
-                                                            color: AppThemeData.grey900,
-                                                            shape: RoundedRectangleBorder(
-                                                              borderRadius: BorderRadius.circular(120),
-                                                            ),
+                                                        : BoxDecoration(
+                                                            gradient: AppThemeData.primaryGradient,
+                                                            borderRadius: BorderRadius.circular(AppThemeData.radiusPill),
+                                                            boxShadow: themeChange.getThem() ? null : AppThemeData.primaryGlow,
                                                           ),
                                                     child: Padding(
                                                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -139,7 +138,11 @@ class FavouriteScreen extends StatelessWidget {
                                                         textAlign: TextAlign.center,
                                                         style: TextStyle(
                                                           fontFamily: AppThemeData.semiBold,
-                                                          color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
+                                                          color: controller.favouriteRestaurant.value == true
+                                                              ? AppThemeData.grey50
+                                                              : themeChange.getThem()
+                                                                  ? AppThemeData.grey400
+                                                                  : AppThemeData.grey500,
                                                         ),
                                                       ),
                                                     ),
@@ -154,11 +157,10 @@ class FavouriteScreen extends StatelessWidget {
                                                   child: Container(
                                                     decoration: controller.favouriteRestaurant.value == true
                                                         ? null
-                                                        : ShapeDecoration(
-                                                            color: AppThemeData.grey900,
-                                                            shape: RoundedRectangleBorder(
-                                                              borderRadius: BorderRadius.circular(120),
-                                                            ),
+                                                        : BoxDecoration(
+                                                            gradient: AppThemeData.primaryGradient,
+                                                            borderRadius: BorderRadius.circular(AppThemeData.radiusPill),
+                                                            boxShadow: themeChange.getThem() ? null : AppThemeData.primaryGlow,
                                                           ),
                                                     child: Padding(
                                                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -171,9 +173,7 @@ class FavouriteScreen extends StatelessWidget {
                                                               ? themeChange.getThem()
                                                                   ? AppThemeData.grey400
                                                                   : AppThemeData.grey500
-                                                              : themeChange.getThem()
-                                                                  ? AppThemeData.primary300
-                                                                  : AppThemeData.primary300,
+                                                              : AppThemeData.grey50,
                                                         ),
                                                       ),
                                                     ),
@@ -196,7 +196,7 @@ class FavouriteScreen extends StatelessWidget {
                                                 ? Constant.showEmptyView(message: "Favourite Restaurants not found.")
                                                 : ListView.builder(
                                                     shrinkWrap: true,
-                                                    padding: EdgeInsets.zero,
+                                                    padding: const EdgeInsets.only(bottom: 100),
                                                     scrollDirection: Axis.vertical,
                                                     itemCount: controller.favouriteVendorList.length,
                                                     itemBuilder: (BuildContext context, int index) {
@@ -218,9 +218,15 @@ class FavouriteScreen extends StatelessWidget {
                                                         child: Padding(
                                                           padding: const EdgeInsets.only(bottom: 20),
                                                           child: Container(
-                                                            decoration: ShapeDecoration(
+                                                            padding: const EdgeInsets.all(8),
+                                                            decoration: BoxDecoration(
                                                               color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
-                                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                                              borderRadius: BorderRadius.circular(AppThemeData.radiusLg),
+                                                              border: Border.all(
+                                                                width: 1,
+                                                                color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey100,
+                                                              ),
+                                                              boxShadow: themeChange.getThem() ? null : AppThemeData.cardShadow,
                                                             ),
                                                             child: Column(
                                                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,7 +234,7 @@ class FavouriteScreen extends StatelessWidget {
                                                                 Stack(
                                                                   children: [
                                                                     ClipRRect(
-                                                                      borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
+                                                                      borderRadius: const BorderRadius.all(Radius.circular(AppThemeData.radiusMd)),
                                                                       child: Stack(
                                                                         children: [
                                                                           ColorFiltered(
@@ -272,7 +278,7 @@ class FavouriteScreen extends StatelessWidget {
                                                                                   ? LinearGradient(
                                                                                       begin: const Alignment(-0.00, -1.00),
                                                                                       end: const Alignment(0, 1),
-                                                                                      colors: [Colors.black.withOpacity(0), const Color(0xFF111827)],
+                                                                                      colors: [Colors.black.withValues(alpha: 0), const Color(0xFF111827)],
                                                                                     )
                                                                                   : null,
                                                                             ),
@@ -360,23 +366,23 @@ class FavouriteScreen extends StatelessWidget {
                                                                           ),
                                                                           Container(
                                                                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                                                                            decoration: ShapeDecoration(
-                                                                              color: themeChange.getThem() ? AppThemeData.primary600 : AppThemeData.primary50,
-                                                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(120)),
+                                                                            decoration: BoxDecoration(
+                                                                              color: AppThemeData.lightGreen,
+                                                                              borderRadius: BorderRadius.circular(AppThemeData.radiusPill),
                                                                             ),
                                                                             child: Row(
                                                                               children: [
                                                                                 SvgPicture.asset(
                                                                                   "assets/icons/ic_star.svg",
-                                                                                  colorFilter: ColorFilter.mode(AppThemeData.primary300, BlendMode.srcIn),
+                                                                                  colorFilter: const ColorFilter.mode(AppThemeData.darkGreen, BlendMode.srcIn),
                                                                                 ),
                                                                                 const SizedBox(
                                                                                   width: 5,
                                                                                 ),
                                                                                 Text(
                                                                                   "${Constant.calculateReview(reviewCount: vendorModel.reviewsCount!.toStringAsFixed(0), reviewSum: vendorModel.reviewsSum.toString())} (${vendorModel.reviewsCount!.toStringAsFixed(0)})",
-                                                                                  style: TextStyle(
-                                                                                    color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
+                                                                                  style: const TextStyle(
+                                                                                    color: AppThemeData.darkGreen,
                                                                                     fontFamily: AppThemeData.semiBold,
                                                                                     fontWeight: FontWeight.w600,
                                                                                   ),
@@ -483,7 +489,7 @@ class FavouriteScreen extends StatelessWidget {
                                                 : ListView.builder(
                                                     itemCount: controller.favouriteFoodList.length,
                                                     shrinkWrap: true,
-                                                    padding: EdgeInsets.zero,
+                                                    padding: const EdgeInsets.only(bottom: 100),
                                                     itemBuilder: (context, index) {
                                                       ProductModel productModel = controller.favouriteFoodList[index];
                                                       final VendorModel? cachedVendorModel = controller.foodVendorCache[productModel.vendorID];
@@ -508,9 +514,14 @@ class FavouriteScreen extends StatelessWidget {
                                                                 child: Padding(
                                                                   padding: const EdgeInsets.symmetric(vertical: 5),
                                                                   child: Container(
-                                                                    decoration: ShapeDecoration(
+                                                                    decoration: BoxDecoration(
                                                                       color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
-                                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                                                      borderRadius: BorderRadius.circular(AppThemeData.radiusLg),
+                                                                      border: Border.all(
+                                                                        width: 1,
+                                                                        color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey100,
+                                                                      ),
+                                                                      boxShadow: themeChange.getThem() ? null : AppThemeData.cardShadow,
                                                                     ),
                                                                     child: Padding(
                                                                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -626,7 +637,7 @@ class FavouriteScreen extends StatelessWidget {
                                                                             width: 6,
                                                                           ),
                                                                           ClipRRect(
-                                                                            borderRadius: const BorderRadius.all(Radius.circular(16)),
+                                                                            borderRadius: const BorderRadius.all(Radius.circular(AppThemeData.radiusMd)),
                                                                             child: Stack(
                                                                               children: [
                                                                                 NetworkImageWidget(
@@ -642,7 +653,7 @@ class FavouriteScreen extends StatelessWidget {
                                                                                     gradient: LinearGradient(
                                                                                       begin: const Alignment(-0.00, -1.00),
                                                                                       end: const Alignment(0, 1),
-                                                                                      colors: [Colors.black.withOpacity(0), const Color(0xFF111827)],
+                                                                                      colors: [Colors.black.withValues(alpha: 0), const Color(0xFF111827)],
                                                                                     ),
                                                                                   ),
                                                                                 ),

@@ -39,17 +39,18 @@ class EditProfileScreen extends StatelessWidget {
                     TranslatedText(
                       "Profile Information",
                       style: TextStyle(
-                        fontSize: 24,
+                        fontSize: 26,
                         color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                        fontFamily: AppThemeData.semiBold,
-                        fontWeight: FontWeight.w500,
+                        fontFamily: AppThemeData.bold,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
+                    const SizedBox(height: 4),
                     TranslatedText(
                       "View and update your personal details, contact information, and preferences.",
                       style: TextStyle(
-                        fontSize: 16,
-                        color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                        fontSize: 15,
+                        color: themeChange.getThem() ? AppThemeData.grey400 : AppThemeData.grey500,
                         fontFamily: AppThemeData.regular,
                         fontWeight: FontWeight.w400,
                       ),
@@ -58,8 +59,21 @@ class EditProfileScreen extends StatelessWidget {
                       height: 20,
                     ),
                     Center(
-                      child: Stack(
-                        children: [
+                      child: Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: AppThemeData.primaryGradient,
+                          boxShadow: themeChange.getThem() ? null : AppThemeData.primaryGlow,
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: themeChange.getThem() ? AppThemeData.surfaceDark : AppThemeData.surface,
+                          ),
+                          child: Stack(
+                            children: [
                           controller.profileImage.isEmpty
                               ? ClipRRect(
                                   borderRadius: BorderRadius.circular(60),
@@ -102,8 +116,26 @@ class EditProfileScreen extends StatelessWidget {
                                   onTap: () {
                                     buildBottomSheet(context, controller);
                                   },
-                                  child: SvgPicture.asset("assets/icons/ic_edit.svg")))
-                        ],
+                                  child: Container(
+                                    padding: const EdgeInsets.all(7),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: AppThemeData.primaryGradient,
+                                      border: Border.all(
+                                        color: themeChange.getThem() ? AppThemeData.surfaceDark : AppThemeData.surface,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: SvgPicture.asset(
+                                      "assets/icons/ic_edit.svg",
+                                      height: 16,
+                                      width: 16,
+                                      colorFilter: const ColorFilter.mode(AppThemeData.grey50, BlendMode.srcIn),
+                                    ),
+                                  )))
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(
@@ -149,7 +181,14 @@ class EditProfileScreen extends StatelessWidget {
               ),
             ),
             bottomNavigationBar: Container(
-              color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
+              decoration: BoxDecoration(
+                color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(AppThemeData.radiusLg),
+                  topRight: Radius.circular(AppThemeData.radiusLg),
+                ),
+                boxShadow: themeChange.getThem() ? null : AppThemeData.floatShadow,
+              ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               child: Padding(
                   padding: const EdgeInsets.only(bottom: 20),

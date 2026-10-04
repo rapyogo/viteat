@@ -32,7 +32,16 @@ class OnBoardingScreen extends StatelessWidget {
                                   ? "assets/images/image_2.png"
                                   : "assets/images/image_3.png"),
                           fit: BoxFit.cover)),
-                  child: Padding(
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [Colors.transparent, Colors.transparent, Color(0xF2000000)],
+                        stops: [0.0, 0.4, 1.0],
+                      ),
+                    ),
+                    child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
@@ -90,8 +99,31 @@ class OnBoardingScreen extends StatelessWidget {
                         const SizedBox(
                           height: 20,
                         ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(
+                            controller.onBoardingList.length,
+                            (index) {
+                              final bool active = controller.selectedPageIndex.value == index;
+                              return AnimatedContainer(
+                                duration: const Duration(milliseconds: 250),
+                                margin: const EdgeInsets.symmetric(horizontal: 4),
+                                height: 8,
+                                width: active ? 24 : 8,
+                                decoration: BoxDecoration(
+                                  color: active ? AppThemeData.primary300 : AppThemeData.grey50.withValues(alpha: 0.5),
+                                  borderRadius: BorderRadius.circular(AppThemeData.radiusPill),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 20,
+                        ),
                         RoundedButtonFill(
-                          title: "Get Started",
+                          title: controller.selectedPageIndex.value == controller.onBoardingList.length - 1 ? "Get Started" : "Next",
+                          gradient: AppThemeData.primaryGradient,
                           color: AppThemeData.primary300,
                           textColor: AppThemeData.grey50,
                           onPress: () {
@@ -108,6 +140,7 @@ class OnBoardingScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+                  ),
                   ),
                 ),
         );

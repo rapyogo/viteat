@@ -56,14 +56,16 @@ class DiscountRestaurantListScreen extends StatelessWidget {
                           child: Padding(
                             padding: const EdgeInsets.only(bottom: 20),
                             child: Container(
-                              decoration: ShapeDecoration(
-                                color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              decoration: BoxDecoration(
+                                color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey50,
+                                borderRadius: BorderRadius.circular(AppThemeData.radiusLg),
+                                boxShadow: themeChange.getThem() ? null : AppThemeData.cardShadow,
+                                border: Border.all(color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey100),
                               ),
                               child: Row(
                                 children: [
                                   ClipRRect(
-                                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(16), bottomLeft: Radius.circular(16)),
+                                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(AppThemeData.radiusLg), bottomLeft: Radius.circular(AppThemeData.radiusLg)),
                                     child: Stack(
                                       children: [
                                         NetworkImageWidget(
@@ -79,7 +81,7 @@ class DiscountRestaurantListScreen extends StatelessWidget {
                                             gradient: LinearGradient(
                                               begin: const Alignment(-0.00, -1.00),
                                               end: const Alignment(0, 1),
-                                              colors: [Colors.black.withOpacity(0), const Color(0xFF111827)],
+                                              colors: [Colors.black.withValues(alpha: 0), const Color(0xFF111827)],
                                             ),
                                           ),
                                         ),
@@ -130,24 +132,34 @@ class DiscountRestaurantListScreen extends StatelessWidget {
                                                   ),
                                                 ),
                                               ),
-                                              Row(
-                                                children: [
-                                                  SvgPicture.asset(
-                                                    "assets/icons/ic_star.svg",
-                                                    colorFilter: ColorFilter.mode(AppThemeData.primary300, BlendMode.srcIn),
-                                                  ),
-                                                  const SizedBox(
-                                                    width: 5,
-                                                  ),
-                                                  Text(
-                                                    "${Constant.calculateReview(reviewCount: vendorModel.reviewsCount!.toStringAsFixed(0), reviewSum: vendorModel.reviewsSum.toString())} (${vendorModel.reviewsCount!.toStringAsFixed(0)})",
-                                                    style: TextStyle(
-                                                      color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
-                                                      fontFamily: AppThemeData.semiBold,
-                                                      fontWeight: FontWeight.w600,
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: AppThemeData.lightGreen,
+                                                  borderRadius: BorderRadius.circular(AppThemeData.radiusSm),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    SvgPicture.asset(
+                                                      "assets/icons/ic_star.svg",
+                                                      width: 14,
+                                                      colorFilter: const ColorFilter.mode(AppThemeData.darkGreen, BlendMode.srcIn),
                                                     ),
-                                                  ),
-                                                ],
+                                                    const SizedBox(
+                                                      width: 4,
+                                                    ),
+                                                    Text(
+                                                      "${Constant.calculateReview(reviewCount: vendorModel.reviewsCount!.toStringAsFixed(0), reviewSum: vendorModel.reviewsSum.toString())} (${vendorModel.reviewsCount!.toStringAsFixed(0)})",
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: AppThemeData.darkGreen,
+                                                        fontFamily: AppThemeData.bold,
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -237,7 +249,7 @@ class DiscountRestaurantListScreen extends StatelessWidget {
 //                     gradient: LinearGradient(
 //                       begin: const Alignment(-0.00, -1.00),
 //                       end: const Alignment(0, 1),
-//                       colors: [Colors.black.withOpacity(0), const Color(0xFF111827)],
+//                       colors: [Colors.black.withValues(alpha: 0), const Color(0xFF111827)],
 //                     ),
 //                   ),
 //                 ),
