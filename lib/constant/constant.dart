@@ -516,7 +516,19 @@ class Constant {
   }
 
   static DateTime stringToDate(String openDineTime) {
-    return DateFormat('HH:mm').parse(DateFormat('HH:mm').format(DateFormat("hh:mm a").parse((Intl.getCurrentLocale() == "en_US") ? openDineTime : openDineTime.toLowerCase())));
+    final input = ((Intl.getCurrentLocale() == "en_US") ? openDineTime : openDineTime.toLowerCase()).trim();
+    // Les restaurants peuvent enregistrer l'heure en 12 h ("09:00 AM") ou en
+    // 24 h ("09:00") : accepter les deux au lieu de planter (Foodie 9.2).
+    try {
+      final parsed = DateFormat("hh:mm a").parse(input);
+      return DateFormat('HH:mm').parse(DateFormat('HH:mm').format(parsed));
+    } catch (_) {
+      try {
+        return DateFormat('HH:mm').parse(input);
+      } catch (_) {
+        return DateFormat('HH:mm').parse('00:00');
+      }
+    }
   }
 
   static LanguageModel getLanguage() {
