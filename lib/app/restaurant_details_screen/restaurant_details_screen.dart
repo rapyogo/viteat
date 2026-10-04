@@ -90,9 +90,18 @@ class RestaurantDetailsScreen extends StatelessWidget {
                           onTap: () {
                             Get.back();
                           },
-                          child: Icon(
-                            Icons.arrow_back,
-                            color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50,
+                          borderRadius: BorderRadius.circular(AppThemeData.radiusPill),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.28),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.arrow_back,
+                              size: 20,
+                              color: AppThemeData.grey50,
+                            ),
                           ),
                         ),
                         const Expanded(child: SizedBox()),
@@ -209,7 +218,7 @@ class RestaurantDetailsScreen extends StatelessWidget {
                                         gradient: LinearGradient(
                                           begin: const Alignment(0.00, -1.00),
                                           end: const Alignment(0, 1),
-                                          colors: [Colors.black.withOpacity(0), Colors.black],
+                                          colors: [Colors.black.withValues(alpha: 0), Colors.black],
                                         ),
                                       ),
                                     ),
@@ -240,7 +249,7 @@ class RestaurantDetailsScreen extends StatelessWidget {
                                             gradient: LinearGradient(
                                               begin: const Alignment(0.00, -1.00),
                                               end: const Alignment(0, 1),
-                                              colors: [Colors.black.withOpacity(0), Colors.black],
+                                              colors: [Colors.black.withValues(alpha: 0), Colors.black.withValues(alpha: 0.55)],
                                             ),
                                           ),
                                         ),
@@ -259,14 +268,16 @@ class RestaurantDetailsScreen extends StatelessWidget {
                                 controller.vendorModel.value.photos!.length,
                                 (index) {
                                   return Obx(
-                                    () => Container(
+                                    () => AnimatedContainer(
+                                      duration: const Duration(milliseconds: 250),
+                                      curve: Curves.easeOut,
                                       margin: const EdgeInsets.only(right: 5),
                                       alignment: Alignment.centerLeft,
-                                      height: 9,
-                                      width: 9,
+                                      height: 8,
+                                      width: controller.currentPage.value == index ? 22 : 8,
                                       decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: controller.currentPage.value == index ? AppThemeData.primary300 : AppThemeData.grey300,
+                                        borderRadius: BorderRadius.circular(AppThemeData.radiusPill),
+                                        color: controller.currentPage.value == index ? AppThemeData.primary300 : AppThemeData.grey50.withValues(alpha: 0.7),
                                       ),
                                     ),
                                   );
@@ -292,7 +303,16 @@ class RestaurantDetailsScreen extends StatelessWidget {
                           children: [
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: Column(
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey50,
+                                  borderRadius: BorderRadius.circular(AppThemeData.radiusLg),
+                                  boxShadow: themeChange.getThem() ? null : AppThemeData.cardShadow,
+                                  border: Border.all(color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey100),
+                                ),
+                                child: Column(
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -313,10 +333,9 @@ class RestaurantDetailsScreen extends StatelessWidget {
                                                     textAlign: TextAlign.start,
                                                     maxLines: 1,
                                                     style: TextStyle(
-                                                      fontSize: 22,
+                                                      fontSize: 24,
                                                       overflow: TextOverflow.ellipsis,
-                                                      fontFamily: AppThemeData.semiBold,
-                                                      fontWeight: FontWeight.w600,
+                                                      fontFamily: AppThemeData.extraBold,
                                                       color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
                                                     ),
                                                   ),
@@ -343,16 +362,17 @@ class RestaurantDetailsScreen extends StatelessWidget {
                                         children: [
                                           Container(
                                             decoration: ShapeDecoration(
-                                              color: themeChange.getThem() ? AppThemeData.primary600 : AppThemeData.primary50,
+                                              color: AppThemeData.lightGreen,
                                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(120)),
                                             ),
                                             child: Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                                               child: Row(
                                                 children: [
                                                   SvgPicture.asset(
                                                     "assets/icons/ic_star.svg",
-                                                    colorFilter: ColorFilter.mode(AppThemeData.primary300, BlendMode.srcIn),
+                                                    width: 16,
+                                                    colorFilter: const ColorFilter.mode(AppThemeData.darkGreen, BlendMode.srcIn),
                                                   ),
                                                   const SizedBox(
                                                     width: 5,
@@ -360,10 +380,9 @@ class RestaurantDetailsScreen extends StatelessWidget {
                                                   Text(
                                                     Constant.calculateReview(
                                                         reviewCount: controller.vendorModel.value.reviewsCount!.toStringAsFixed(0), reviewSum: controller.vendorModel.value.reviewsSum.toString()),
-                                                    style: TextStyle(
-                                                      color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
-                                                      fontFamily: AppThemeData.semiBold,
-                                                      fontWeight: FontWeight.w600,
+                                                    style: const TextStyle(
+                                                      color: AppThemeData.darkGreen,
+                                                      fontFamily: AppThemeData.bold,
                                                     ),
                                                   ),
                                                 ],
@@ -398,16 +417,33 @@ class RestaurantDetailsScreen extends StatelessWidget {
                                     crossAxisAlignment: WrapCrossAlignment.center,
                                     runSpacing: 4,
                                     children: [
-                                      TranslatedText(
-                                        controller.isOpen.value ? "Open" : "Close",
-                                        textAlign: TextAlign.start,
-                                        maxLines: 1,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          overflow: TextOverflow.ellipsis,
-                                          fontFamily: AppThemeData.semiBold,
-                                          fontWeight: FontWeight.w600,
-                                          color: controller.isOpen.value ? AppThemeData.success400 : AppThemeData.danger300,
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: controller.isOpen.value ? AppThemeData.lightGreen : AppThemeData.danger50,
+                                          borderRadius: BorderRadius.circular(AppThemeData.radiusPill),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.circle,
+                                              size: 8,
+                                              color: controller.isOpen.value ? AppThemeData.darkGreen : AppThemeData.danger300,
+                                            ),
+                                            const SizedBox(width: 5),
+                                            TranslatedText(
+                                              controller.isOpen.value ? "Open" : "Close",
+                                              textAlign: TextAlign.start,
+                                              maxLines: 1,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                overflow: TextOverflow.ellipsis,
+                                                fontFamily: AppThemeData.bold,
+                                                color: controller.isOpen.value ? AppThemeData.darkGreen : AppThemeData.danger300,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                       Padding(
@@ -476,10 +512,10 @@ class RestaurantDetailsScreen extends StatelessWidget {
                                                 height: 80,
                                                 clipBehavior: Clip.antiAlias,
                                                 decoration: ShapeDecoration(
-                                                  color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
+                                                  color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.primary50,
                                                   shape: RoundedRectangleBorder(
-                                                    side: BorderSide(width: 1, color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50),
-                                                    borderRadius: BorderRadius.circular(16),
+                                                    side: BorderSide(width: 1, color: themeChange.getThem() ? AppThemeData.grey700 : AppThemeData.primary100),
+                                                    borderRadius: BorderRadius.circular(AppThemeData.radiusMd),
                                                   ),
                                                 ),
                                                 child: Padding(
@@ -559,10 +595,9 @@ class RestaurantDetailsScreen extends StatelessWidget {
                                     textAlign: TextAlign.start,
                                     maxLines: 1,
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 20,
                                       overflow: TextOverflow.ellipsis,
-                                      fontFamily: AppThemeData.semiBold,
-                                      fontWeight: FontWeight.w600,
+                                      fontFamily: AppThemeData.bold,
                                       color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
                                     ),
                                   ),
@@ -595,14 +630,14 @@ class RestaurantDetailsScreen extends StatelessWidget {
                                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                           decoration: controller.isVag.value
                                               ? ShapeDecoration(
-                                                  color: themeChange.getThem() ? AppThemeData.primary600 : AppThemeData.primary50,
+                                                  color: AppThemeData.lightGreen,
                                                   shape: RoundedRectangleBorder(
-                                                    side: BorderSide(width: 1, color: AppThemeData.primary300),
+                                                    side: const BorderSide(width: 1.5, color: AppThemeData.darkGreen),
                                                     borderRadius: BorderRadius.circular(120),
                                                   ),
                                                 )
                                               : ShapeDecoration(
-                                                  color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey100,
+                                                  color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey50,
                                                   shape: RoundedRectangleBorder(
                                                     side: BorderSide(width: 1, color: themeChange.getThem() ? AppThemeData.grey700 : AppThemeData.grey200),
                                                     borderRadius: BorderRadius.circular(120),
@@ -647,14 +682,14 @@ class RestaurantDetailsScreen extends StatelessWidget {
                                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                           decoration: controller.isNonVag.value
                                               ? ShapeDecoration(
-                                                  color: themeChange.getThem() ? AppThemeData.primary600 : AppThemeData.primary50,
+                                                  color: AppThemeData.danger50,
                                                   shape: RoundedRectangleBorder(
-                                                    side: BorderSide(width: 1, color: AppThemeData.primary300),
+                                                    side: const BorderSide(width: 1.5, color: AppThemeData.danger300),
                                                     borderRadius: BorderRadius.circular(120),
                                                   ),
                                                 )
                                               : ShapeDecoration(
-                                                  color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey100,
+                                                  color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey50,
                                                   shape: RoundedRectangleBorder(
                                                     side: BorderSide(width: 1, color: themeChange.getThem() ? AppThemeData.grey700 : AppThemeData.grey200),
                                                     borderRadius: BorderRadius.circular(120),
@@ -686,6 +721,7 @@ class RestaurantDetailsScreen extends StatelessWidget {
                                     ],
                                   ),
                                 ],
+                                ),
                               ),
                             ),
                             const SizedBox(
@@ -1029,7 +1065,6 @@ class ProductListView extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeChange = Provider.of<DarkThemeProvider>(context);
     return Container(
-      color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: ListView.builder(
         shrinkWrap: true,
@@ -1043,12 +1078,13 @@ class ProductListView extends StatelessWidget {
             tilePadding: EdgeInsets.zero,
             shape: const Border(),
             initiallyExpanded: true,
+            iconColor: AppThemeData.primary300,
+            collapsedIconColor: themeChange.getThem() ? AppThemeData.grey400 : AppThemeData.grey500,
             title: Text(
               "${vendorCategoryModel.title.toString().tr} (${controller.productList.where((p0) => p0.categoryID == vendorCategoryModel.id).toList().length})",
               style: TextStyle(
-                fontSize: 18,
-                fontFamily: AppThemeData.semiBold,
-                fontWeight: FontWeight.w600,
+                fontSize: 19,
+                fontFamily: AppThemeData.bold,
                 color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
               ),
             ),
@@ -1086,8 +1122,15 @@ class ProductListView extends StatelessWidget {
                       price = Constant.productCommissionPrice(controller.vendorModel.value, productModel.price.toString());
                       disPrice = double.parse(productModel.disPrice.toString()) <= 0 ? "0" : Constant.productCommissionPrice(controller.vendorModel.value, productModel.disPrice.toString());
                     }
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 20),
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 14),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey50,
+                        borderRadius: BorderRadius.circular(AppThemeData.radiusLg),
+                        boxShadow: themeChange.getThem() ? null : AppThemeData.cardShadow,
+                        border: Border.all(color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey100),
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1129,10 +1172,9 @@ class ProductListView extends StatelessWidget {
                                     ? Text(
                                         Constant.amountShow(amount: price),
                                         style: TextStyle(
-                                          fontSize: 16,
-                                          color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                                          fontFamily: AppThemeData.semiBold,
-                                          fontWeight: FontWeight.w600,
+                                          fontSize: 17,
+                                          color: AppThemeData.primary300,
+                                          fontFamily: AppThemeData.bold,
                                         ),
                                       )
                                     : Row(
@@ -1140,10 +1182,9 @@ class ProductListView extends StatelessWidget {
                                           Text(
                                             Constant.amountShow(amount: disPrice),
                                             style: TextStyle(
-                                              fontSize: 16,
-                                              color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                                              fontFamily: AppThemeData.semiBold,
-                                              fontWeight: FontWeight.w600,
+                                              fontSize: 17,
+                                              color: AppThemeData.primary300,
+                                              fontFamily: AppThemeData.bold,
                                             ),
                                           ),
                                           const SizedBox(
@@ -1247,7 +1288,7 @@ class ProductListView extends StatelessWidget {
                                     gradient: LinearGradient(
                                       begin: const Alignment(-0.00, -1.00),
                                       end: const Alignment(0, 1),
-                                      colors: [Colors.black.withOpacity(0), const Color(0xFF111827)],
+                                      colors: [Colors.black.withValues(alpha: 0), Colors.black.withValues(alpha: 0.45)],
                                     ),
                                   ),
                                 ),
@@ -1291,8 +1332,8 @@ class ProductListView extends StatelessWidget {
                                                 title: "Add",
                                                 width: 10,
                                                 height: 4,
-                                                color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
-                                                textColor: AppThemeData.primary300,
+                                                gradient: AppThemeData.primaryGradient,
+                                                textColor: AppThemeData.grey50,
                                                 onPress: () async {
                                                   if (Constant.userModel?.id == null) {
                                                     ShowToastDialog.showToast("Please login first to add items to your cart.");
@@ -1733,7 +1774,7 @@ class ProductDetailsView extends StatelessWidget {
                                     gradient: LinearGradient(
                                       begin: const Alignment(-0.00, -1.00),
                                       end: const Alignment(0, 1),
-                                      colors: [Colors.black.withOpacity(0), const Color(0xFF111827)],
+                                      colors: [Colors.black.withValues(alpha: 0), const Color(0xFF111827)],
                                     ),
                                   ),
                                 ),

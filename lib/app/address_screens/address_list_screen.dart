@@ -125,20 +125,32 @@ class AddressListScreen extends StatelessWidget {
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(vertical: 5),
                                   child: Container(
-                                    decoration: ShapeDecoration(
+                                    decoration: BoxDecoration(
                                       color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                      borderRadius: BorderRadius.circular(AppThemeData.radiusMd),
+                                      border: Border.all(
+                                        width: 1,
+                                        color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey100,
+                                      ),
+                                      boxShadow: themeChange.getThem() ? null : AppThemeData.cardShadow,
                                     ),
                                     child: Padding(
-                                      padding: const EdgeInsets.all(8.0),
+                                      padding: const EdgeInsets.all(14.0),
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Row(
                                             children: [
-                                              SvgPicture.asset(
-                                                "assets/icons/ic_send_one.svg",
-                                                colorFilter: ColorFilter.mode(themeChange.getThem() ? AppThemeData.grey100 : AppThemeData.grey800, BlendMode.srcIn),
+                                              Container(
+                                                padding: const EdgeInsets.all(8),
+                                                decoration: BoxDecoration(
+                                                  color: themeChange.getThem() ? AppThemeData.primary600 : AppThemeData.primary50,
+                                                  borderRadius: BorderRadius.circular(AppThemeData.radiusSm),
+                                                ),
+                                                child: SvgPicture.asset(
+                                                  "assets/icons/ic_send_one.svg",
+                                                  colorFilter: ColorFilter.mode(AppThemeData.primary300, BlendMode.srcIn),
+                                                ),
                                               ),
                                               const SizedBox(
                                                 width: 10,
@@ -161,17 +173,17 @@ class AddressListScreen extends StatelessWidget {
                                                     shippingAddress.isDefault == false
                                                         ? const SizedBox()
                                                         : Container(
-                                                            decoration: ShapeDecoration(
-                                                              color: themeChange.getThem() ? AppThemeData.primary50 : AppThemeData.primary50,
-                                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                                            decoration: BoxDecoration(
+                                                              color: AppThemeData.lightGreen,
+                                                              borderRadius: BorderRadius.circular(AppThemeData.radiusPill),
                                                             ),
                                                             child: Padding(
                                                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                                                               child: TranslatedText(
                                                                 "Default".tr,
-                                                                style: TextStyle(
+                                                                style: const TextStyle(
                                                                   fontSize: 12,
-                                                                  color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
+                                                                  color: AppThemeData.darkGreen,
                                                                   fontFamily: AppThemeData.semiBold,
                                                                   fontWeight: FontWeight.w600,
                                                                 ),

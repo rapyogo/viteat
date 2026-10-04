@@ -79,7 +79,7 @@ class LocationPermissionScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TranslatedText(
-                    "Enable Location Services 📍",
+                    "Enable Location Services",
                     style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey200 : AppThemeData.grey900, fontSize: 22, fontFamily: AppThemeData.semiBold),
                   ),
                   TranslatedText(
