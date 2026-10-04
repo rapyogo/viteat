@@ -13,6 +13,7 @@ import 'package:customer/models/vendor_model.dart';
 import 'package:customer/services/cart_provider.dart';
 import 'package:customer/utils/fire_store_utils.dart';
 import 'package:customer/utils/preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
@@ -108,14 +109,21 @@ class HomeController extends GetxController {
         return;
       }
 
-      // Sort by open status and rating
+      // Tri : ouverts d'abord, puis par note. Les cles sont calculees une seule
+      // fois par restaurant au lieu de l'etre a chaque comparaison (Foodie 9.2).
+      // La note est comparee en nombre, pas en texte ("10" < "4.5" en texte).
+      final Map<String?, bool> openStatus = {
+        for (final r in restaurants) r.id: Constant.statusCheckOpenORClose(vendorModel: r),
+      };
+      final Map<String?, double> ratingKey = {
+        for (final r in restaurants)
+          r.id: double.tryParse(Constant.calculateReview(reviewCount: r.reviewsCount.toString(), reviewSum: r.reviewsSum.toString())) ?? 0.0,
+      };
       restaurants.sort((a, b) {
-        final aOpen = Constant.statusCheckOpenORClose(vendorModel: a);
-        final bOpen = Constant.statusCheckOpenORClose(vendorModel: b);
+        final aOpen = openStatus[a.id] ?? false;
+        final bOpen = openStatus[b.id] ?? false;
         if (aOpen == bOpen) {
-          final ratingA = Constant.calculateReview(reviewCount: a.reviewsCount.toString(), reviewSum: a.reviewsSum.toString());
-          final ratingB = Constant.calculateReview(reviewCount: b.reviewsCount.toString(), reviewSum: b.reviewsSum.toString());
-          return ratingB.compareTo(ratingA);
+          return (ratingKey[b.id] ?? 0.0).compareTo(ratingKey[a.id] ?? 0.0);
         }
         return aOpen ? -1 : 1;
       });
@@ -132,8 +140,13 @@ class HomeController extends GetxController {
       final usedCategoryIds = restaurants.expand((v) => v.categoryID ?? []).toSet();
       vendorCategoryModel.retainWhere((cat) => usedCategoryIds.contains(cat.id));
 
-      await _loadAdditionalData(restaurants);
+      // L'accueil s'affiche des que les restaurants sont prets : coupons,
+      // stories et pubs sont des listes Rx (servies depuis le cache puis
+      // revalidees), leurs sections apparaissent seules (Foodie 9.2).
       isLoading.value = false;
+      unawaited(_loadAdditionalData(restaurants).catchError((Object e) {
+        debugPrint('HomeController: donnees secondaires de l'accueil indisponibles : $e');
+      }));
     });
   }
 
@@ -197,13 +210,23 @@ class HomeController extends GetxController {
     bannerModel.assignAll(results[1] as List<BannerModel>);
     bannerBottomModel.assignAll(results[2] as List<BannerModel>);
 
-    await getFavouriteRestaurant();
+    // Les favoris ne pilotent que les coeurs : chargement en arriere-plan
+    // plutot que de bloquer le premier affichage (Foodie 9.2).
+    unawaited(getFavouriteRestaurant());
   }
 
   Future<void> getFavouriteRestaurant() async {
-    if (Constant.userModel != null) {
+    // Comme dans SplashController, c'est la session Firebase Auth persistee
+    // localement qui fait foi, pas la presence d'un profil : hors ligne, le
+    // dashboard peut s'ouvrir en mode cache sans profil frais. Sans session
+    // locale (invite), rien a lire. On ne vide jamais la liste ni le profil
+    // sur un echec : un profil restaure depuis le cache reste une session valide.
+    if (FirebaseAuth.instance.currentUser == null) return;
+    try {
       final favs = await FireStoreUtils.getFavouriteRestaurant();
       favouriteList.assignAll(favs);
+    } catch (e) {
+      debugPrint('HomeController: favoris indisponibles (liste conservee) : $e');
     }
   }
 
