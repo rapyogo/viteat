@@ -1027,9 +1027,12 @@ class CategoryView extends StatelessWidget {
                         width: 60,
                         height: 60,
                         child: ClipOval(
-                          child: NetworkImageWidget(
-                            imageUrl: vendorCategoryModel.photo.toString(),
-                            fit: BoxFit.cover,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: NetworkImageWidget(
+                              imageUrl: vendorCategoryModel.photo.toString(),
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
                       ),

@@ -2235,47 +2235,46 @@ class CategoryView extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
               child: SizedBox(
                 width: 78,
-                child: Container(
-                  decoration: ShapeDecoration(
-                    color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(
-                        width: 1,
-                        strokeAlign: BorderSide.strokeAlignOutside,
-                        color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey100,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.primary50,
+                        shape: BoxShape.circle,
+                        boxShadow: themeChange.getThem() ? null : AppThemeData.cardShadow,
                       ),
-                      borderRadius: BorderRadius.circular(100),
+                      child: ClipOval(
+                        child: SizedBox(
+                          width: 56,
+                          height: 56,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: NetworkImageWidget(
+                              imageUrl: vendorCategoryModel.photo.toString(),
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 60,
-                        height: 60,
-                        child: ClipOval(
-                          child: NetworkImageWidget(
-                            imageUrl: vendorCategoryModel.photo.toString(),
-                            fit: BoxFit.cover,
-                          ),
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      child: TranslatedText(
+                        '${vendorCategoryModel.title}',
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        style: TextStyle(
+                          overflow: TextOverflow.ellipsis,
+                          color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                          fontFamily: AppThemeData.semiBold,
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                        child: TranslatedText(
-                          '${vendorCategoryModel.title}',
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                            fontFamily: AppThemeData.medium,
-                          ),
-                        ),
-                      )
-                    ],
-                  ),
+                    )
+                  ],
                 ),
               ),
             ),

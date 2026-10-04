@@ -73,9 +73,13 @@ class ViewAllCategoryScreen extends StatelessWidget {
                                     width: 56,
                                     height: 56,
                                     child: ClipOval(
-                                      child: NetworkImageWidget(
-                                        imageUrl: vendorCategoryModel.photo.toString(),
-                                        fit: BoxFit.cover,
+                                      // Icone entiere, plus rognee (Foodie 9.2).
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: NetworkImageWidget(
+                                          imageUrl: vendorCategoryModel.photo.toString(),
+                                          fit: BoxFit.contain,
+                                        ),
                                       ),
                                     ),
                                   ),
