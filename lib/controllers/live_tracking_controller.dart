@@ -94,54 +94,7 @@ class LiveTrackingController extends GetxController {
             _driverSubscription = FireStoreUtils.fireStore.collection(CollectionName.users).doc(orderModel.value.driverID).snapshots().listen((event) {
               if (event.data() != null) {
                 driverUserModel.value = UserModel.fromJson(event.data()!);
-
-                // animate / fetch based on map type & order status
-                if (Constant.selectedMapType != 'osm') {
-                  if (orderModel.value.status == Constant.orderShipped) {
-                    getPolyline(
-                        sourceLatitude: driverUserModel.value.location!.latitude,
-                        sourceLongitude: driverUserModel.value.location!.longitude,
-                        destinationLatitude: orderModel.value.vendor!.latitude,
-                        destinationLongitude: orderModel.value.vendor!.longitude);
-                  } else if (orderModel.value.status == Constant.orderInTransit) {
-                    getPolyline(
-                        sourceLatitude: driverUserModel.value.location!.latitude,
-                        sourceLongitude: driverUserModel.value.location!.longitude,
-                        destinationLatitude: orderModel.value.address!.location!.latitude,
-                        destinationLongitude: orderModel.value.address!.location!.longitude);
-                  } else {
-                    getPolyline(
-                        sourceLatitude: orderModel.value.address!.location!.latitude,
-                        sourceLongitude: orderModel.value.address!.location!.longitude,
-                        destinationLatitude: orderModel.value.vendor!.latitude,
-                        destinationLongitude: orderModel.value.vendor!.longitude);
-                  }
-
-                  // call animation for Google (non-blocking)
-                } else {
-                  // OSM flow
-                  current.value = location.LatLng(driverUserModel.value.location!.latitude ?? 0.0, driverUserModel.value.location!.longitude ?? 0.0);
-
-                  // set source/destination logically depending on status
-                  if (orderModel.value.status == Constant.orderShipped) {
-                    source.value = location.LatLng(orderModel.value.vendor!.latitude ?? 0.0, orderModel.value.vendor!.longitude ?? 0.0);
-                    destination.value = location.LatLng(orderModel.value.address!.location!.latitude ?? 0.0, orderModel.value.address!.location!.longitude ?? 0.0);
-                    awaitFetchRouteAndAnimateOSM(current.value, source.value);
-                  } else if (orderModel.value.status == Constant.orderInTransit) {
-                    source.value = location.LatLng(orderModel.value.vendor!.latitude ?? 0.0, orderModel.value.vendor!.longitude ?? 0.0);
-                    destination.value = location.LatLng(orderModel.value.address!.location!.latitude ?? 0.0, orderModel.value.address!.location!.longitude ?? 0.0);
-                    awaitFetchRouteAndAnimateOSM(current.value, destination.value);
-                  } else {
-                    source.value = location.LatLng(orderModel.value.vendor!.latitude ?? 0.0, orderModel.value.vendor!.longitude ?? 0.0);
-                    destination.value = location.LatLng(orderModel.value.address!.location!.latitude ?? 0.0, orderModel.value.address!.location!.longitude ?? 0.0);
-                    awaitFetchRouteAndAnimateOSM(current.value, source.value);
-                  }
-                }
-                onDriverLocationUpdate(
-                  lat: driverUserModel.value.location!.latitude,
-                  lng: driverUserModel.value.location!.longitude,
-                  rotation: double.tryParse(driverUserModel.value.rotation.toString()) ?? 0.0,
-                );
+                _handleDriverUpdate();
               }
             });
           }
@@ -161,6 +114,73 @@ class LiveTrackingController extends GetxController {
 
     isLoading.value = false;
     update();
+  }
+
+  // ---------- route-fetch throttle (Foodie 9.2) ----------
+  // L'itinéraire (Google Directions, facture a l'appel) n'est recalcule que si
+  // l'etape de livraison change ou toutes les 60 s, pas a chaque position GPS.
+  // Le marqueur du livreur reste anime a chaque position sur l'itineraire connu.
+  String? _lastRouteStatus;
+  DateTime _lastRouteFetch = DateTime.fromMillisecondsSinceEpoch(0);
+  final Duration _routeMinInterval = const Duration(seconds: 60);
+  // Sans itineraire (echec de l'API), on retente, mais pas a chaque position.
+  final Duration _routeRetryInterval = const Duration(seconds: 10);
+
+  void _handleDriverUpdate() {
+    final loc = driverUserModel.value.location;
+    if (loc == null) return;
+    final String status = orderModel.value.status ?? '';
+
+    if (Constant.selectedMapType != 'osm') {
+      if (_shouldFetchRoute(status)) {
+        if (status == Constant.orderShipped) {
+          getPolyline(
+              sourceLatitude: loc.latitude,
+              sourceLongitude: loc.longitude,
+              destinationLatitude: orderModel.value.vendor?.latitude,
+              destinationLongitude: orderModel.value.vendor?.longitude);
+        } else if (status == Constant.orderInTransit) {
+          getPolyline(
+              sourceLatitude: loc.latitude,
+              sourceLongitude: loc.longitude,
+              destinationLatitude: orderModel.value.address?.location?.latitude,
+              destinationLongitude: orderModel.value.address?.location?.longitude);
+        } else {
+          getPolyline(
+              sourceLatitude: orderModel.value.address?.location?.latitude,
+              sourceLongitude: orderModel.value.address?.location?.longitude,
+              destinationLatitude: orderModel.value.vendor?.latitude,
+              destinationLongitude: orderModel.value.vendor?.longitude);
+        }
+      }
+    } else {
+      // OSM : position et extremites sont de l'etat local, rafraichis a chaque
+      // position ; seul l'appel d'itineraire OSRM est limite.
+      current.value = location.LatLng(loc.latitude ?? 0.0, loc.longitude ?? 0.0);
+      source.value = location.LatLng(orderModel.value.vendor?.latitude ?? 0.0, orderModel.value.vendor?.longitude ?? 0.0);
+      destination.value = location.LatLng(orderModel.value.address?.location?.latitude ?? 0.0, orderModel.value.address?.location?.longitude ?? 0.0);
+      if (_shouldFetchRoute(status)) {
+        awaitFetchRouteAndAnimateOSM(current.value, status == Constant.orderInTransit ? destination.value : source.value);
+      }
+    }
+
+    onDriverLocationUpdate(
+      lat: loc.latitude,
+      lng: loc.longitude,
+      rotation: double.tryParse(driverUserModel.value.rotation.toString()) ?? 0.0,
+    );
+  }
+
+  bool _shouldFetchRoute(String status) {
+    final now = DateTime.now();
+    final Duration sinceLast = now.difference(_lastRouteFetch);
+    final bool statusChanged = status != _lastRouteStatus;
+    final bool haveRoute = Constant.selectedMapType != 'osm' ? polyLines.isNotEmpty : routePoints.isNotEmpty;
+    final bool due = haveRoute ? sinceLast >= _routeMinInterval : sinceLast >= _routeRetryInterval;
+    if (!statusChanged && !due) return false;
+    _lastRouteStatus = status;
+    _lastRouteFetch = now;
+    return true;
   }
 
   Future<void> awaitFetchRouteAndAnimateOSM(location.LatLng cur, location.LatLng dest) async {
