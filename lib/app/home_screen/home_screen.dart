@@ -1,5 +1,6 @@
 import 'package:customer/widget/location_prompt_view.dart';
 import 'package:customer/widget/home_skeleton.dart';
+import 'package:customer/widget/fade_in_section.dart';
 import 'package:customer/services/location_service.dart';
 import 'package:customer/widget/location_picker_flow.dart';
 import 'dart:io';
@@ -330,14 +331,14 @@ class HomeScreen extends StatelessWidget {
                                         children: [
                                           controller.storyList.isEmpty || Constant.storyEnable == false
                                               ? const SizedBox()
-                                              : Padding(
+                                              : FadeInSection(delayMs: 80, child: Padding(
                                                   padding: const EdgeInsets.symmetric(horizontal: 16),
                                                   child: StoryView(controller: controller),
-                                                ),
+                                                )),
                                           SizedBox(
                                             height: controller.storyList.isEmpty ? 0 : 20,
                                           ),
-                                          Padding(
+                                          FadeInSection(child: Padding(
                                             padding: const EdgeInsets.symmetric(horizontal: 16),
                                             child: Column(
                                               mainAxisAlignment: MainAxisAlignment.start,
@@ -352,19 +353,19 @@ class HomeScreen extends StatelessWidget {
                                                 CategoryView(controller: controller),
                                               ],
                                             ),
-                                          ),
+                                          )),
                                           const SizedBox(
                                             height: 32,
                                           ),
                                           controller.bannerModel.isEmpty
                                               ? const SizedBox()
-                                              : Padding(
+                                              : FadeInSection(delayMs: 120, child: Padding(
                                                   padding: const EdgeInsets.symmetric(horizontal: 16),
                                                   child: BannerView(controller: controller),
-                                                ),
+                                                )),
                                           controller.couponRestaurantList.isEmpty
                                               ? const SizedBox()
-                                              : Padding(
+                                              : FadeInSection(delayMs: 160, child: Padding(
                                                   padding: const EdgeInsets.symmetric(horizontal: 16),
                                                   child: Column(
                                                     mainAxisAlignment: MainAxisAlignment.start,
@@ -380,13 +381,13 @@ class HomeScreen extends StatelessWidget {
                                                       OfferView(controller: controller),
                                                     ],
                                                   ),
-                                                ),
+                                                )),
                                           const SizedBox(
                                             height: 28,
                                           ),
                                           controller.newArrivalRestaurantList.isEmpty
                                               ? const SizedBox()
-                                              : Container(
+                                              : FadeInSection(delayMs: 200, child: Container(
                                                   decoration: const BoxDecoration(image: DecorationImage(image: AssetImage("assets/images/ic_new_arrival_bg.png"), fit: BoxFit.cover)),
                                                   child: Padding(
                                                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -431,7 +432,7 @@ class HomeScreen extends StatelessWidget {
                                                       ],
                                                     ),
                                                   ),
-                                                ),
+                                                )),
                                           const SizedBox(
                                             height: 20,
                                           ),
@@ -592,10 +593,10 @@ class HomeScreen extends StatelessWidget {
                                               ),
                                             ),
                                           ),
-                                          Padding(
+                                          FadeInSection(delayMs: 120, child: Padding(
                                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                                             child: controller.isPopular.value ? PopularRestaurant(controller: controller) : AllRestaurant(controller: controller),
-                                          ),
+                                          )),
                                           // controller.isPopular.value
                                           //     ? PopularRestaurant(
                                           //   controller: controller,

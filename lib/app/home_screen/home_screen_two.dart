@@ -1,5 +1,6 @@
 import 'package:customer/widget/location_prompt_view.dart';
 import 'package:customer/widget/home_skeleton.dart';
+import 'package:customer/widget/fade_in_section.dart';
 import 'package:customer/services/location_service.dart';
 import 'package:customer/widget/location_picker_flow.dart';
 import 'dart:math';
@@ -281,13 +282,13 @@ class HomeScreenTwo extends StatelessWidget {
                                         const SizedBox(
                                           height: 20,
                                         ),
-                                        Padding(
+                                        FadeInSection(child: Padding(
                                           padding: const EdgeInsets.symmetric(horizontal: 16),
                                           child: CategoryView(controller: controller),
-                                        ),
+                                        )),
                                         controller.couponRestaurantList.isEmpty
                                             ? const SizedBox()
-                                            : Padding(
+                                            : FadeInSection(delayMs: 120, child: Padding(
                                                 padding: const EdgeInsets.symmetric(horizontal: 16),
                                                 child: Column(
                                                   children: [
@@ -297,10 +298,10 @@ class HomeScreenTwo extends StatelessWidget {
                                                     OfferView(controller: controller),
                                                   ],
                                                 ),
-                                              ),
+                                              )),
                                         controller.storyList.isEmpty || Constant.storyEnable == false
                                             ? const SizedBox()
-                                            : Padding(
+                                            : FadeInSection(delayMs: 160, child: Padding(
                                                 padding: const EdgeInsets.symmetric(horizontal: 16),
                                                 child: Column(
                                                   children: [
@@ -310,12 +311,12 @@ class HomeScreenTwo extends StatelessWidget {
                                                     StoryView(controller: controller),
                                                   ],
                                                 ),
-                                              ),
+                                              )),
                                         Visibility(
                                           visible: Constant.isEnableAdsFeature == true,
                                           child: controller.advertisementList.isEmpty
                                               ? const SizedBox()
-                                              : Column(
+                                              : FadeInSection(delayMs: 80, child: Column(
                                                   children: [
                                                     const SizedBox(
                                                       height: 20,
@@ -380,11 +381,11 @@ class HomeScreenTwo extends StatelessWidget {
                                                       ),
                                                     ),
                                                   ],
-                                                ),
+                                                )),
                                         ),
                                         controller.allNearestRestaurant.isEmpty
                                             ? const SizedBox()
-                                            : Column(
+                                            : FadeInSection(delayMs: 120, child: Column(
                                                 children: [
                                                   const SizedBox(
                                                     height: 20,
@@ -393,7 +394,7 @@ class HomeScreenTwo extends StatelessWidget {
                                                     controller: controller,
                                                   ),
                                                 ],
-                                              ),
+                                              )),
                                       ],
                                     ),
                                   ),
