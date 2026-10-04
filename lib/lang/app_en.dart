@@ -645,4 +645,7 @@ const Map<String, String> enUS = {
   "Where should we deliver?": "Where should we deliver?",
   "We need your position to show you the restaurants closest to you.": "We need your position to show you the restaurants closest to you.",
   "Use my position": "Use my position",
+  "Items added to your cart": "Items added to your cart",
+  "Some items are no longer available and were not added.": "Some items are no longer available and were not added.",
+  "These items are no longer available.": "These items are no longer available.",
 };

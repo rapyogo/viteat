@@ -2,7 +2,6 @@ import 'package:customer/app/auth_screen/login_screen.dart';
 import 'package:customer/app/order_list_screen/live_tracking_screen.dart';
 import 'package:customer/app/order_list_screen/order_details_screen.dart';
 import 'package:customer/constant/constant.dart';
-import 'package:customer/constant/show_toast_dialog.dart';
 import 'package:customer/controllers/order_controller.dart';
 import 'package:customer/models/cart_product_model.dart';
 import 'package:customer/models/order_model.dart';
@@ -409,12 +408,7 @@ class OrderScreen extends StatelessWidget {
                                               if (vendorModel.subscriptionTotalOrders == "-1") {
                                                 return Expanded(
                                                   child: InkWell(
-                                                    onTap: () {
-                                                      for (var element in orderModel.products!) {
-                                                        controller.addToCart(cartProductModel: element);
-                                                        ShowToastDialog.showToast("Item Added In a cart");
-                                                      }
-                                                    },
+                                                    onTap: () => controller.reorder(orderModel),
                                                     child: TranslatedText(
                                                       "Reorder",
                                                       textAlign: TextAlign.center,
@@ -432,12 +426,7 @@ class OrderScreen extends StatelessWidget {
                                                   if (vendorModel.subscriptionTotalOrders != '0') {
                                                     return Expanded(
                                                       child: InkWell(
-                                                        onTap: () {
-                                                          for (var element in orderModel.products!) {
-                                                            controller.addToCart(cartProductModel: element);
-                                                            ShowToastDialog.showToast("Item Added In a cart");
-                                                          }
-                                                        },
+                                                        onTap: () => controller.reorder(orderModel),
                                                         child: TranslatedText(
                                                           "Reorder",
                                                           textAlign: TextAlign.center,
@@ -459,12 +448,7 @@ class OrderScreen extends StatelessWidget {
                                             } else {
                                               return Expanded(
                                                 child: InkWell(
-                                                  onTap: () {
-                                                    for (var element in orderModel.products!) {
-                                                      controller.addToCart(cartProductModel: element);
-                                                      ShowToastDialog.showToast("Item Added In a cart");
-                                                    }
-                                                  },
+                                                  onTap: () => controller.reorder(orderModel),
                                                   child: TranslatedText(
                                                     "Reorder",
                                                     textAlign: TextAlign.center,

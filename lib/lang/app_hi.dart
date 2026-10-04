@@ -649,4 +649,7 @@ const Map<String, String> hiIN = {
   "Where should we deliver?": "डिलीवरी कहाँ करें?",
   "We need your position to show you the restaurants closest to you.": "आपके नज़दीकी रेस्टोरेंट दिखाने के लिए हमें आपकी लोकेशन चाहिए।",
   "Use my position": "मेरी लोकेशन इस्तेमाल करें",
+  "Items added to your cart": "आइटम आपके कार्ट में जोड़ दिए गए",
+  "Some items are no longer available and were not added.": "कुछ आइटम अब उपलब्ध नहीं हैं और जोड़े नहीं गए।",
+  "These items are no longer available.": "ये आइटम अब उपलब्ध नहीं हैं।",
 };

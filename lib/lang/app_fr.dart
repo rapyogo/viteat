@@ -649,4 +649,7 @@ const Map<String, String> trFR = {
   "Where should we deliver?": "Où livrer ?",
   "We need your position to show you the restaurants closest to you.": "Nous avons besoin de votre position pour vous montrer les restaurants les plus proches.",
   "Use my position": "Utiliser ma position",
+  "Items added to your cart": "Articles ajoutés à votre panier",
+  "Some items are no longer available and were not added.": "Certains articles ne sont plus disponibles et n'ont pas été ajoutés.",
+  "These items are no longer available.": "Ces articles ne sont plus disponibles.",
 };

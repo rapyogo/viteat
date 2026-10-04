@@ -641,4 +641,7 @@ const Map<String, String> lnAr = {
   "Where should we deliver?": "أين نوصل الطلب؟",
   "We need your position to show you the restaurants closest to you.": "نحتاج إلى موقعك لعرض أقرب المطاعم إليك.",
   "Use my position": "استخدام موقعي",
+  "Items added to your cart": "تمت إضافة العناصر إلى سلتك",
+  "Some items are no longer available and were not added.": "بعض العناصر لم تعد متوفرة ولم تتم إضافتها.",
+  "These items are no longer available.": "هذه العناصر لم تعد متوفرة.",
 };

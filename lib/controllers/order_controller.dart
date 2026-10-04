@@ -1,4 +1,6 @@
+import 'package:customer/app/cart_screen/cart_screen.dart';
 import 'package:customer/constant/constant.dart';
+import 'package:customer/constant/show_toast_dialog.dart';
 import 'package:customer/models/cart_product_model.dart';
 import 'package:customer/models/order_model.dart';
 import 'package:customer/models/vendor_model.dart';
@@ -63,10 +65,48 @@ class OrderController extends GetxController {
     update();
   }
 
+  /// Vrai si AU MOINS UN produit de la commande est encore disponible (Foodie 9.2).
+  /// Avant, un seul article retire masquait « Recommander » sur toute la commande.
+  /// L'identifiant panier d'un produit a variante est `produitId~varianteId`.
   Future<bool> hasAnyPublishedProduct(List<CartProductModel>? products) async {
     if (products == null || products.isEmpty) return false;
     // Un getProductById() par article, lancés en parallèle plutôt qu'en séquence.
-    final results = await Future.wait(products.map((item) => FireStoreUtils.getProductById(item.id ?? '')));
-    return results.every((product) => product != null && product.publish != false);
+    final results = await Future.wait(products.map((item) => FireStoreUtils.getProductById(item.id?.split('~').first ?? '')));
+    return results.any((product) => product != null && product.publish != false);
+  }
+
+  /// Remet au panier les produits encore disponibles d'une commande, puis ouvre
+  /// le panier (Foodie 9.2). Les articles supprimés ou dépubliés sont ignorés et
+  /// signalés, au lieu d'un toast par article.
+  Future<void> reorder(OrderModel orderModel) async {
+    final List<CartProductModel> items = orderModel.products ?? [];
+    if (items.isEmpty) return;
+    ShowToastDialog.showLoader("Please wait");
+    int skipped = 0;
+    final List<CartProductModel> available = [];
+    try {
+      final results = await Future.wait(items.map((item) => FireStoreUtils.getProductById(item.id?.split('~').first ?? '')));
+      for (int i = 0; i < items.length; i++) {
+        final product = results[i];
+        if (product == null || product.publish == false) {
+          skipped++;
+        } else {
+          available.add(items[i]);
+        }
+      }
+    } finally {
+      ShowToastDialog.closeLoader();
+    }
+
+    if (available.isEmpty) {
+      ShowToastDialog.showToast("These items are no longer available.");
+      return;
+    }
+    for (final item in available) {
+      cartProvider.addToCart(Get.context!, item, item.quantity ?? 1);
+    }
+    update();
+    ShowToastDialog.showToast(skipped > 0 ? "Some items are no longer available and were not added." : "Items added to your cart");
+    await Get.to(const CartScreen());
   }
 }
