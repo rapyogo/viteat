@@ -54,119 +54,130 @@ class DashBoardScreen extends StatelessWidget {
                   ),
                 ],
               ),
+              // Barre flottante arrondie et animee (Foodie 9.2). Pas d'extendBody :
+              // le contenu (et le bandeau de connexion) reste au-dessus de la barre,
+              // rien n'est masque dessous.
               bottomNavigationBar: ValueListenableBuilder(
                   valueListenable: TranslationNotifier.refresh,
                   builder: (_, __, ___) {
-                    return BottomNavigationBar(
-                      type: BottomNavigationBarType.fixed,
-                      showUnselectedLabels: true,
-                      showSelectedLabels: true,
-                      selectedFontSize: 12,
-                      selectedLabelStyle: const TextStyle(fontFamily: AppThemeData.bold),
-                      unselectedLabelStyle: const TextStyle(fontFamily: AppThemeData.bold),
-                      currentIndex: controller.selectedIndex.value,
-                      backgroundColor: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
-                      selectedItemColor: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
-                      unselectedItemColor: themeChange.getThem() ? AppThemeData.grey300 : AppThemeData.grey600,
-                      onTap: (int index) {
-                        if (index == 0) {
-                          Get.put(DashBoardController());
-                        }
-                        controller.selectedIndex.value = index;
-                      },
-                      items: Constant.walletSetting == false
-                          ? [
-                              navigationBarItem(
-                                themeChange,
-                                index: 0,
-                                assetIcon: "assets/icons/ic_home.svg",
-                                label: 'Home',
-                                controller: controller,
-                              ),
-                              navigationBarItem(
-                                themeChange,
-                                index: 1,
-                                assetIcon: "assets/icons/ic_fav.svg",
-                                label: 'Favourites',
-                                controller: controller,
-                              ),
-                              navigationBarItem(
-                                themeChange,
-                                index: 2,
-                                assetIcon: "assets/icons/ic_orders.svg",
-                                label: 'Orders',
-                                controller: controller,
-                              ),
-                              navigationBarItem(
-                                themeChange,
-                                index: 3,
-                                assetIcon: "assets/icons/ic_profile.svg",
-                                label: 'Profile',
-                                controller: controller,
-                              ),
-                            ]
-                          : [
-                              navigationBarItem(
-                                themeChange,
-                                index: 0,
-                                assetIcon: "assets/icons/ic_home.svg",
-                                label: 'Home',
-                                controller: controller,
-                              ),
-                              navigationBarItem(
-                                themeChange,
-                                index: 1,
-                                assetIcon: "assets/icons/ic_fav.svg",
-                                label: 'Favourites',
-                                controller: controller,
-                              ),
-                              navigationBarItem(
-                                themeChange,
-                                index: 2,
-                                assetIcon: "assets/icons/ic_wallet.svg",
-                                label: 'Wallet',
-                                controller: controller,
-                              ),
-                              navigationBarItem(
-                                themeChange,
-                                index: 3,
-                                assetIcon: "assets/icons/ic_orders.svg",
-                                label: 'Orders',
-                                controller: controller,
-                              ),
-                              navigationBarItem(
-                                themeChange,
-                                index: 4,
-                                assetIcon: "assets/icons/ic_profile.svg",
-                                label: 'Profile',
-                                controller: controller,
-                              ),
-                            ],
+                    final bool isDark = themeChange.getThem();
+                    final List<_NavItemData> items = Constant.walletSetting == false
+                        ? const [
+                            _NavItemData(assetIcon: "assets/icons/ic_home.svg", label: 'Home'),
+                            _NavItemData(assetIcon: "assets/icons/ic_fav.svg", label: 'Favourites'),
+                            _NavItemData(assetIcon: "assets/icons/ic_orders.svg", label: 'Orders'),
+                            _NavItemData(assetIcon: "assets/icons/ic_profile.svg", label: 'Profile'),
+                          ]
+                        : const [
+                            _NavItemData(assetIcon: "assets/icons/ic_home.svg", label: 'Home'),
+                            _NavItemData(assetIcon: "assets/icons/ic_fav.svg", label: 'Favourites'),
+                            _NavItemData(assetIcon: "assets/icons/ic_wallet.svg", label: 'Wallet'),
+                            _NavItemData(assetIcon: "assets/icons/ic_orders.svg", label: 'Orders'),
+                            _NavItemData(assetIcon: "assets/icons/ic_profile.svg", label: 'Profile'),
+                          ];
+                    return SafeArea(
+                      top: false,
+                      child: Container(
+                        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppThemeData.grey900 : AppThemeData.grey50,
+                          borderRadius: BorderRadius.circular(AppThemeData.radiusXl),
+                          boxShadow: AppThemeData.floatShadow,
+                          border: Border.all(color: isDark ? AppThemeData.grey800 : AppThemeData.grey100),
+                        ),
+                        // Material transparent : l'effet d'encre des onglets se dessine
+                        // au-dessus du fond de la barre, pas derriere.
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: List.generate(items.length, (index) {
+                              return _NavItem(
+                                data: items[index],
+                                selected: controller.selectedIndex.value == index,
+                                isDark: isDark,
+                                onTap: () {
+                                  if (index == 0) {
+                                    Get.put(DashBoardController());
+                                  }
+                                  controller.selectedIndex.value = index;
+                                },
+                              );
+                            }),
+                          ),
+                        ),
+                      ),
                     );
                   }),
             ),
           );
         });
   }
+}
 
-  BottomNavigationBarItem navigationBarItem(themeChange, {required int index, required String label, required String assetIcon, required DashBoardController controller}) {
-    return BottomNavigationBarItem(
-      icon: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5),
-        child: SvgPicture.asset(
-          assetIcon,
-          height: 22,
-          width: 22,
-          color: controller.selectedIndex.value == index
-              ? themeChange.getThem()
-                  ? AppThemeData.primary300
-                  : AppThemeData.primary300
-              : themeChange.getThem()
-                  ? AppThemeData.grey300
-                  : AppThemeData.grey600,
+class _NavItemData {
+  final String assetIcon;
+  final String label;
+  const _NavItemData({required this.assetIcon, required this.label});
+}
+
+class _NavItem extends StatelessWidget {
+  final _NavItemData data;
+  final bool selected;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _NavItem({required this.data, required this.selected, required this.isDark, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final Color inactive = isDark ? AppThemeData.grey300 : AppThemeData.grey600;
+    final String label = data.label.tr;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppThemeData.radiusPill),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOut,
+          constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
+          padding: EdgeInsets.symmetric(horizontal: selected ? 14 : 10, vertical: 10),
+          decoration: BoxDecoration(
+            gradient: selected ? AppThemeData.primaryGradient : null,
+            borderRadius: BorderRadius.circular(AppThemeData.radiusPill),
+            boxShadow: selected ? AppThemeData.primaryGlow : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SvgPicture.asset(
+                data.assetIcon,
+                height: 22,
+                width: 22,
+                colorFilter: ColorFilter.mode(selected ? AppThemeData.grey50 : inactive, BlendMode.srcIn),
+              ),
+              if (selected) ...[
+                const SizedBox(width: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 82),
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontFamily: AppThemeData.bold, fontSize: 12.5, color: AppThemeData.grey50),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
-      label: label.tr,
     );
   }
 }
