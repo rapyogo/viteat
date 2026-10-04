@@ -470,7 +470,7 @@ class OrderDetailsScreen extends StatelessWidget {
                                                                       children: [
                                                                         ClipOval(
                                                                           child: NetworkImageWidget(
-                                                                            imageUrl: controller.orderModel.value.author!.profilePictureURL.toString(),
+                                                                            imageUrl: controller.orderModel.value.driver!.profilePictureURL.toString(),
                                                                             fit: BoxFit.cover,
                                                                             height: Responsive.height(5, context),
                                                                             width: Responsive.width(10, context),
