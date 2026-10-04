@@ -145,7 +145,7 @@ class HomeController extends GetxController {
       // revalidees), leurs sections apparaissent seules (Foodie 9.2).
       isLoading.value = false;
       unawaited(_loadAdditionalData(restaurants).catchError((Object e) {
-        debugPrint('HomeController: donnees secondaires de l'accueil indisponibles : $e');
+        debugPrint("HomeController: donnees secondaires de l'accueil indisponibles : $e");
       }));
     });
   }
