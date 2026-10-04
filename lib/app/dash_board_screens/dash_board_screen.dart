@@ -46,6 +46,9 @@ class DashBoardScreen extends StatelessWidget {
             //   }
             // },
             child: Scaffold(
+              // Comme Foodie 9.2 : le contenu defile sous la barre flottante ; les
+              // ecrans gardent un espace bas pour que rien ne reste masque dessous.
+              extendBody: true,
               body: Column(
                 children: [
                   const ConnectivityBanner(),
@@ -54,9 +57,7 @@ class DashBoardScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              // Barre flottante arrondie et animee (Foodie 9.2). Pas d'extendBody :
-              // le contenu (et le bandeau de connexion) reste au-dessus de la barre,
-              // rien n'est masque dessous.
+              // Barre flottante arrondie et animee (Foodie 9.2).
               bottomNavigationBar: ValueListenableBuilder(
                   valueListenable: TranslationNotifier.refresh,
                   builder: (_, __, ___) {
