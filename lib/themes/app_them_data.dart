@@ -76,4 +76,83 @@ class AppThemeData {
   static const String regular = 'Urbanist-Regular';
   static const String semiBold = 'Urbanist-SemiBold';
   static const String thin = 'Urbanist-Thin';
+
+  // ─────────────────────────────────────────────────────────────
+  //  Jetons de design Foodie 9.2 (couche additive)
+  //  Degrades, ombres, rayons et espacements. La palette ne change pas :
+  //  la couleur de marque reste l'orange Viteat (primary300), et les
+  //  degrades en sont DERIVES pour suivre app_customer_color de l'admin.
+  // ─────────────────────────────────────────────────────────────
+
+  /// Decale la luminosite HSL d'une couleur (teintes de degrade).
+  static Color shiftLightness(Color color, double amount) {
+    final hsl = HSLColor.fromColor(color);
+    return hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0)).toColor();
+  }
+
+  /// Teintes du degrade de marque, derivees de [primary300] (getters : elles
+  /// suivent la couleur dynamique fixee depuis l'admin).
+  static Color get primaryGradientStart => shiftLightness(primary300, 0.06);
+  static Color get primaryGradientEnd => shiftLightness(primary300, -0.05);
+
+  static LinearGradient get primaryGradient => LinearGradient(
+        colors: [primaryGradientStart, primaryGradientEnd],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      );
+
+  /// Degrade plus doux pour les grandes surfaces (splash, en-tetes, cartes).
+  static LinearGradient get brandGradientSoft => LinearGradient(
+        colors: [shiftLightness(primary300, 0.09), shiftLightness(primary300, -0.02)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      );
+
+  /// Voile pose sur les photos de plats pour garder le texte lisible.
+  static const LinearGradient imageScrim = LinearGradient(
+    colors: [Colors.transparent, Color(0xCC000000)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  // Echelle des rayons.
+  static const double radiusSm = 10;
+  static const double radiusMd = 16;
+  static const double radiusLg = 22;
+  static const double radiusXl = 28;
+  static const double radiusPill = 100;
+
+  // Echelle des espacements (base 4 pt).
+  static const double spaceXs = 4;
+  static const double spaceSm = 8;
+  static const double spaceMd = 16;
+  static const double spaceLg = 24;
+  static const double spaceXl = 32;
+
+  /// Ombre douce des cartes sur fond clair.
+  static List<BoxShadow> cardShadow = [
+    BoxShadow(
+      color: grey900.withValues(alpha: 0.06),
+      blurRadius: 18,
+      offset: const Offset(0, 8),
+    ),
+  ];
+
+  /// Halo colore sous les boutons principaux (suit la couleur dynamique).
+  static List<BoxShadow> get primaryGlow => [
+        BoxShadow(
+          color: primary300.withValues(alpha: 0.35),
+          blurRadius: 16,
+          offset: const Offset(0, 8),
+        ),
+      ];
+
+  /// Ombre des elements flottants (barre de navigation, boutons flottants).
+  static List<BoxShadow> floatShadow = [
+    BoxShadow(
+      color: grey900.withValues(alpha: 0.10),
+      blurRadius: 24,
+      offset: const Offset(0, 10),
+    ),
+  ];
 }

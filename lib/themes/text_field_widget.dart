@@ -78,33 +78,37 @@ class TextFieldWidget extends StatelessWidget {
                     enabled: enable ?? true,
                     contentPadding: EdgeInsets.symmetric(
                         vertical: title == null
-                            ? 12
+                            ? 16
                             : enable == false
-                                ? 13
-                                : 8,
-                        horizontal: 10),
+                                ? 16
+                                : 14,
+                        horizontal: 16),
                     fillColor: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
                     prefixIcon: prefix,
                     suffixIcon: suffix,
-                    disabledBorder: UnderlineInputBorder(
-                      borderRadius: const BorderRadius.all(Radius.circular(10)),
-                      borderSide: BorderSide(color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50, width: 1),
+                    disabledBorder: OutlineInputBorder(
+                      borderRadius: const BorderRadius.all(Radius.circular(AppThemeData.radiusMd)),
+                      borderSide: BorderSide(color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey200, width: 1),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: const BorderRadius.all(Radius.circular(10)),
-                      borderSide: BorderSide(color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300, width: 1),
+                      borderRadius: const BorderRadius.all(Radius.circular(AppThemeData.radiusMd)),
+                      borderSide: BorderSide(color: AppThemeData.primary300, width: 1.6),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: const BorderRadius.all(Radius.circular(10)),
-                      borderSide: BorderSide(color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50, width: 1),
+                      borderRadius: const BorderRadius.all(Radius.circular(AppThemeData.radiusMd)),
+                      borderSide: BorderSide(color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey200, width: 1),
                     ),
                     errorBorder: OutlineInputBorder(
-                      borderRadius: const BorderRadius.all(Radius.circular(10)),
-                      borderSide: BorderSide(color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50, width: 1),
+                      borderRadius: const BorderRadius.all(Radius.circular(AppThemeData.radiusMd)),
+                      borderSide: const BorderSide(color: AppThemeData.danger300, width: 1),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: const BorderRadius.all(Radius.circular(AppThemeData.radiusMd)),
+                      borderSide: const BorderSide(color: AppThemeData.danger300, width: 1.6),
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: const BorderRadius.all(Radius.circular(10)),
-                      borderSide: BorderSide(color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50, width: 1),
+                      borderRadius: const BorderRadius.all(Radius.circular(AppThemeData.radiusMd)),
+                      borderSide: BorderSide(color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey200, width: 1),
                     ),
                     hintText: hintText.tr,
                     hintStyle: TextStyle(
