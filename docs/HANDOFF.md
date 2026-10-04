@@ -1,6 +1,32 @@
 # HANDOFF — customer (app Flutter de livraison de repas)
 
-Dernière mise à jour : 2026-10-03
+Dernière mise à jour : 2026-10-04
+
+## Session 2026-10-04 — G6 Android natif : build APK vert (branche `feat/app-client-deps-9.2`, NON fusionnée)
+
+- **État : base technique compilée, test sur téléphone pas encore fait.** Il ne faut donc pas encore annoncer `CLIENT_APP_PHASE_1_TECH_BASE_READY`.
+- **SDK Android** :
+  - le 03/10, le SDK n'était pas « absent » : il se trouve sur le disque USB, dans `D:\Explorer\MAYUNDO\Dev\Android\Sdk` (et non dans `D:\Dev\Android\Sdk`) ;
+  - avec l'accord de l'utilisateur, les composants utiles ont été copiés dans **`C:\Android\Sdk`** (platform-tools, cmdline-tools, cmake, android-36, build-tools 35 et 36.1, NDK 28.2 et 29). Gradle a ajouté lui-même android-31, 34 et 35 ;
+  - la jonction `%LOCALAPPDATA%\Android\Sdk` pointe maintenant vers `C:\Android\Sdk`.
+- **RAM du poste (6,9 Go)** : un build à `-Xmx4096m` saturait la machine (plus de 70 minutes sans fin). `~/.gradle/gradle.properties` (hors dépôt) fixe désormais Xmx 2560m, 2 workers et Kotlin in-process. Résultat : un build propre prend environ 95 minutes, un build incrémental de 3 à 16 minutes.
+- **Build de référence sur `c49ef8d`, sans rien modifier : ÉCHEC attendu.** Flutter 3.47.5 refuse Gradle 8.13 (minimum 8.14), puis AGP 8.9.1 (minimum 8.11.1). Les dépendances G1 à G5 n'y sont pour rien : la branche ne pouvait pas compiler avec Flutter 3.47 sans G6. Il n'y a donc pas de checkpoint « base verte » avant G6.
+- **Commits G6**, chacun suivi d'un `flutter build apk --debug --target-platform android-arm64` :
+  - `701c608` : Gradle 8.13 → 8.14.3. Le build passe le contrôle Gradle, puis bute sur l'AGP ;
+  - `ed45cee` : AGP 8.11.1 pour application et library. **Premier APK vert** (184 Mo) ;
+  - `98c43d8` : NDK 28.2 → 29.0.14033849. Vert ;
+  - `09875aa` : `android.newDsl=false` et `android.builtInKotlin=false`, ajouté par le migrateur Flutter dès le premier build. Ces drapeaux sont identiques à la 9.2 et répondent à la consigne « opt out of android.newDsl » du Flutter Fix. Vert.
+- **Conservé** : namespace et applicationId `com.rapyogo.customer.android`, signature, targetSdk 36 (la 9.2 est à 34), `versionCode 5`, desugaring, Kotlin 2.3.0.
+- **Vérifications** :
+  - `flutter analyze` : 0 erreur, 22 avertissements (identiques à la référence), 281 infos (contre 277 avant G1 ; G6 ne touche aucun fichier Dart) ;
+  - contrôle du contrat serveur : aucune nouvelle occurrence de `googleapis_auth|mailer|serviceJson|emailSetting|setWalletTransaction|updateUserWallet|wallet_amount|FirebaseEnv.staging` (les seules présentes sont des commentaires expliquant les suppressions) ;
+  - branche poussée, `c49ef8d..09875aa`.
+- **Avertissements de Flutter 3.47** : Gradle 8.14.3, AGP 8.11.1 et Kotlin 2.3.0 ne seront « bientôt plus pris en charge » (il recommande Gradle 9.1, AGP 9.0.1, Kotlin 2.3.20). Ce n'est pas bloquant. Monter au-delà de la 9.2 est une décision à part, à prendre plus tard (AGP 9 impose le nouveau DSL).
+- **Prochaine opération** :
+  1. brancher un téléphone Android avec le débogage USB ;
+  2. `adb install -r build/app/outputs/flutter-apk/app-debug.apk` ;
+  3. test rapide en lecture seule : splash, connexion, accueil, fiche restaurant, panier, écran FlexPay **sans valider**, scan QR, carte. Aucune commande, aucun paiement, aucune notification de test ;
+  4. si le test passe, annoncer `CLIENT_APP_PHASE_1_TECH_BASE_READY`, puis seulement passer aux 6 améliorations fonctionnelles 9.2.
 
 ## Session 2026-10-03 — étape 1 : dépendances alignées sur Foodie 9.2 (branche `feat/app-client-deps-9.2`, NON fusionnée)
 
