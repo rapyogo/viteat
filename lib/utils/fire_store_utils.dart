@@ -1050,7 +1050,7 @@ class FireStoreUtils {
       // Limite connue : placemarkFromCoordinates a besoin du reseau. Hors ligne
       // le pays reste inconnu et on sort ci-dessus — le cache-first ci-dessous
       // ne sert donc qu'en ligne, ou il evite quand meme l'aller-retour.
-      return _cacheFirstQuery<TaxModel>(
+      return await _cacheFirstQuery<TaxModel>(
         fireStore.collection(CollectionName.tax).where('country', isEqualTo: placeMarks.first.country).where('enable', isEqualTo: true),
         TaxModel.fromJson,
         onRefresh: onRefresh,
