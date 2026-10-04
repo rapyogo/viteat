@@ -1118,7 +1118,8 @@ class RestaurantView extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 physics: const NeverScrollableScrollPhysics(),
                 scrollDirection: Axis.vertical,
-                itemCount: controller.allNearestRestaurant.length,
+                // 15 cartes au plus sur l'accueil, la liste complete est derriere « See all » (Foodie 9.2).
+                itemCount: controller.allNearestRestaurant.length > 15 ? 15 : controller.allNearestRestaurant.length,
                 itemBuilder: (BuildContext context, int index) {
                   VendorModel vendorModel = controller.allNearestRestaurant[index];
 

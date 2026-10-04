@@ -1032,12 +1032,16 @@ class AllRestaurant extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeChange = Provider.of<DarkThemeProvider>(context);
     final isRTL = Directionality.of(context) == TextDirection.rtl;
-    return ListView.builder(
+    // L'accueil est une liste non paresseuse (shrinkWrap) : chaque carte est
+    // construite d'emblee. On en affiche 15 au plus, la liste complete est
+    // derriere « View all » (Foodie 9.2).
+    const int homeListLimit = 15;
+    final Widget list = ListView.builder(
       shrinkWrap: true,
       padding: EdgeInsets.zero,
       physics: const NeverScrollableScrollPhysics(),
       scrollDirection: Axis.vertical,
-      itemCount: controller.allNearestRestaurant.length,
+      itemCount: controller.allNearestRestaurant.length > homeListLimit ? homeListLimit : controller.allNearestRestaurant.length,
       itemBuilder: (BuildContext context, int index) {
         VendorModel vendorModel = controller.allNearestRestaurant[index];
         bool isOpen = Constant.statusCheckOpenORClose(vendorModel: vendorModel);
@@ -1316,6 +1320,30 @@ class AllRestaurant extends StatelessWidget {
           ),
         );
       },
+    );
+    if (controller.allNearestRestaurant.length <= homeListLimit) return list;
+    return Column(
+      children: [
+        list,
+        InkWell(
+          onTap: () {
+            Get.to(const RestaurantListScreen(), arguments: {"vendorList": controller.allNearestRestaurant, "title": "All Restaurants"})?.then((v) {
+              controller.getFavouriteRestaurant();
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: TranslatedText(
+              "View all",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: AppThemeData.semiBold,
+                color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
