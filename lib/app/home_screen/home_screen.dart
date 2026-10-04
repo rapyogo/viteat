@@ -1,4 +1,5 @@
 import 'package:customer/widget/location_prompt_view.dart';
+import 'package:customer/widget/home_skeleton.dart';
 import 'package:customer/services/location_service.dart';
 import 'package:customer/widget/location_picker_flow.dart';
 import 'dart:io';
@@ -75,7 +76,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             child: controller.isLoading.value
-                ? Constant.loader()
+                ? const HomeSkeleton()
                 : !LocationService.isResolved
                     // Localisation non resolue : cause distincte de "zone non
                     // couverte", les deux etaient confondues sous le meme message.
