@@ -38,10 +38,24 @@ class PhoneNumberScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TranslatedText(
-                      "Welcome Back! 👋",
-                      style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900, fontSize: 22, fontFamily: AppThemeData.semiBold),
+                    Container(
+                      height: 64,
+                      width: 64,
+                      decoration: BoxDecoration(
+                        gradient: AppThemeData.primaryGradient,
+                        borderRadius: BorderRadius.circular(AppThemeData.radiusLg),
+                        boxShadow: themeChange.getThem() ? null : AppThemeData.primaryGlow,
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.smartphone, size: 30, color: AppThemeData.grey50),
+                      ),
                     ),
+                    const SizedBox(height: AppThemeData.spaceLg),
+                    TranslatedText(
+                      "Welcome Back!",
+                      style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900, fontSize: 24, fontFamily: AppThemeData.bold),
+                    ),
+                    const SizedBox(height: AppThemeData.spaceXs),
                     TranslatedText(
                       "Log in to continue enjoying delicious food delivered to your doorstep.",
                       style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey400 : AppThemeData.grey500, fontSize: 16, fontFamily: AppThemeData.regular),
@@ -100,7 +114,7 @@ class PhoneNumberScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 40),
                       child: Row(
                         children: [
-                          const Expanded(child: Divider(thickness: 1)),
+                          Expanded(child: Divider(thickness: 1, color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey200)),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
                             child: TranslatedText(
@@ -114,7 +128,7 @@ class PhoneNumberScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const Expanded(child: Divider()),
+                          Expanded(child: Divider(thickness: 1, color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey200)),
                         ],
                       ),
                     ),

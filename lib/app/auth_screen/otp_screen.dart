@@ -44,10 +44,24 @@ class OtpScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          TranslatedText(
-                            "Verify Your Number 📱",
-                            style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900, fontSize: 22, fontFamily: AppThemeData.semiBold),
+                          Container(
+                            height: 64,
+                            width: 64,
+                            decoration: BoxDecoration(
+                              gradient: AppThemeData.primaryGradient,
+                              borderRadius: BorderRadius.circular(AppThemeData.radiusLg),
+                              boxShadow: themeChange.getThem() ? null : AppThemeData.primaryGlow,
+                            ),
+                            child: const Center(
+                              child: Icon(Icons.mark_email_read_outlined, size: 30, color: AppThemeData.grey50),
+                            ),
                           ),
+                          const SizedBox(height: AppThemeData.spaceLg),
+                          TranslatedText(
+                            "Verify Your Number",
+                            style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900, fontSize: 24, fontFamily: AppThemeData.bold),
+                          ),
+                          const SizedBox(height: AppThemeData.spaceXs),
                           TranslatedText(
                             "${'Enter the OTP sent to your mobile number.'} ${controller.countryCode.value} ${Constant.maskingString(controller.phoneNumber.value, 3)}",
                             textAlign: TextAlign.start,
@@ -73,19 +87,20 @@ class OtpScreen extends StatelessWidget {
                               theme: MaterialPinTheme(
                                 cellSize: const Size(50, 50),
                                 shape: MaterialPinShape.outlined,
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(AppThemeData.radiusMd),
 
                                 // Text Style
                                 textStyle: TextStyle(
-                                  fontFamily: AppThemeData.regular,
+                                  fontFamily: AppThemeData.semiBold,
+                                  fontSize: 18,
                                   color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
                                 ),
 
                                 // Fill Color (like enableActiveFill: true)
-                                fillColor: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
+                                fillColor: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey50,
 
                                 // Border Colors
-                                borderColor: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
+                                borderColor: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey200,
 
                                 focusedBorderColor: AppThemeData.primary300,
                                 cursorColor: AppThemeData.primary300,

@@ -39,9 +39,10 @@ class SignupScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       TranslatedText(
-                        "Create an Account 🚀",
-                        style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900, fontSize: 22, fontFamily: AppThemeData.semiBold),
+                        "Create an Account",
+                        style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900, fontSize: 24, fontFamily: AppThemeData.bold),
                       ),
+                      const SizedBox(height: AppThemeData.spaceXs),
                       TranslatedText(
                         "Sign up to start your food adventure with Viteat",
                         style: TextStyle(color: themeChange.getThem() ? AppThemeData.grey400 : AppThemeData.grey500, fontSize: 16, fontFamily: AppThemeData.regular),
