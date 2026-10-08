@@ -1,6 +1,8 @@
 import 'package:customer/constant/show_toast_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
+import 'package:customer/utils/auth_error_messages.dart';
+import 'package:flutter/foundation.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 class OtpController extends GetxController {
@@ -35,7 +37,10 @@ class OtpController extends GetxController {
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: countryCode.value + phoneNumber.value,
       verificationCompleted: (PhoneAuthCredential credential) {},
-      verificationFailed: (FirebaseAuthException e) {},
+      verificationFailed: (FirebaseAuthException e) {
+        debugPrint("resendOTP :: ${e.code}");
+        ShowToastDialog.showToast(AuthErrorMessages.fromCode(e.code));
+      },
       codeSent: (String verificationId0, int? resendToken0) async {
         verificationId.value = verificationId0;
         resendToken.value = resendToken0!;

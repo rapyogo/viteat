@@ -649,4 +649,12 @@ const Map<String, String> enUS = {
   "These items are no longer available.": "These items are no longer available.",
   "What would you like to eat today?": "What would you like to eat today?",
   "Unable to load your profile. Please try again.": "Unable to load your profile. Please try again.",
+  "Incorrect email or password.": "Incorrect email or password.",
+  "This account has been disabled. Please contact support.": "This account has been disabled. Please contact support.",
+  "Too many attempts. Please wait a few minutes and try again.": "Too many attempts. Please wait a few minutes and try again.",
+  "No internet connection. Check your network and try again.": "No internet connection. Check your network and try again.",
+  "Too many SMS requests. Please try again later.": "Too many SMS requests. Please try again later.",
+  "Security check failed. Please try again.": "Security check failed. Please try again.",
+  "The code has expired. Please request a new one.": "The code has expired. Please request a new one.",
+  "Something went wrong. Please try again.": "Something went wrong. Please try again.",
 };

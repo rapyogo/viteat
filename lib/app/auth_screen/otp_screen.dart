@@ -20,6 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:customer/widget/translated_text.dart';
 import 'package:get/get.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:customer/utils/auth_error_messages.dart';
 import 'package:provider/provider.dart';
 
 class OtpScreen extends StatelessWidget {
@@ -190,7 +191,7 @@ class OtpScreen extends StatelessWidget {
                                   }
                                 }).catchError((error) {
                                   ShowToastDialog.closeLoader();
-                                  ShowToastDialog.showToast("Invalid Code");
+                                  ShowToastDialog.showToast(AuthErrorMessages.fromException(error));
                                 });
                               } else {
                                 ShowToastDialog.showToast("Enter Valid otp");

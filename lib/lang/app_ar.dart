@@ -645,4 +645,12 @@ const Map<String, String> lnAr = {
   "These items are no longer available.": "هذه العناصر لم تعد متوفرة.",
   "What would you like to eat today?": "ماذا تودّ أن تأكل اليوم؟",
   "Unable to load your profile. Please try again.": "تعذّر تحميل ملفك الشخصي. يرجى المحاولة مرة أخرى.",
+  "Incorrect email or password.": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+  "This account has been disabled. Please contact support.": "تم تعطيل هذا الحساب. يرجى التواصل مع الدعم.",
+  "Too many attempts. Please wait a few minutes and try again.": "محاولات كثيرة. انتظر بضع دقائق ثم حاول مرة أخرى.",
+  "No internet connection. Check your network and try again.": "لا يوجد اتصال بالإنترنت. تحقّق من الشبكة وحاول مرة أخرى.",
+  "Too many SMS requests. Please try again later.": "طلبات رسائل SMS كثيرة. حاول لاحقًا.",
+  "Security check failed. Please try again.": "فشل التحقق الأمني. حاول مرة أخرى.",
+  "The code has expired. Please request a new one.": "انتهت صلاحية الرمز. اطلب رمزًا جديدًا.",
+  "Something went wrong. Please try again.": "حدث خطأ. حاول مرة أخرى.",
 };

@@ -653,4 +653,12 @@ const Map<String, String> hiIN = {
   "These items are no longer available.": "ये आइटम अब उपलब्ध नहीं हैं।",
   "What would you like to eat today?": "आज आप क्या खाना चाहेंगे?",
   "Unable to load your profile. Please try again.": "आपकी प्रोफ़ाइल लोड नहीं हो सकी। कृपया फिर से प्रयास करें।",
+  "Incorrect email or password.": "ईमेल या पासवर्ड गलत है।",
+  "This account has been disabled. Please contact support.": "यह खाता निष्क्रिय कर दिया गया है। सहायता से संपर्क करें।",
+  "Too many attempts. Please wait a few minutes and try again.": "बहुत अधिक प्रयास। कुछ मिनट रुककर फिर प्रयास करें।",
+  "No internet connection. Check your network and try again.": "इंटरनेट कनेक्शन नहीं है। नेटवर्क जांचें और फिर प्रयास करें।",
+  "Too many SMS requests. Please try again later.": "बहुत अधिक SMS अनुरोध। बाद में प्रयास करें।",
+  "Security check failed. Please try again.": "सुरक्षा जांच विफल रही। फिर प्रयास करें।",
+  "The code has expired. Please request a new one.": "कोड की समय सीमा समाप्त हो गई। नया कोड मांगें।",
+  "Something went wrong. Please try again.": "कुछ गलत हो गया। फिर प्रयास करें।",
 };

@@ -4,6 +4,7 @@ import 'package:customer/constant/show_toast_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import 'package:customer/utils/auth_error_messages.dart';
 import 'package:get/get.dart';
 
 class PhoneNumberController extends GetxController {
@@ -20,11 +21,7 @@ class PhoneNumberController extends GetxController {
             verificationFailed: (FirebaseAuthException e) {
               debugPrint("FirebaseAuthException--->${e.message}");
               ShowToastDialog.closeLoader();
-              if (e.code == 'invalid-phone-number') {
-                ShowToastDialog.showToast("invalid_phone_number");
-              } else {
-                ShowToastDialog.showToast(e.message);
-              }
+              ShowToastDialog.showToast(AuthErrorMessages.fromCode(e.code));
             },
             codeSent: (String verificationId, int? resendToken) {
               ShowToastDialog.closeLoader();

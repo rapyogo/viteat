@@ -15,6 +15,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:customer/utils/auth_error_messages.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class LoginController extends GetxController {
@@ -38,10 +39,17 @@ class LoginController extends GetxController {
       );
       UserModel? userModel = await FireStoreUtils.getUserProfile(credential.user!.uid);
       log("Login :: ${userModel?.toJson()}");
-      if (userModel?.role == Constant.userRoleCustomer) {
-        if (userModel?.active == true) {
-          userModel?.fcmToken = await NotificationService.getToken();
-          await FireStoreUtils.updateUser(userModel!);
+      if (userModel == null) {
+        // Profil illisible (reseau, donnees) : ce n'est pas un refus. On ne
+        // deconnecte pas, on informe.
+        ShowToastDialog.closeLoader();
+        ShowToastDialog.showToast("Unable to load your profile. Please try again.");
+        return;
+      }
+      if (userModel.role == Constant.userRoleCustomer) {
+        if (userModel.active == true) {
+          userModel.fcmToken = await NotificationService.getToken();
+          await FireStoreUtils.updateUser(userModel);
           if (userModel.shippingAddress != null && userModel.shippingAddress!.isNotEmpty) {
             if (userModel.shippingAddress!.where((element) => element.isDefault == true).isNotEmpty) {
               Constant.selectedLocation = userModel.shippingAddress!.where((element) => element.isDefault == true).single;
@@ -55,22 +63,29 @@ class LoginController extends GetxController {
         } else {
           await LocationService.clear();
           await FirebaseAuth.instance.signOut();
+          ShowToastDialog.closeLoader();
           ShowToastDialog.showToast("This user is disable please contact to administrator");
+          return;
         }
       } else {
         await LocationService.clear();
         await FirebaseAuth.instance.signOut();
+        ShowToastDialog.closeLoader();
         ShowToastDialog.showToast("This user is not created in customer application.");
+        return;
       }
     } on FirebaseAuthException catch (e) {
-      print(e.code);
-      if (e.code == 'user-not-found') {
-        ShowToastDialog.showToast("No user found for that email.");
-      } else if (e.code == 'wrong-password') {
-        ShowToastDialog.showToast("Wrong password provided for that user.");
-      } else if (e.code == 'invalid-email') {
-        ShowToastDialog.showToast("Invalid Email.");
-      }
+      debugPrint("loginWithEmail :: ${e.code}");
+      // Fermer le loader AVANT le message : closeLoader() (EasyLoading.dismiss)
+      // effacait aussi le toast affiche juste avant, d'ou l'absence de retour.
+      ShowToastDialog.closeLoader();
+      ShowToastDialog.showToast(AuthErrorMessages.fromCode(e.code));
+      return;
+    } catch (e) {
+      debugPrint("loginWithEmail :: $e");
+      ShowToastDialog.closeLoader();
+      ShowToastDialog.showToast(AuthErrorMessages.fromException(e));
+      return;
     }
     ShowToastDialog.closeLoader();
   }

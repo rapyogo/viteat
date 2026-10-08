@@ -653,4 +653,12 @@ const Map<String, String> trFR = {
   "These items are no longer available.": "Ces articles ne sont plus disponibles.",
   "What would you like to eat today?": "Qu'aimeriez-vous manger aujourd'hui ?",
   "Unable to load your profile. Please try again.": "Impossible de charger votre profil. Veuillez réessayer.",
+  "Incorrect email or password.": "E-mail ou mot de passe incorrect.",
+  "This account has been disabled. Please contact support.": "Ce compte a été désactivé. Contactez le support.",
+  "Too many attempts. Please wait a few minutes and try again.": "Trop de tentatives. Patientez quelques minutes puis réessayez.",
+  "No internet connection. Check your network and try again.": "Pas de connexion internet. Vérifiez votre réseau et réessayez.",
+  "Too many SMS requests. Please try again later.": "Trop de demandes de SMS. Réessayez plus tard.",
+  "Security check failed. Please try again.": "La vérification de sécurité a échoué. Réessayez.",
+  "The code has expired. Please request a new one.": "Le code a expiré. Demandez-en un nouveau.",
+  "Something went wrong. Please try again.": "Une erreur s'est produite. Réessayez.",
 };
