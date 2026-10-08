@@ -31,7 +31,23 @@ class SplashController extends GetxController {
     super.onInit();
   }
 
+  /// Au demarrage a froid, la session Firebase persistee n'est pas forcement
+  /// restauree a la premiere frame (constate hors ligne : currentUser nul, puis
+  /// la session revient). Decider avant envoyait au login un utilisateur
+  /// toujours connecte. Le premier evenement d'authStateChanges() donne l'etat
+  /// restaure ; delai maximal pour ne jamais bloquer le splash.
+  Future<void> _waitForAuthRestore() async {
+    if (FirebaseAuth.instance.currentUser != null) return;
+    try {
+      await FirebaseAuth.instance.authStateChanges().first.timeout(const Duration(seconds: 4));
+    } catch (_) {
+      // Delai depasse : on garde l'etat courant.
+    }
+    debugPrint("SplashController: session restauree = ${FirebaseAuth.instance.currentUser != null}");
+  }
+
   Future<void> redirectScreen({int retryCount = 0}) async {
+    if (retryCount == 0) await _waitForAuthRestore();
     try {
       await _redirectScreen();
     } catch (e) {
