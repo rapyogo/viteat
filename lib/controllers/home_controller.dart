@@ -59,13 +59,16 @@ class HomeController extends GetxController {
   Future<void> getData() async {
     isLoading.value = true;
     selectedOrderTypeValue.value = Preferences.getString(Preferences.foodDeliveryType, defaultValue: "Delivery");
+    // La liste des restaurants ne depend que de la zone : elle demarre des que
+    // la zone est connue, sans attendre taxes, categories et bannieres (avant,
+    // le geocodage des taxes retardait l'affichage des restaurants).
+    await getZone();
+    _listenForRestaurants();
     await Future.wait([
       getTaxList(),
       getVendorCategory(),
-      getZone(),
       getCartData(),
     ]);
-    _listenForRestaurants(); // 🔹 Stream listens in background
   }
 
   Future<void> getTaxList() async {

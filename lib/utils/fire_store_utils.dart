@@ -1070,15 +1070,22 @@ class FireStoreUtils {
       if (latitude == null || longitude == null) {
         return <TaxModel>[];
       }
-      final List<Placemark> placeMarks = await Geocoding().placemarkFromCoordinates(latitude, longitude);
-      if (placeMarks.isEmpty) {
-        return <TaxModel>[];
+      // Pays memorise par zone d'environ 1 km : le geocodage (appel reseau)
+      // n'est refait que si l'on change de secteur, plus a chaque lancement.
+      // Fonctionne aussi hors ligne une fois le pays connu.
+      final String areaKey = '${latitude.toStringAsFixed(2)},${longitude.toStringAsFixed(2)}';
+      String country = Preferences.getString('taxCountryArea') == areaKey ? Preferences.getString('taxCountry') : '';
+      if (country.isEmpty) {
+        final List<Placemark> placeMarks = await Geocoding().placemarkFromCoordinates(latitude, longitude);
+        if (placeMarks.isEmpty || (placeMarks.first.country ?? '').isEmpty) {
+          return <TaxModel>[];
+        }
+        country = placeMarks.first.country!;
+        await Preferences.setString('taxCountryArea', areaKey);
+        await Preferences.setString('taxCountry', country);
       }
-      // Limite connue : placemarkFromCoordinates a besoin du reseau. Hors ligne
-      // le pays reste inconnu et on sort ci-dessus — le cache-first ci-dessous
-      // ne sert donc qu'en ligne, ou il evite quand meme l'aller-retour.
       return await _cacheFirstQuery<TaxModel>(
-        fireStore.collection(CollectionName.tax).where('country', isEqualTo: placeMarks.first.country).where('enable', isEqualTo: true),
+        fireStore.collection(CollectionName.tax).where('country', isEqualTo: country).where('enable', isEqualTo: true),
         TaxModel.fromJson,
         onRefresh: onRefresh,
         tag: 'getTaxList',
