@@ -927,8 +927,14 @@ class BannerView extends StatelessWidget {
           return InkWell(
             onTap: () async {
               if (bannerModel.redirect_type == "store") {
-                ShowToastDialog.showLoader("Please wait");
-                VendorModel? vendorModel = await FireStoreUtils.getVendorById(bannerModel.redirect_id.toString());
+                // Restaurant deja en memoire (liste de l'accueil) : ouverture immediate,
+                // sans dialogue « Veuillez patienter » ni lecture reseau.
+                final String wantedVendorId = (bannerModel.redirect_id.toString()).toString();
+                VendorModel? vendorModel = Constant.restaurantList?.where((v) => v.id == wantedVendorId).firstOrNull;
+                if (vendorModel == null) {
+                  ShowToastDialog.showLoader("Please wait");
+                  vendorModel = await FireStoreUtils.getVendorById(wantedVendorId);
+                }
 
                 if (vendorModel!.zoneId == Constant.selectedZone!.id) {
                   ShowToastDialog.closeLoader();
