@@ -774,9 +774,11 @@ class FireStoreUtils {
     // liste vide, en donnant l'impression que la zone n'etait pas couverte.
     // On sort explicitement : aux ecrans d'inviter a definir une localisation.
     if (!LocationService.isResolved || Constant.selectedZone == null) {
+      debugPrint("VENDORS: pas de requete (localisation=${LocationService.isResolved}, zone=${Constant.selectedZone?.id})");
       yield <VendorModel>[];
       return;
     }
+    debugPrint("VENDORS: requete zone=${Constant.selectedZone?.id} centre=${LocationService.latitude},${LocationService.longitude} rayon=${Constant.radius}");
     try {
       Query<Map<String, dynamic>> query = isDining == true
           ? fireStore.collection(CollectionName.vendors).where('zoneId', isEqualTo: Constant.selectedZone?.id.toString()).where("enabledDiveInFuture", isEqualTo: true)
@@ -809,7 +811,10 @@ class FireStoreUtils {
             vendorList.add(vendorModel);
           }
         }
+        debugPrint("VENDORS: ${documentList.length} documents recus, ${vendorList.length} retenus");
         return vendorList;
+      }).handleError((Object e) {
+        debugPrint("VENDORS: erreur du flux :: $e");
       });
     } catch (e) {
       print(e);
