@@ -26,31 +26,47 @@ class NetworkImageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double h = height ?? Responsive.height(8, context);
+    final double w = width ?? Responsive.width(15, context);
+    // Decodage a la taille affichee (et non en pleine resolution) : une photo
+    // de 2000 px decodee pour une vignette de 60 px saturait la memoire et
+    // saccadait le defilement. On se base sur le plus grand cote pour garder
+    // une image nette quel que soit le BoxFit.
+    final double dpr = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0;
+    final double side = [w, h].where((v) => v.isFinite && v > 0).fold<double>(0, (m, v) => v > m ? v : m);
+    final int? decodeSize = side > 0 ? (side * dpr).round() : null;
+
     return CachedNetworkImage(
       imageUrl: imageUrl,
       fit: fit ?? BoxFit.fitWidth,
-      height: height ?? Responsive.height(8, context),
-      width: width ?? Responsive.width(15, context),
+      height: h,
+      width: w,
       color: color,
-      progressIndicatorBuilder: (context, url, downloadProgress) => Image.asset(
-        "assets/images/simmer_gif.gif",
+      memCacheWidth: decodeSize,
+      fadeInDuration: const Duration(milliseconds: 150),
+      // Fond neutre statique au lieu d'un GIF anime par image (couteux a
+      // decoder et a animer dans les longues listes).
+      placeholder: (context, url) => Container(
         height: height,
         width: width,
-        fit: BoxFit.fill,
+        color: Colors.grey.withValues(alpha: 0.15),
       ),
       errorWidget: (context, url, error) =>
           errorWidget ??
           (Constant.placeholderImage.isEmpty
               ? Icon(
                   Icons.image_not_supported_outlined,
-                  size: height ?? Responsive.height(8, context),
+                  size: h,
                   color: color,
                 )
-              : Image.network(
-                  Constant.placeholderImage,
+              : CachedNetworkImage(
+                  // Image de remplacement elle aussi mise en cache (avant :
+                  // Image.network, retelechargee a chaque affichage).
+                  imageUrl: Constant.placeholderImage,
                   fit: fit ?? BoxFit.fitWidth,
-                  height: height ?? Responsive.height(8, context),
-                  width: width ?? Responsive.width(15, context),
+                  height: h,
+                  width: w,
+                  memCacheWidth: decodeSize,
                 )),
     );
   }
