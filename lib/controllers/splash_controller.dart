@@ -63,7 +63,10 @@ class SplashController extends GetxController {
 
       if (deviceOffline || transientBackendError || retryCount >= 1) {
         // Hors ligne, erreur backend connue, ou deuxieme echec consecutif :
-        // inutile d'insister. L'app fonctionne en mode cache sur le dashboard.
+        // inutile d'insister. L'app fonctionne en mode cache sur le dashboard,
+        // avec le profil du cache local (sinon l'accueil s'affichait comme pour
+        // un invite). Le DashBoardController le recharge au retour du reseau.
+        Constant.userModel ??= await FireStoreUtils.getUserProfileFromCache(FireStoreUtils.getCurrentUid());
         Get.offAll(const DashBoardScreen());
         return;
       }

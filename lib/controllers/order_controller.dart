@@ -6,6 +6,7 @@ import 'package:customer/models/order_model.dart';
 import 'package:customer/models/vendor_model.dart';
 import 'package:customer/services/cart_provider.dart';
 import 'package:customer/utils/fire_store_utils.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 
 class OrderController extends GetxController {
@@ -30,7 +31,9 @@ class OrderController extends GetxController {
   }
 
   Future<void> getOrder() async {
-    if (Constant.userModel != null) {
+    // La session Firebase fait foi : au demarrage hors ligne, le profil peut
+    // manquer alors que la session est valide, et la liste restait vide.
+    if (FirebaseAuth.instance.currentUser != null) {
       await FireStoreUtils.getAllOrder().then((value) {
         isLoading.value = true;
         allList.value = value;

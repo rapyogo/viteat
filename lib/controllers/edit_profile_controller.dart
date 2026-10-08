@@ -27,6 +27,9 @@ class EditProfileController extends GetxController {
 
   getData() async {
     await FireStoreUtils.getUserProfile(FireStoreUtils.getCurrentUid()).then((value) {
+      // Lecture impossible : on montre le profil deja en memoire plutot que des
+      // champs vides.
+      value ??= Constant.userModel;
       if (value != null) {
         userModel.value = value;
         firstNameController.value.text = userModel.value.firstName.toString();

@@ -295,6 +295,7 @@ class FireStoreUtils {
   }
 
   static Future<UserModel?> getUserProfile(String uuid) async {
+    if (uuid.isEmpty) return null;
     UserModel? userModel;
     await fireStore.collection(CollectionName.users).doc(uuid).get().then((value) {
       if (value.exists) {
@@ -304,7 +305,23 @@ class FireStoreUtils {
       log("Failed to update user: $error");
       userModel = null;
     });
+    // Serveur injoignable (hors ligne, reseau lent) : le profil deja lu reste
+    // dans le cache local de Firestore. Sans ce repli, une session valide
+    // s'affichait comme un invite (pas de nom, pas de commandes).
+    userModel ??= await getUserProfileFromCache(uuid);
     return userModel;
+  }
+
+  /// Profil lu uniquement depuis le cache local de Firestore (aucun appel reseau).
+  static Future<UserModel?> getUserProfileFromCache(String uuid) async {
+    if (uuid.isEmpty) return null;
+    try {
+      final doc = await fireStore.collection(CollectionName.users).doc(uuid).get(const GetOptions(source: Source.cache));
+      return doc.exists ? UserModel.fromJson(doc.data()!) : null;
+    } catch (e) {
+      log("getUserProfileFromCache :: $e");
+      return null;
+    }
   }
 
   static Future<UserModel?> getUserByEmail(String email) async {
