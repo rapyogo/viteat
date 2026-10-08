@@ -21,6 +21,11 @@ class DashBoardScreen extends StatelessWidget {
     return GetX(
         init: DashBoardController(),
         builder: (controller) {
+          // Lu ICI, dans la fonction de GetX : c'est ce qui abonne l'ecran aux
+          // changements d'onglet. Lu dans un Builder imbrique, le tap changeait
+          // l'index sans rien redessiner (onglets qui ne s'ouvraient pas).
+          final int selectedTab = controller.pageList.isEmpty ? 0 : controller.selectedIndex.value.clamp(0, controller.pageList.length - 1);
+          if (controller.pageList.isNotEmpty) controller.visitedTabs.add(selectedTab);
           return PopScope(
             canPop: controller.canPopNow.value,
             onPopInvoked: (didPop) {
@@ -59,17 +64,13 @@ class DashBoardScreen extends StatelessWidget {
                     // paresseuse : un onglet n'est cree qu'a sa premiere ouverture.
                     child: controller.pageList.isEmpty
                         ? const SizedBox()
-                        : Builder(builder: (context) {
-                            final int selected = controller.selectedIndex.value.clamp(0, controller.pageList.length - 1);
-                            controller.visitedTabs.add(selected);
-                            return IndexedStack(
-                              index: selected,
-                              children: List.generate(
-                                controller.pageList.length,
-                                (i) => controller.visitedTabs.contains(i) ? controller.pageList[i] as Widget : const SizedBox.shrink(),
-                              ),
-                            );
-                          }),
+                        : IndexedStack(
+                            index: selectedTab,
+                            children: List.generate(
+                              controller.pageList.length,
+                              (i) => controller.visitedTabs.contains(i) ? controller.pageList[i] as Widget : const SizedBox.shrink(),
+                            ),
+                          ),
                   ),
                 ],
               ),
