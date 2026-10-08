@@ -91,12 +91,17 @@ class DashBoardScreen extends StatelessWidget {
                         // au-dessus du fond de la barre, pas derriere.
                         child: Material(
                           type: MaterialType.transparency,
+                          // Les onglets inactifs gardent leur taille (icone, 44 px) ;
+                          // l'onglet actif prend toute la place restante et son
+                          // libelle se coupe avec « … » au lieu de deborder
+                          // (« Portefeuille », « Commandes » avec 5 onglets).
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: List.generate(items.length, (index) {
-                              return _NavItem(
+                              final bool selected = controller.selectedIndex.value == index;
+                              final Widget item = _NavItem(
                                 data: items[index],
-                                selected: controller.selectedIndex.value == index,
+                                selected: selected,
                                 isDark: isDark,
                                 onTap: () {
                                   if (index == 0) {
@@ -105,6 +110,7 @@ class DashBoardScreen extends StatelessWidget {
                                   controller.selectedIndex.value = index;
                                 },
                               );
+                              return selected ? Expanded(child: Center(child: item)) : item;
                             }),
                           ),
                         ),
@@ -147,7 +153,7 @@ class _NavItem extends StatelessWidget {
           duration: const Duration(milliseconds: 260),
           curve: Curves.easeOut,
           constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
-          padding: EdgeInsets.symmetric(horizontal: selected ? 14 : 10, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: selected ? 12 : 10, vertical: 10),
           decoration: BoxDecoration(
             gradient: selected ? AppThemeData.primaryGradient : null,
             borderRadius: BorderRadius.circular(AppThemeData.radiusPill),
@@ -164,8 +170,7 @@ class _NavItem extends StatelessWidget {
               ),
               if (selected) ...[
                 const SizedBox(width: 8),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 82),
+                Flexible(
                   child: Text(
                     label,
                     maxLines: 1,
