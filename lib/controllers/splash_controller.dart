@@ -63,6 +63,7 @@ class SplashController extends GetxController {
       // sur une reponse serveur — jamais par ce catch.
       final bool hasLocalSession = FirebaseAuth.instance.currentUser != null;
       if (!hasLocalSession) {
+        debugPrint("SESSION: erreur splash sans session locale -> login ($e)");
         Get.offAll(const LoginScreen());
         return;
       }
@@ -152,11 +153,13 @@ class SplashController extends GetxController {
                       Get.offAll(const LocationPermissionScreen());
                     }
                   } else {
+                    debugPrint("SESSION: deconnexion splash, compte inactif");
                     await LocationService.clear();
                     await FirebaseAuth.instance.signOut();
                     Get.offAll(const LoginScreen());
                   }
                 } else {
+                  debugPrint("SESSION: deconnexion splash, role=${userModel.role}");
                   await LocationService.clear();
                   await FirebaseAuth.instance.signOut();
                   Get.offAll(const LoginScreen());
@@ -173,6 +176,7 @@ class SplashController extends GetxController {
               }
             });
           } else {
+            debugPrint("SESSION: isLogin=false (currentUser=${FirebaseAuth.instance.currentUser != null}), deconnexion splash");
             await LocationService.clear();
             await FirebaseAuth.instance.signOut();
             Get.offAll(const LoginScreen());

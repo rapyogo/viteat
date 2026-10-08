@@ -45,8 +45,11 @@ void main() async {
   // Le provider debug ne fait pas cette tentative et répond immédiatement.
   await FirebaseAppCheck.instance.activate(
     webProvider: ReCaptchaV3Provider('recaptcha-v3-site-key'),
-    androidProvider: kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
-    appleProvider: kDebugMode ? AppleProvider.debug : AppleProvider.appAttest,
+    // APP_CHECK_DEBUG (--dart-define) : build profile/release de test installe
+    // hors Play Store, pour mesurer les performances reelles (le mode debug
+    // est plusieurs fois plus lent). Jamais active sur un build publie.
+    androidProvider: (kDebugMode || const bool.fromEnvironment('APP_CHECK_DEBUG')) ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+    appleProvider: (kDebugMode || const bool.fromEnvironment('APP_CHECK_DEBUG')) ? AppleProvider.debug : AppleProvider.appAttest,
   );
 
   DatabaseHelper.instance;
