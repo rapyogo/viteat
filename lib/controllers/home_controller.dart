@@ -136,9 +136,8 @@ class HomeController extends GetxController {
       popularRestaurantList.assignAll(restaurants.take(10)); // only top 10
       Constant.restaurantList = allNearestRestaurant;
 
-      // Filter categories used by restaurants
-      final usedCategoryIds = restaurants.expand((v) => v.categoryID ?? []).toSet();
-      vendorCategoryModel.retainWhere((cat) => usedCategoryIds.contains(cat.id));
+      // Categories : seulement celles utilisees par un restaurant proche.
+      _applyHomeCategories();
 
       // L'accueil s'affiche des que les restaurants sont prets : coupons,
       // stories et pubs sont des listes Rx (servies depuis le cache puis
@@ -198,15 +197,36 @@ class HomeController extends GetxController {
     apply(await FireStoreUtils.getAllAdvertisement(onRefresh: apply));
   }
 
+  // Categories d'accueil (publiees et « afficher sur l'accueil » dans l'Admin),
+  // avant filtrage. Le filtre « utilisee par un restaurant proche » ne dependait
+  // que de l'ordre d'arrivee des donnees : applique si les categories arrivaient
+  // avant les restaurants, annule par la revalidation serveur. Il est maintenant
+  // reapplique a chaque arrivee de l'une ou l'autre liste.
+  List<VendorCategoryModel> _homeCategories = [];
+
+  void _setHomeCategories(List<VendorCategoryModel> categories) {
+    _homeCategories = categories;
+    _applyHomeCategories();
+  }
+
+  void _applyHomeCategories() {
+    if (allNearestRestaurant.isEmpty) {
+      vendorCategoryModel.assignAll(_homeCategories);
+      return;
+    }
+    final usedCategoryIds = allNearestRestaurant.expand((v) => v.categoryID ?? []).toSet();
+    vendorCategoryModel.assignAll(_homeCategories.where((cat) => usedCategoryIds.contains(cat.id)));
+  }
+
   // ✅ Cached and parallel category + banner + favourite fetch
   Future<void> getVendorCategory() async {
     final results = await Future.wait([
-      FireStoreUtils.getHomeVendorCategory(onRefresh: vendorCategoryModel.assignAll),
+      FireStoreUtils.getHomeVendorCategory(onRefresh: _setHomeCategories),
       FireStoreUtils.getHomeTopBanner(onRefresh: bannerModel.assignAll),
       FireStoreUtils.getHomeBottomBanner(onRefresh: bannerBottomModel.assignAll),
     ]);
 
-    vendorCategoryModel.assignAll(results[0] as List<VendorCategoryModel>);
+    _setHomeCategories(results[0] as List<VendorCategoryModel>);
     bannerModel.assignAll(results[1] as List<BannerModel>);
     bannerBottomModel.assignAll(results[2] as List<BannerModel>);
 
