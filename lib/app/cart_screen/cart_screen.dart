@@ -1130,20 +1130,11 @@ class CartScreen extends StatelessWidget {
                 ? null
                 : Container(
                     decoration: BoxDecoration(color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50),
-                    height: controller.selectedPaymentMethod.value == ''
-                        ? 100
-                        : controller.isCashbackApply.value == true
-                            ? controller.isEnableFreeDeliveryByAdmin.value == false &&
-                                    controller.freeDeliveryByAdminModel.value.isEnableFreeDelivery == true &&
-                                    controller.selectedFoodType.value != 'TakeAway'
-                                ? 200
-                                : 170
-                            : controller.freeDeliveryByAdminModel.value.isEnableFreeDelivery == true &&
-                                    controller.isEnableFreeDeliveryByAdmin.value == false &&
-                                    controller.selectedFoodType.value != 'TakeAway'
-                                ? 170
-                                : 100,
+                    // Hauteur ajustee au contenu (affichage seulement) : les hauteurs
+                    // fixes 100/170/200 debordaient des que le texte du cashback
+                    // passait sur plusieurs lignes en francais.
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (controller.isCashbackApply.value == true && controller.selectedPaymentMethod.value != '')
