@@ -37,10 +37,12 @@ class AdvertisementListController extends GetxController {
     advertisementList.clear();
     _restaurantSubscription?.cancel();
     _restaurantSubscription = FireStoreUtils.getAllNearestRestaurant().listen((event) async {
-      allNearestRestaurant.addAll(event);
+      // assignAll : chaque emission du flux remplace la liste au lieu de
+      // l'allonger (doublons qui s'accumulaient).
+      allNearestRestaurant.assignAll(event);
       await FireStoreUtils.getAllAdvertisement().then((value) {
         List<AdvertisementModel> adsList = value;
-        advertisementList.addAll(
+        advertisementList.assignAll(
           adsList.where((ads) => allNearestRestaurant.any((restaurant) => restaurant.id == ads.vendorId)),
         );
       });

@@ -65,10 +65,12 @@ class DineInController extends GetxController {
         (a, b) => Constant.calculateReview(reviewCount: b.reviewsCount.toString(), reviewSum: b.reviewsSum.toString())
             .compareTo(Constant.calculateReview(reviewCount: a.reviewsCount.toString(), reviewSum: a.reviewsSum.toString())),
       );
+      // Fin du chargement a l'arrivee des donnees : avant, isLoading passait a
+      // false tout de suite et l'etat « vide » clignotait.
+      isLoading.value = false;
     });
 
     update();
-    isLoading.value = false;
   }
 
   Future<void> getCategory() async {

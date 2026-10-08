@@ -45,15 +45,21 @@ class RestaurantDetailsController extends GetxController {
 
   StreamSubscription<List<CartProductModel>>? _cartSubscription;
 
+  // Minuteur du carrousel photos : garde pour l'annuler (il tournait encore
+  // apres la fermeture de la fiche, un de plus a chaque visite).
+  Timer? _sliderTimer;
+
   @override
   void onClose() {
     _cartSubscription?.cancel();
+    _sliderTimer?.cancel();
     super.onClose();
   }
 
   void animateSlider() {
     if (vendorModel.value.photos != null && vendorModel.value.photos!.isNotEmpty) {
-      Timer.periodic(const Duration(seconds: 2), (Timer timer) {
+      _sliderTimer?.cancel();
+      _sliderTimer = Timer.periodic(const Duration(seconds: 2), (Timer timer) {
         if (currentPage < vendorModel.value.photos!.length - 1) {
           currentPage++;
         } else {

@@ -37,10 +37,11 @@ class CategoryRestaurantController extends GetxController {
       dineIn.value = argumentData['dineIn'];
       await getZone();
       await getRestaurant();
-    }
-    Future.delayed(Duration(seconds: 1), () {
+    } else {
       isLoading.value = false;
-    });
+    }
+    // Plus de spinner force d'1 s : le chargement s'arrete a la premiere
+    // reponse du flux (voir getRestaurant).
   }
 
   Future getRestaurant() async {
@@ -55,6 +56,7 @@ class CategoryRestaurantController extends GetxController {
         return aOpen ? -1 : 1;
       });
       allNearestRestaurant.addAll(event);
+      isLoading.value = false;
       for (var store in allNearestRestaurant) {
         final storeData = Constant.statusCheckOpenORClose(vendorModel: store);
         log("storeData :: ${allNearestRestaurant.indexOf(store)} :: ${store.title} :: $storeData");
