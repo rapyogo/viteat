@@ -752,8 +752,6 @@ class FireStoreUtils {
     );
   }
 
-  static StreamController<List<VendorModel>>? getNearestVendorController;
-
   static Stream<List<VendorModel>> getAllNearestRestaurant({bool? isDining}) async* {
     // Sans localisation resolue, le centre geographique retombait sur (0,0) —
     // au large de l'Afrique — et la requete ramenait donc systematiquement une
@@ -764,8 +762,6 @@ class FireStoreUtils {
       return;
     }
     try {
-      getNearestVendorController = StreamController<List<VendorModel>>.broadcast();
-      List<VendorModel> vendorList = [];
       Query<Map<String, dynamic>> query = isDining == true
           ? fireStore.collection(CollectionName.vendors).where('zoneId', isEqualTo: Constant.selectedZone?.id.toString()).where("enabledDiveInFuture", isEqualTo: true)
           : fireStore.collection(CollectionName.vendors).where('zoneId', isEqualTo: Constant.selectedZone?.id.toString());
@@ -775,8 +771,12 @@ class FireStoreUtils {
 
       Stream<List<DocumentSnapshot>> stream = Geoflutterfire().collection(collectionRef: query).within(center: center, radius: double.parse(Constant.radius), field: field, strictMode: true);
 
-      stream.listen((List<DocumentSnapshot> documentList) async {
-        vendorList.clear();
+      // Flux transforme directement (plus de StreamController statique ni de
+      // listen interne) : quand l'ecran annule son abonnement, l'annulation
+      // remonte jusqu'aux requetes Firestore. Avant, chaque ouverture d'ecran
+      // laissait des ecouteurs actifs sur `vendors` (lectures facturees).
+      yield* stream.map((List<DocumentSnapshot> documentList) {
+        final List<VendorModel> vendorList = [];
         for (var document in documentList) {
           final data = document.data() as Map<String, dynamic>;
           VendorModel vendorModel = VendorModel.fromJson(data);
@@ -793,16 +793,12 @@ class FireStoreUtils {
             vendorList.add(vendorModel);
           }
         }
-        getNearestVendorController!.sink.add(vendorList);
+        return vendorList;
       });
-
-      yield* getNearestVendorController!.stream;
     } catch (e) {
       print(e);
     }
   }
-
-  static StreamController<List<VendorModel>>? getNearestVendorByCategoryController;
 
   static Stream<List<VendorModel>> getAllNearestRestaurantByCategoryId({bool? isDining, required String categoryId}) async* {
     // Sans localisation resolue, le centre geographique retombait sur (0,0) —
@@ -814,8 +810,6 @@ class FireStoreUtils {
       return;
     }
     try {
-      getNearestVendorByCategoryController = StreamController<List<VendorModel>>.broadcast();
-      List<VendorModel> vendorList = [];
       Query<Map<String, dynamic>> query = isDining == true
           ? fireStore
               .collection(CollectionName.vendors)
@@ -829,8 +823,9 @@ class FireStoreUtils {
 
       Stream<List<DocumentSnapshot>> stream = Geoflutterfire().collection(collectionRef: query).within(center: center, radius: double.parse(Constant.radius), field: field, strictMode: true);
 
-      stream.listen((List<DocumentSnapshot> documentList) async {
-        vendorList.clear();
+      // Meme correctif que getAllNearestRestaurant : annulation propagee.
+      yield* stream.map((List<DocumentSnapshot> documentList) {
+        final List<VendorModel> vendorList = [];
         for (var document in documentList) {
           final data = document.data() as Map<String, dynamic>;
           VendorModel vendorModel = VendorModel.fromJson(data);
@@ -849,10 +844,8 @@ class FireStoreUtils {
             vendorList.add(vendorModel);
           }
         }
-        getNearestVendorByCategoryController!.sink.add(vendorList);
+        return vendorList;
       });
-
-      yield* getNearestVendorByCategoryController!.stream;
     } catch (e) {
       print(e);
     }
