@@ -110,7 +110,10 @@ class DashBoardScreen extends StatelessWidget {
                                   controller.selectedIndex.value = index;
                                 },
                               );
-                              return selected ? Expanded(child: Center(child: item)) : item;
+                              // heightFactor 1 : la barre garde la hauteur de l'onglet (une
+                              // bottomNavigationBar n'a pas de hauteur bornee, un Center seul
+                              // s'etirait sur tout l'ecran).
+                              return selected ? Expanded(child: Center(heightFactor: 1, child: item)) : item;
                             }),
                           ),
                         ),
