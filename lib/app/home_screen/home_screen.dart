@@ -1747,7 +1747,10 @@ class AdvertisementHomeCard extends StatelessWidget {
                   ),
               ],
             ),
-            Padding(
+            // Le bloc du bas prend la hauteur restante de la carte (220 fixes) :
+            // le texte s'adapte avec « … » au lieu de deborder.
+            Expanded(
+              child: Padding(
               padding: EdgeInsets.all(12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1767,20 +1770,31 @@ class AdvertisementHomeCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TranslatedText(
-                          model.title ?? '',
-                          style: TextStyle(
-                            color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            Flexible(
+                              child: TranslatedText(
+                                model.title ?? '',
+                                maxLines: 1,
+                                style: TextStyle(
+                                  color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (model.type == 'restaurant_promotion')
+                              VerifiedBadge(isVerified: controller.vendorById(model.vendorId)?.isVerified, size: 14),
+                          ],
                         ),
-                        TranslatedText(
-                          model.description ?? '',
-                          style: TextStyle(fontSize: 12, fontFamily: AppThemeData.medium, color: themeChange.getThem() ? AppThemeData.grey400 : AppThemeData.grey600),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 2,
+                        Flexible(
+                          child: TranslatedText(
+                            model.description ?? '',
+                            style: TextStyle(fontSize: 12, fontFamily: AppThemeData.medium, color: themeChange.getThem() ? AppThemeData.grey400 : AppThemeData.grey600),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                          ),
                         ),
                       ],
                     ),
@@ -1817,6 +1831,7 @@ class AdvertisementHomeCard extends StatelessWidget {
                           ),
                           child: Padding(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), child: Icon(Icons.arrow_forward, size: 20, color: AppThemeData.primary300)))
                 ],
+              ),
               ),
             ),
           ],
