@@ -132,6 +132,11 @@ class SplashController extends GetxController {
                     // Jeton FCM synchronise en arriere-plan, et seulement s'il a
                     // change : la navigation n'attend plus getToken() et le
                     // profil complet n'est plus reecrit a chaque lancement.
+                    // Profil courant en memoire : c'est lui qui alimente l'en-tete,
+                    // le profil, les commandes. Avant, il etait rempli en effet de
+                    // bord par updateUser() ; sans cette ligne l'app s'affichait
+                    // comme pour un invite alors que la session etait valide.
+                    Constant.userModel = userModel;
                     unawaited(FireStoreUtils.syncFcmToken(userModel));
                     RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
                     if (initialMessage != null && initialMessage.data['type'] != null) {

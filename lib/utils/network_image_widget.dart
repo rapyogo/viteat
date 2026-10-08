@@ -33,8 +33,11 @@ class NetworkImageWidget extends StatelessWidget {
     // saccadait le defilement. On se base sur le plus grand cote pour garder
     // une image nette quel que soit le BoxFit.
     final double dpr = MediaQuery.maybeDevicePixelRatioOf(context) ?? 2.0;
-    final double side = [w, h].where((v) => v.isFinite && v > 0).fold<double>(0, (m, v) => v > m ? v : m);
-    final int? decodeSize = side > 0 ? (side * dpr).round() : null;
+    // Si un cote n'est pas borne (largeur pleine, double.infinity), on ne
+    // connait pas la taille reelle : pas de reduction, sinon l'image (ex.
+    // banniere) etait decodee trop petite et apparaissait floue.
+    final bool bounded = w.isFinite && h.isFinite && w > 0 && h > 0;
+    final int? decodeSize = bounded ? ((w > h ? w : h) * dpr).round() : null;
 
     return CachedNetworkImage(
       imageUrl: imageUrl,
