@@ -45,6 +45,7 @@ import 'package:customer/models/vendor_model.dart';
 import 'package:customer/models/wallet_transaction_model.dart';
 import 'package:customer/models/zone_model.dart';
 import 'package:customer/themes/app_them_data.dart';
+import 'package:customer/utils/notification_service.dart';
 import 'package:customer/utils/preferences.dart';
 import 'package:customer/widget/geoflutterfire/src/geoflutterfire.dart';
 import 'package:customer/widget/geoflutterfire/src/models/point.dart';
@@ -311,6 +312,21 @@ class FireStoreUtils {
     // s'affichait comme un invite (pas de nom, pas de commandes).
     userModel ??= await getUserProfileFromCache(uuid);
     return userModel;
+  }
+
+  /// Enregistre le jeton FCM du telephone sur le profil, SEULEMENT s'il a
+  /// change. Avant, le profil complet etait reecrit deux fois a chaque
+  /// lancement (splash + GlobalSettingController), meme jeton identique.
+  static Future<void> syncFcmToken(UserModel userModel) async {
+    try {
+      final String? token = await NotificationService.getToken();
+      if (token == null || token.isEmpty || token == userModel.fcmToken || (userModel.id ?? '').isEmpty) return;
+      await fireStore.collection(CollectionName.users).doc(userModel.id).update({'fcmToken': token});
+      userModel.fcmToken = token;
+      if (Constant.userModel?.id == userModel.id) Constant.userModel?.fcmToken = token;
+    } catch (e) {
+      debugPrint("syncFcmToken :: $e");
+    }
   }
 
   /// Profil lu uniquement depuis le cache local de Firestore (aucun appel reseau).

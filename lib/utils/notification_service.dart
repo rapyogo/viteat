@@ -84,7 +84,16 @@ class NotificationService {
       }
     });
     log("::::::::::::Permission authorized:::::::::::::::::");
-    await FirebaseMessaging.instance.subscribeToTopic("customer");
+    // Abonnement au topic une seule fois par installation (appel reseau
+    // auparavant refait a chaque lancement).
+    if (Preferences.getBoolean('fcmTopicCustomerSubscribed') != true) {
+      try {
+        await FirebaseMessaging.instance.subscribeToTopic("customer");
+        await Preferences.setBoolean('fcmTopicCustomerSubscribed', true);
+      } catch (e) {
+        log("subscribeToTopic :: $e");
+      }
+    }
   }
 
   static Future<String?> getToken() async {

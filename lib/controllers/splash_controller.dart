@@ -12,7 +12,6 @@ import 'package:customer/constant/constant.dart';
 import 'package:customer/models/user_model.dart';
 import 'package:customer/services/connectivity_service.dart';
 import 'package:customer/utils/fire_store_utils.dart';
-import 'package:customer/utils/notification_service.dart';
 import 'package:customer/utils/preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -129,21 +128,10 @@ class SplashController extends GetxController {
                 log(userModel.toJson().toString());
                 if (userModel.role == Constant.userRoleCustomer) {
                   if (userModel.active == true) {
-                    try {
-                      // Le token FCM est secondaire : s'il échoue (hors-ligne,
-                      // service Messaging indisponible...), ça ne doit jamais
-                      // faire échouer toute la redirection vers le dashboard —
-                      // avant ce try/catch, une erreur ici remontait jusqu'au
-                      // catch de redirectScreen() sans forcément matcher son
-                      // filtre "erreur réseau connue", et l'utilisateur
-                      // retombait sur l'écran de connexion au lieu du cache.
-                      userModel.fcmToken = await NotificationService.getToken();
-                    } catch (e) {
-                      log("SplashController: échec récupération token FCM (ignoré) :: $e");
-                    }
-                    // Pas d'await : le rafraîchissement du token FCM ne doit pas
-                    // retarder la navigation vers le dashboard à chaque lancement.
-                    FireStoreUtils.updateUser(userModel);
+                    // Jeton FCM synchronise en arriere-plan, et seulement s'il a
+                    // change : la navigation n'attend plus getToken() et le
+                    // profil complet n'est plus reecrit a chaque lancement.
+                    unawaited(FireStoreUtils.syncFcmToken(userModel));
                     RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
                     if (initialMessage != null && initialMessage.data['type'] != null) {
                     } else if (userModel.shippingAddress != null && userModel.shippingAddress!.isNotEmpty) {

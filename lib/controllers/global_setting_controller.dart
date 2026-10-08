@@ -1,4 +1,6 @@
+import 'package:customer/constant/constant.dart';
 import 'package:customer/models/user_model.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:customer/utils/fire_store_utils.dart';
 import 'package:customer/utils/notification_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -19,16 +21,13 @@ class GlobalSettingController extends GetxController {
   NotificationService notificationService = NotificationService();
 
   void notificationInit() {
-    notificationService.initInfo().then((value) async {
-      String? token = await NotificationService.getToken();
-      if (FirebaseAuth.instance.currentUser != null) {
-        await FireStoreUtils.getUserProfile(FireStoreUtils.getCurrentUid()).then((value) {
-          if (value != null) {
-            UserModel driverUserModel = value;
-            driverUserModel.fcmToken = token;
-            FireStoreUtils.updateUser(driverUserModel);
-          }
-        });
+    notificationService.initInfo();
+    // Le jeton est deja synchronise par le splash (une fois, s'il a change) ;
+    // ici on ne suit que son renouvellement, sans relire le profil.
+    FirebaseMessaging.instance.onTokenRefresh.listen((_) {
+      final UserModel? user = Constant.userModel;
+      if (user != null && FirebaseAuth.instance.currentUser != null) {
+        FireStoreUtils.syncFcmToken(user);
       }
     });
   }
