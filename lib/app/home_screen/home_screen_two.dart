@@ -3,6 +3,8 @@ import 'package:customer/widget/home_skeleton.dart';
 import 'package:customer/widget/fade_in_section.dart';
 import 'package:customer/services/location_service.dart';
 import 'package:customer/widget/location_picker_flow.dart';
+import 'package:badges/badges.dart' as badges;
+import 'package:customer/widget/verified_badge.dart';
 import 'dart:math';
 import 'package:customer/app/address_screens/address_list_screen.dart';
 import 'package:customer/app/advertisement_screens/all_advertisement_screen.dart';
@@ -109,13 +111,18 @@ class HomeScreenTwo extends StatelessWidget {
                       ),
                     )
                   : Padding(
-                      padding: EdgeInsets.only(top: MediaQuery.of(context).viewPadding.top),
+                      padding: EdgeInsets.only(top: controller.isListView.value == false ? MediaQuery.of(context).viewPadding.top : 0),
                       child: controller.isListView.value == false
                           ? const MapView()
                           : Column(
                               children: [
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.only(top: MediaQuery.of(context).viewPadding.top + 8, left: 16, right: 16, bottom: 18),
+                                  decoration: BoxDecoration(
+                                    gradient: AppThemeData.brandGradientSoft,
+                                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(AppThemeData.radiusXl)),
+                                  ),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -130,16 +137,29 @@ class HomeScreenTwo extends StatelessWidget {
                                                 dashBoardController.selectedIndex.value = 4;
                                               }
                                             },
-                                            child: ClipOval(
-                                              child: NetworkImageWidget(
-                                                imageUrl: Constant.userModel == null ? "" : Constant.userModel!.profilePictureURL.toString(),
-                                                height: 40,
-                                                width: 40,
-                                                errorWidget: Image.asset(
-                                                  Constant.userPlaceHolder,
-                                                  fit: BoxFit.cover,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(2),
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: AppThemeData.grey50.withValues(alpha: 0.25),
+                                                border: Border.all(color: AppThemeData.grey50.withValues(alpha: 0.6), width: 1.5),
+                                              ),
+                                              child: ClipOval(
+                                                child: SizedBox(
                                                   height: 40,
                                                   width: 40,
+                                                  child: NetworkImageWidget(
+                                                    imageUrl: Constant.userModel == null ? "" : Constant.userModel!.profilePictureURL.toString(),
+                                                    height: 40,
+                                                    width: 40,
+                                                    fit: BoxFit.cover,
+                                                    errorWidget: Image.asset(
+                                                      Constant.userPlaceHolder,
+                                                      fit: BoxFit.cover,
+                                                      height: 40,
+                                                      width: 40,
+                                                    ),
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -160,9 +180,9 @@ class HomeScreenTwo extends StatelessWidget {
                                                         child: TranslatedText(
                                                           "Login",
                                                           textAlign: TextAlign.center,
-                                                          style: TextStyle(
+                                                          style: const TextStyle(
                                                             fontFamily: AppThemeData.medium,
-                                                            color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                                                            color: AppThemeData.primary50,
                                                             fontSize: 12,
                                                           ),
                                                         ),
@@ -170,9 +190,9 @@ class HomeScreenTwo extends StatelessWidget {
                                                     : TranslatedText(
                                                         "${Constant.userModel!.fullName()}",
                                                         textAlign: TextAlign.center,
-                                                        style: TextStyle(
+                                                        style: const TextStyle(
                                                           fontFamily: AppThemeData.medium,
-                                                          color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                                                          color: AppThemeData.primary50,
                                                           fontSize: 12,
                                                         ),
                                                       ),
@@ -190,10 +210,7 @@ class HomeScreenTwo extends StatelessWidget {
                                                       );
                                                     } else {
                                                       // Invite : pas de compte, donc pas de liste d'adresses — on va
-                                                      // directement au choix sur carte. L'ancien code demandait la
-                                                      // permission GPS puis jetait la position obtenue, ce qui rendait
-                                                      // tout l'appel faillible pour rien et retombait sur une
-                                                      // coordonnee en dur en cas d'echec.
+                                                      // directement au choix sur carte (aucune coordonnee de repli).
                                                       final bool picked = await pickLocationOnMap();
                                                       if (picked) controller.getData();
                                                     }
@@ -208,15 +225,18 @@ class HomeScreenTwo extends StatelessWidget {
                                                             children: [
                                                               TextSpan(
                                                                 text: LocationService.displayLabel,
-                                                                style: TextStyle(
-                                                                  fontFamily: AppThemeData.medium,
+                                                                style: const TextStyle(
+                                                                  fontFamily: AppThemeData.semiBold,
                                                                   overflow: TextOverflow.ellipsis,
-                                                                  color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                                                                  color: AppThemeData.grey50,
                                                                   fontSize: 14,
                                                                 ),
                                                               ),
                                                               WidgetSpan(
-                                                                child: SvgPicture.asset("assets/icons/ic_down.svg"),
+                                                                child: SvgPicture.asset(
+                                                                  "assets/icons/ic_down.svg",
+                                                                  colorFilter: const ColorFilter.mode(AppThemeData.grey50, BlendMode.srcIn),
+                                                                ),
                                                               ),
                                                             ],
                                                           ),
@@ -229,25 +249,58 @@ class HomeScreenTwo extends StatelessWidget {
                                           const SizedBox(
                                             width: 5,
                                           ),
-                                          InkWell(
-                                            onTap: () async {
-                                              (await Get.to(const CartScreen()));
-                                              controller.getCartData();
-                                            },
-                                            child: ClipOval(
-                                              child: Container(
-                                                  padding: const EdgeInsets.all(8.0),
-                                                  color: themeChange.getThem() ? AppThemeData.grey900 : AppThemeData.grey50,
-                                                  child: SvgPicture.asset(
-                                                    "assets/icons/ic_shoping_cart.svg",
-                                                    colorFilter: ColorFilter.mode(themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900, BlendMode.srcIn),
-                                                  )),
+                                          Obx(
+                                            () => badges.Badge(
+                                              showBadge: cartItem.isNotEmpty,
+                                              badgeContent: Text(
+                                                "${cartItem.length}",
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  fontFamily: AppThemeData.semiBold,
+                                                  color: AppThemeData.grey50,
+                                                ),
+                                              ),
+                                              badgeStyle: const badges.BadgeStyle(
+                                                shape: badges.BadgeShape.circle,
+                                                badgeColor: AppThemeData.secondary300,
+                                              ),
+                                              child: InkWell(
+                                                onTap: () async {
+                                                  (await Get.to(const CartScreen()));
+                                                  controller.getCartData();
+                                                },
+                                                child: ClipOval(
+                                                  child: Container(
+                                                      padding: const EdgeInsets.all(8.0),
+                                                      decoration: BoxDecoration(
+                                                        color: AppThemeData.grey50.withValues(alpha: 0.22),
+                                                        shape: BoxShape.circle,
+                                                        border: Border.all(color: AppThemeData.grey50.withValues(alpha: 0.35)),
+                                                      ),
+                                                      child: SvgPicture.asset(
+                                                        "assets/icons/ic_shoping_cart.svg",
+                                                        colorFilter: const ColorFilter.mode(AppThemeData.grey50, BlendMode.srcIn),
+                                                      )),
+                                                ),
+                                              ),
                                             ),
                                           )
                                         ],
                                       ),
                                       const SizedBox(
-                                        height: 10,
+                                        height: 16,
+                                      ),
+                                      TranslatedText(
+                                        "What would you like to eat today?",
+                                        style: const TextStyle(
+                                          fontFamily: AppThemeData.extraBold,
+                                          color: AppThemeData.grey50,
+                                          fontSize: 22,
+                                          height: 1.15,
+                                        ),
+                                      ),
+                                      const SizedBox(
+                                        height: 14,
                                       ),
                                       InkWell(
                                         onTap: () {
@@ -258,8 +311,13 @@ class HomeScreenTwo extends StatelessWidget {
                                           controller: null,
                                           enable: false,
                                           prefix: Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                                            child: SvgPicture.asset("assets/icons/ic_search.svg"),
+                                            padding: const EdgeInsets.only(left: 14, right: 10),
+                                            child: SvgPicture.asset(
+                                              "assets/icons/ic_search.svg",
+                                              width: 20,
+                                              height: 20,
+                                              colorFilter: const ColorFilter.mode(AppThemeData.grey500, BlendMode.srcIn),
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -273,19 +331,22 @@ class HomeScreenTwo extends StatelessWidget {
                                   child: SingleChildScrollView(
                                     child: Column(
                                       children: [
-                                        controller.bannerModel.isEmpty
-                                            ? const SizedBox()
-                                            : Padding(
-                                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                                child: BannerView(controller: controller),
-                                              ),
                                         const SizedBox(
-                                          height: 20,
+                                          height: 18,
                                         ),
                                         FadeInSection(child: Padding(
                                           padding: const EdgeInsets.symmetric(horizontal: 16),
                                           child: CategoryView(controller: controller),
                                         )),
+                                        controller.bannerModel.isEmpty
+                                            ? const SizedBox()
+                                            : FadeInSection(
+                                                delayMs: 120,
+                                                child: Padding(
+                                                  padding: const EdgeInsets.only(left: 16, right: 16, top: 20),
+                                                  child: BannerView(controller: controller),
+                                                ),
+                                              ),
                                         controller.couponRestaurantList.isEmpty
                                             ? const SizedBox()
                                             : FadeInSection(delayMs: 120, child: Padding(
@@ -395,6 +456,10 @@ class HomeScreenTwo extends StatelessWidget {
                                                   ),
                                                 ],
                                               )),
+                                        // Le dernier element reste visible au-dessus de la barre flottante.
+                                        const SizedBox(
+                                          height: 110,
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -404,7 +469,14 @@ class HomeScreenTwo extends StatelessWidget {
                     ),
           floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
           floatingActionButton: Container(
-            decoration: BoxDecoration(color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey100, borderRadius: const BorderRadius.all(Radius.circular(30))),
+            // Au-dessus de la barre de navigation flottante (Foodie 9.2).
+            margin: const EdgeInsets.only(bottom: 78),
+            decoration: BoxDecoration(
+              color: themeChange.getThem() ? AppThemeData.grey800 : AppThemeData.grey50,
+              borderRadius: const BorderRadius.all(Radius.circular(30)),
+              border: Border.all(color: themeChange.getThem() ? AppThemeData.grey700 : AppThemeData.grey100),
+              boxShadow: AppThemeData.floatShadow,
+            ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               child: Row(
@@ -767,7 +839,7 @@ class OfferView extends StatelessWidget {
                                       gradient: LinearGradient(
                                         begin: const Alignment(-0.00, -1.00),
                                         end: const Alignment(0, 1),
-                                        colors: [Colors.black.withOpacity(0), AppThemeData.grey900],
+                                        colors: [Colors.black.withValues(alpha: 0), AppThemeData.grey900],
                                       ),
                                     ),
                                   ),
@@ -779,7 +851,11 @@ class OfferView extends StatelessWidget {
                                         mainAxisSize: MainAxisSize.min,
                                         crossAxisAlignment: CrossAxisAlignment.center,
                                         children: [
-                                          TranslatedText(
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Flexible(
+                                                child: TranslatedText(
                                             vendorModel.title.toString(),
                                             textAlign: TextAlign.start,
                                             maxLines: 1,
@@ -789,6 +865,10 @@ class OfferView extends StatelessWidget {
                                               fontFamily: AppThemeData.semiBold,
                                               color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50,
                                             ),
+                                          ),
+                                              ),
+                                              VerifiedBadge(isVerified: vendorModel.isVerified, size: 14),
+                                            ],
                                           ),
                                           const SizedBox(
                                             height: 5,
@@ -975,7 +1055,7 @@ class StoryView extends StatelessWidget {
                                 width: Responsive.width(100, context),
                               ),
                               Container(
-                                color: Colors.black.withOpacity(0.30),
+                                color: Colors.black.withValues(alpha: 0.30),
                               ),
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 8),
@@ -1004,7 +1084,11 @@ class StoryView extends StatelessWidget {
                                                   mainAxisAlignment: MainAxisAlignment.start,
                                                   crossAxisAlignment: CrossAxisAlignment.start,
                                                   children: [
-                                                    TranslatedText(
+                                                    Row(
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Flexible(
+                                                          child: TranslatedText(
                                                       vendorModel.title.toString(),
                                                       textAlign: TextAlign.center,
                                                       maxLines: 1,
@@ -1014,6 +1098,10 @@ class StoryView extends StatelessWidget {
                                                         overflow: TextOverflow.ellipsis,
                                                         fontWeight: FontWeight.w700,
                                                       ),
+                                                    ),
+                                                        ),
+                                                        VerifiedBadge(isVerified: vendorModel.isVerified, size: 12),
+                                                      ],
                                                     ),
                                                     Row(
                                                       children: [
@@ -1164,7 +1252,7 @@ class RestaurantView extends StatelessWidget {
                                       gradient: LinearGradient(
                                         begin: const Alignment(-0.00, -1.00),
                                         end: const Alignment(0, 1),
-                                        colors: [Colors.black.withOpacity(0), const Color(0xFF111827)],
+                                        colors: [Colors.black.withValues(alpha: 0), const Color(0xFF111827)],
                                       ),
                                     ),
                                   ),
@@ -1217,7 +1305,11 @@ class RestaurantView extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  TranslatedText(
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Flexible(
+                                        child: TranslatedText(
                                     vendorModel.title.toString(),
                                     textAlign: TextAlign.start,
                                     maxLines: 1,
@@ -1227,6 +1319,10 @@ class RestaurantView extends StatelessWidget {
                                       fontFamily: AppThemeData.semiBold,
                                       color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
                                     ),
+                                  ),
+                                      ),
+                                      VerifiedBadge(isVerified: vendorModel.isVerified, size: 16),
+                                    ],
                                   ),
                                   TranslatedText(
                                     vendorModel.location.toString(),
