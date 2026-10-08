@@ -19,12 +19,23 @@ class DashBoardController extends GetxController {
 
   RxList pageList = [].obs;
 
+  /// Onglets deja ouverts (gardes montes dans l'IndexedStack du dashboard).
+  final Set<int> visitedTabs = <int>{0};
+
   Worker? _connectivityWorker;
 
   @override
   void onInit() {
     super.onInit();
     getInit();
+    // L'onglet Commandes reste monte : on le rafraichit en arriere-plan quand on
+    // y revient, au plus une fois par minute (pas de spinner, pas de relecture
+    // systematique comme avant).
+    ever<int>(selectedIndex, (index) {
+      if (index < pageList.length && pageList[index] is OrderScreen && Get.isRegistered<OrderController>()) {
+        unawaited(Get.find<OrderController>().refreshIfStale(const Duration(minutes: 1)));
+      }
+    });
     if (Get.isRegistered<ConnectivityService>()) {
       _connectivityWorker = ever<SyncState>(Get.find<ConnectivityService>().state, (state) {
         if (state == SyncState.online) unawaited(refreshSessionData());
@@ -50,6 +61,10 @@ class DashBoardController extends GetxController {
   }
 
   Future<void> getInit() async {
+    // Nouvelle liste d'onglets (theme ou wallet differents) : les index changent.
+    visitedTabs
+      ..clear()
+      ..add(0);
     if (Constant.theme == "theme_2") {
       if (Constant.walletSetting == false) {
         pageList.value = [

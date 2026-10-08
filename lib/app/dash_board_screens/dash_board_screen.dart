@@ -53,7 +53,23 @@ class DashBoardScreen extends StatelessWidget {
                 children: [
                   const ConnectivityBanner(),
                   Expanded(
-                    child: controller.pageList.isEmpty ? SizedBox() : controller.pageList[controller.selectedIndex.value],
+                    // Onglets persistants : un onglet deja ouvert reste monte (son
+                    // controleur et ses donnees aussi) au lieu d'etre detruit puis
+                    // recharge a chaque changement d'onglet. Construction
+                    // paresseuse : un onglet n'est cree qu'a sa premiere ouverture.
+                    child: controller.pageList.isEmpty
+                        ? const SizedBox()
+                        : Builder(builder: (context) {
+                            final int selected = controller.selectedIndex.value.clamp(0, controller.pageList.length - 1);
+                            controller.visitedTabs.add(selected);
+                            return IndexedStack(
+                              index: selected,
+                              children: List.generate(
+                                controller.pageList.length,
+                                (i) => controller.visitedTabs.contains(i) ? controller.pageList[i] as Widget : const SizedBox.shrink(),
+                              ),
+                            );
+                          }),
                   ),
                 ],
               ),

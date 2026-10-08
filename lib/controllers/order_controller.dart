@@ -30,12 +30,21 @@ class OrderController extends GetxController {
     getOrder();
   }
 
-  Future<void> getOrder() async {
+  DateTime? _lastLoaded;
+
+  /// Rafraichissement silencieux si les donnees ont plus de [maxAge].
+  Future<void> refreshIfStale(Duration maxAge) async {
+    if (_lastLoaded != null && DateTime.now().difference(_lastLoaded!) < maxAge) return;
+    await getOrder(silent: true);
+  }
+
+  Future<void> getOrder({bool silent = false}) async {
+    _lastLoaded = DateTime.now();
     // La session Firebase fait foi : au demarrage hors ligne, le profil peut
     // manquer alors que la session est valide, et la liste restait vide.
     if (FirebaseAuth.instance.currentUser != null) {
       await FireStoreUtils.getAllOrder().then((value) {
-        isLoading.value = true;
+        if (!silent) isLoading.value = true;
         allList.value = value;
 
         rejectedList.value = allList.where((p0) => p0.status == Constant.orderRejected).toList();
