@@ -651,4 +651,5 @@ const Map<String, String> hiIN = {
   "Items added to your cart": "आइटम आपके कार्ट में जोड़ दिए गए",
   "Some items are no longer available and were not added.": "कुछ आइटम अब उपलब्ध नहीं हैं और जोड़े नहीं गए।",
   "These items are no longer available.": "ये आइटम अब उपलब्ध नहीं हैं।",
+  "What would you like to eat today?": "आज आप क्या खाना चाहेंगे?",
 };

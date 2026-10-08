@@ -643,4 +643,5 @@ const Map<String, String> lnAr = {
   "Items added to your cart": "تمت إضافة العناصر إلى سلتك",
   "Some items are no longer available and were not added.": "بعض العناصر لم تعد متوفرة ولم تتم إضافتها.",
   "These items are no longer available.": "هذه العناصر لم تعد متوفرة.",
+  "What would you like to eat today?": "ماذا تودّ أن تأكل اليوم؟",
 };

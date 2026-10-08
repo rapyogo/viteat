@@ -647,4 +647,5 @@ const Map<String, String> enUS = {
   "Items added to your cart": "Items added to your cart",
   "Some items are no longer available and were not added.": "Some items are no longer available and were not added.",
   "These items are no longer available.": "These items are no longer available.",
+  "What would you like to eat today?": "What would you like to eat today?",
 };
