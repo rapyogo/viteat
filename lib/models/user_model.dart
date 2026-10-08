@@ -83,7 +83,11 @@ class UserModel {
     countryCode = json['countryCode'];
     countryISOCode = json['countryISOCode'];
     phoneNumber = json['phoneNumber'];
-    walletAmount = json['wallet_amount'] ?? 0;
+    // Lecture tolerante : certains comptes ont wallet_amount en texte ("0"),
+    // ce qui faisait echouer tout le profil (connexion Google, accueil, profil).
+    // Lecture seule : le solde reste gere par le serveur.
+    final dynamic rawWallet = json['wallet_amount'];
+    walletAmount = rawWallet is num ? rawWallet : (num.tryParse('${rawWallet ?? ''}') ?? 0);
     createdAt = json['createdAt'];
     active = json['active'];
     isActive = json['isActive'];

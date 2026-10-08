@@ -36,6 +36,7 @@ class SplashController extends GetxController {
       await _redirectScreen();
     } catch (e) {
       log("SplashController.redirectScreen error :: $e");
+      debugPrint("SplashController.redirectScreen error :: $e");
 
       // Une session Firebase Auth persistee localement fait foi. Tant qu'elle
       // existe, un echec de LECTURE ne doit JAMAIS renvoyer au login : on ne

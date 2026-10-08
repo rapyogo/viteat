@@ -303,6 +303,7 @@ class FireStoreUtils {
       }
     }).catchError((error) {
       log("Failed to update user: $error");
+      debugPrint("getUserProfile($uuid) :: $error");
       userModel = null;
     });
     // Serveur injoignable (hors ligne, reseau lent) : le profil deja lu reste
@@ -319,7 +320,7 @@ class FireStoreUtils {
       final doc = await fireStore.collection(CollectionName.users).doc(uuid).get(const GetOptions(source: Source.cache));
       return doc.exists ? UserModel.fromJson(doc.data()!) : null;
     } catch (e) {
-      log("getUserProfileFromCache :: $e");
+      debugPrint("getUserProfileFromCache :: $e");
       return null;
     }
   }

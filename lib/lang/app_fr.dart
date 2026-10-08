@@ -652,4 +652,5 @@ const Map<String, String> trFR = {
   "Some items are no longer available and were not added.": "Certains articles ne sont plus disponibles et n'ont pas été ajoutés.",
   "These items are no longer available.": "Ces articles ne sont plus disponibles.",
   "What would you like to eat today?": "Qu'aimeriez-vous manger aujourd'hui ?",
+  "Unable to load your profile. Please try again.": "Impossible de charger votre profil. Veuillez réessayer.",
 };

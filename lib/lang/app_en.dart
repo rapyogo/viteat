@@ -648,4 +648,5 @@ const Map<String, String> enUS = {
   "Some items are no longer available and were not added.": "Some items are no longer available and were not added.",
   "These items are no longer available.": "These items are no longer available.",
   "What would you like to eat today?": "What would you like to eat today?",
+  "Unable to load your profile. Please try again.": "Unable to load your profile. Please try again.",
 };

@@ -652,4 +652,5 @@ const Map<String, String> hiIN = {
   "Some items are no longer available and were not added.": "कुछ आइटम अब उपलब्ध नहीं हैं और जोड़े नहीं गए।",
   "These items are no longer available.": "ये आइटम अब उपलब्ध नहीं हैं।",
   "What would you like to eat today?": "आज आप क्या खाना चाहेंगे?",
+  "Unable to load your profile. Please try again.": "आपकी प्रोफ़ाइल लोड नहीं हो सकी। कृपया फिर से प्रयास करें।",
 };

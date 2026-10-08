@@ -98,7 +98,12 @@ class LoginController extends GetxController {
             ShowToastDialog.closeLoader();
             if (userExit == true) {
               UserModel? userModel = await FireStoreUtils.getUserProfile(value.user!.uid);
-              if (userModel!.role == Constant.userRoleCustomer) {
+              if (userModel == null) {
+                // Profil illisible (reseau, donnees) : message plutot qu'un plantage.
+                ShowToastDialog.showToast("Unable to load your profile. Please try again.");
+                return;
+              }
+              if (userModel.role == Constant.userRoleCustomer) {
                 if (userModel.active == true) {
                   userModel.fcmToken = await NotificationService.getToken();
                   await FireStoreUtils.updateUser(userModel);

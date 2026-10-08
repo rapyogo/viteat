@@ -644,4 +644,5 @@ const Map<String, String> lnAr = {
   "Some items are no longer available and were not added.": "بعض العناصر لم تعد متوفرة ولم تتم إضافتها.",
   "These items are no longer available.": "هذه العناصر لم تعد متوفرة.",
   "What would you like to eat today?": "ماذا تودّ أن تأكل اليوم؟",
+  "Unable to load your profile. Please try again.": "تعذّر تحميل ملفك الشخصي. يرجى المحاولة مرة أخرى.",
 };
