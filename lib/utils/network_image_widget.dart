@@ -36,7 +36,10 @@ class NetworkImageWidget extends StatelessWidget {
     // Si un cote n'est pas borne (largeur pleine, double.infinity), on ne
     // connait pas la taille reelle : pas de reduction, sinon l'image (ex.
     // banniere) etait decodee trop petite et apparaissait floue.
-    final bool bounded = w.isFinite && h.isFinite && w > 0 && h > 0;
+    // Seulement si l'ecran donne explicitement les deux dimensions : sans elles,
+    // les valeurs par defaut (15 % x 8 %) ne refletent pas la taille reelle
+    // imposee par le parent (ex. banniere pleine largeur), qui etait floue.
+    final bool bounded = width != null && height != null && w.isFinite && h.isFinite && w > 0 && h > 0;
     final int? decodeSize = bounded ? ((w > h ? w : h) * dpr).round() : null;
 
     return CachedNetworkImage(
