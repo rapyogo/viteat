@@ -45,7 +45,12 @@ class OrderController extends GetxController {
   Future<bool> canReorder(OrderModel orderModel) {
     final String key = orderModel.id ?? '';
     if (key.isEmpty) return hasAnyPublishedProduct(orderModel.products);
-    return _reorderable[key] ??= hasAnyPublishedProduct(orderModel.products);
+    // Un « non » n'est pas memorise : hors ligne, les produits ne se lisent pas
+    // et le bouton serait masque jusqu'au prochain rechargement de la liste.
+    return _reorderable[key] ??= hasAnyPublishedProduct(orderModel.products).then((bool ok) {
+      if (!ok) _reorderable.remove(key);
+      return ok;
+    });
   }
 
   Future<void> getOrder({bool silent = false}) async {

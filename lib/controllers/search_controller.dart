@@ -38,7 +38,7 @@ class SearchScreenController extends GetxController {
     // resultat est applique dans l'ordre des restaurants, avec la meme regle de
     // limite d'articles par abonnement.
     final List<VendorModel> vendors = List<VendorModel>.of(vendorList);
-    final List<List<ProductModel>> menus = await Future.wait(vendors.map((VendorModel v) => FireStoreUtils.getProductByVendorId(v.id.toString())));
+    final List<List<ProductModel>> menus = await Future.wait(vendors.map((VendorModel v) => FireStoreUtils.getProductByVendorId(v.id.toString()).catchError((Object _) => <ProductModel>[])));
     for (int i = 0; i < vendors.length; i++) {
       final VendorModel element = vendors[i];
       final List<ProductModel> value = menus[i];

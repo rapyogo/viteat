@@ -208,5 +208,9 @@ class OrderDetailsController extends GetxController {
   /// Calcule une seule fois (le FutureBuilder du bas de l'ecran le relancait a
   /// chaque reconstruction).
   Future<bool>? _reorderable;
-  Future<bool> get reorderable => _reorderable ??= hasAnyPublishedProduct(orderModel.value.products);
+  Future<bool> get reorderable => _reorderable ??= hasAnyPublishedProduct(orderModel.value.products).then((bool ok) {
+        // « Non » pas memorise (lecture impossible hors ligne).
+        if (!ok) _reorderable = null;
+        return ok;
+      });
 }
