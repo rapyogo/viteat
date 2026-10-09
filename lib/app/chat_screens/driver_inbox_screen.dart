@@ -131,7 +131,7 @@ class DriverInboxScreen extends StatelessWidget {
                                       height: 5,
                                     ),
                                     TranslatedText(
-                                      "${"Order"} ${Constant.orderId(orderId: inboxModel.orderId.toString())}",
+                                      "${"Order".tr} ${Constant.orderId(orderId: inboxModel.orderId.toString())}",
                                       textAlign: TextAlign.start,
                                       style: TextStyle(
                                         fontFamily: AppThemeData.medium,
