@@ -11,6 +11,7 @@ import 'package:customer/models/tax_model.dart';
 import 'package:customer/models/vendor_category_model.dart';
 import 'package:customer/models/vendor_model.dart';
 import 'package:customer/services/cart_provider.dart';
+import 'package:customer/data/vendor_repository.dart';
 import 'package:customer/utils/fire_store_utils.dart';
 import 'package:customer/utils/preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -106,7 +107,7 @@ class HomeController extends GetxController {
   // ✅ Stream-based restaurant updates
   void _listenForRestaurants() {
     _restaurantSubscription?.cancel();
-    _restaurantSubscription = FireStoreUtils.getAllNearestRestaurant().listen((restaurants) async {
+    _restaurantSubscription = VendorRepository.instance.watchNearby().listen((restaurants) async {
       if (restaurants.isEmpty) {
         isLoading.value = false;
         return;

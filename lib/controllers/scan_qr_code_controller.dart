@@ -1,5 +1,7 @@
+import 'dart:async';
+
 import 'package:customer/models/vendor_model.dart';
-import 'package:customer/utils/fire_store_utils.dart';
+import 'package:customer/data/vendor_repository.dart';
 import 'package:get/get.dart';
 
 class ScanQrCodeController extends GetxController {
@@ -12,15 +14,18 @@ class ScanQrCodeController extends GetxController {
 
   RxList<VendorModel> allNearestRestaurant = <VendorModel>[].obs;
 
+  StreamSubscription<List<VendorModel>>? _restaurantSubscription;
+
   getData() {
-    FireStoreUtils.getAllNearestRestaurant().listen((event) async {
-      allNearestRestaurant.addAll(event);
+    _restaurantSubscription?.cancel();
+    _restaurantSubscription = VendorRepository.instance.watchNearby().listen((event) {
+      allNearestRestaurant.assignAll(event);
     });
   }
 
   @override
-  void dispose() {
-    // TODO: implement dispose
-    super.dispose();
+  void onClose() {
+    _restaurantSubscription?.cancel();
+    super.onClose();
   }
 }

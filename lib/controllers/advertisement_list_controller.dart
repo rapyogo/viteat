@@ -4,6 +4,7 @@ import 'package:customer/constant/constant.dart';
 import 'package:customer/models/advertisement_model.dart';
 import 'package:customer/models/favourite_model.dart';
 import 'package:customer/models/vendor_model.dart';
+import 'package:customer/data/vendor_repository.dart';
 import 'package:customer/utils/fire_store_utils.dart';
 import 'package:get/get.dart';
 
@@ -36,7 +37,7 @@ class AdvertisementListController extends GetxController {
   getAdvertisementList() async {
     advertisementList.clear();
     _restaurantSubscription?.cancel();
-    _restaurantSubscription = FireStoreUtils.getAllNearestRestaurant().listen((event) async {
+    _restaurantSubscription = VendorRepository.instance.watchNearby().listen((event) async {
       // assignAll : chaque emission du flux remplace la liste au lieu de
       // l'allonger (doublons qui s'accumulaient).
       allNearestRestaurant.assignAll(event);

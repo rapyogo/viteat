@@ -6,6 +6,7 @@ import 'package:customer/models/BannerModel.dart';
 import 'package:customer/models/favourite_model.dart';
 import 'package:customer/models/vendor_category_model.dart';
 import 'package:customer/models/vendor_model.dart';
+import 'package:customer/data/vendor_repository.dart';
 import 'package:customer/utils/fire_store_utils.dart';
 import 'package:flutter/material.dart';
 
@@ -47,7 +48,7 @@ class DineInController extends GetxController {
     isLoading.value = true;
     await getZone();
     _restaurantSubscription?.cancel();
-    _restaurantSubscription = FireStoreUtils.getAllNearestRestaurant(isDining: true).listen((event) async {
+    _restaurantSubscription = VendorRepository.instance.watchNearby(dineIn: true).listen((event) async {
       newArrivalRestaurantList.clear();
       allNearestRestaurant.clear();
       popularRestaurantList.clear();

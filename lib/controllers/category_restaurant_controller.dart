@@ -5,7 +5,7 @@ import 'dart:developer';
 import 'package:customer/constant/constant.dart';
 import 'package:customer/models/vendor_category_model.dart';
 import 'package:customer/models/vendor_model.dart';
-import 'package:customer/utils/fire_store_utils.dart';
+import 'package:customer/data/vendor_repository.dart';
 import 'package:get/get.dart';
 
 class CategoryRestaurantController extends GetxController {
@@ -47,7 +47,7 @@ class CategoryRestaurantController extends GetxController {
   Future getRestaurant() async {
     log("::::::::::GetRestaurant::::::::::::::");
     _restaurantSubscription?.cancel();
-    _restaurantSubscription = FireStoreUtils.getAllNearestRestaurantByCategoryId(categoryId: vendorCategoryModel.value.id.toString(), isDining: dineIn.value).listen((event) async {
+    _restaurantSubscription = VendorRepository.instance.watchNearby(categoryId: vendorCategoryModel.value.id.toString(), dineIn: dineIn.value).listen((event) async {
       allNearestRestaurant.clear();
       event.sort((a, b) {
         final aOpen = Constant.statusCheckOpenORClose(vendorModel: a);
