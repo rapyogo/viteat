@@ -1,10 +1,58 @@
 # HANDOFF — customer (app Flutter de livraison de repas)
 
-Dernière mise à jour : 2026-10-04
+Dernière mise à jour : 2026-10-09
+
+## Session 2026-10-04 → 2026-10-09 — parité Foodie 9.2 terminée, fluidité lots 1-3, livrables Play Store (branche `feat/app-client-lot3`, NON fusionnée)
+
+**Consigne utilisateur toujours en vigueur : ne rien fusionner, les déploiements prod sont lancés par l'utilisateur, d'autres sessions travaillent en parallèle (n'ajouter que ses propres fichiers). Aucune modification panier/checkout/paiement/FlexPay/wallet sans validation explicite (lot 5).**
+
+### Branches et worktrees
+- `feat/app-client-lot3` (worktree `customer-lot3`, partie de `c63e0d0`) **contient tout** (deps 9.2 + parité + lots 1-3 + extras) et doit devenir la ligne principale. Dernier commit de code : `e4002bd`. Poussée.
+- `feat/app-client-deps-9.2` (worktree `customer-clean`) : étape antérieure, dépassée par lot3.
+- `analysis_options.yaml` : modifié localement par quelqu'un d'autre, ne pas toucher ni commiter.
+
+### Parité Foodie 9.2 : VITEAT_CLIENT_FUNCTIONALLY_ALIGNED_WITH_FOODIE_9_2 (avec réserve)
+- Points portés (un commit chacun) : 16 `87fc56d`, 2 `bb17012`, 3 `19b836c`, 4 `d779042`, 1 `cd1c977`, 5 `1008681` (garde favoris adaptée à la session hors ligne, pas `currentUser`), 6 `a3f2c54`, 8 `b4427df`, 9 `23cc7c0`, 10 `39bc003`, 12 `6b73638`+`e65c93e`, 13 `f55d0f2`/`28147e3`/`969337a`, 14 `88c583b`, 15 `a1b4d7b`. Socle visuel : `1a2f479`.
+- Point 7 (Google Pay) : NON APPLICABLE À VITEAT. Point 11 (splash 9.2) : REMPLACÉ PAR LA LOGIQUE VITEAT.
+- **Réserve** : écran Wallet non habillé 9.2 (règle « aucune modif wallet »). À faire, UI seule, quand la règle sera levée.
+- Grep sécurité refait le 09/10 : aucun serviceJson/clé privée/FirebaseEnv.staging/écriture wallet client ; SMTP et Mumbai seulement en commentaires. Depuis le début de la migration, seuls `0ca573d` (API bottom_picker) et `4435641` (hauteur barre panier) touchent le panier : affichage uniquement.
+
+### Plan fluidité (`~/.claude/plans/temporal-whistling-piglet.md`)
+- **Lot 1 fait** : onglets persistants (`IndexedStack`), fuite des écouteurs geo corrigée, démarrage allégé, loaders inutiles retirés, images à la taille affichée.
+- **Lot 2 fait** : `lib/data/memo_cache.dart` (TTL, fusion des appels, stale-while-revalidate ; tests `test/memo_cache_test.dart`), `lib/data/vendor_repository.dart` (un seul flux vendors partagé), splash qui lit maintenance/profil/version depuis le cache puis confirme au serveur avant tout écran bloquant, `layoutSettingsVersion` pour thème/wallet, préchargement des onglets (`_warmUpTabs`).
+- **Lot 3 aux 3/4** : recherche en `Future.wait`, `canReorder` mémorisé, profils de messagerie en cache, fiche restaurant (items calculés une fois). **Reste : accueil (2 thèmes) et dine-in en slivers, un `Obx` par section** — session dédiée.
+- Lot 4 (pagination) : pas commencé. Lot 5 (panier/checkout) : attend validation.
+
+### Extras livrés
+- Version `1.0.0+5` ; icônes `mipmap-*` régénérées (glyphe recadré sur alpha>128, 0,52 adaptatif / 0,66 classique, fond `#FF6A00`, tailles d'origine) ; `ic_logo.png` fourni par l'utilisateur (+2x/3x).
+- WhatsApp : `whatsapp_link_screen.dart` ouvre `wa.me/<botPhone>?text=LIER <code>` (code préchargé à l'ouverture, icône de copie). `settings/whatsapp_share.botPhone = 243902487457`.
+- Agent IA : écran « Bientôt disponible » + bouton robot à côté du panier + entrée profil avec étiquette « Beta ». Plan : `docs/superpowers/plans/2026-10-09-agent-ia-et-personnalisation.md`.
+- Badges bleus : `LiveVerifiedBadge` (`lib/widget/verified_badge.dart`) lit l'état actuel du restaurant quand la copie (réservation, commande) ne porte pas `isVerified`. Utilisé dans Sur place, réservations, commandes. Le ☑️ dans « ROOSTY☑️ » est historique : ne pas y toucher.
+- Foloosi : copie MIT dans `third_party/foloosi_plugins` (via `dependency_overrides`), `TODO()` du cycle de vie remplacés (plantait au changement de mode nuit).
+- Favoris (`e4002bd`) : l'onglet restant monté ne voyait pas les nouveaux favoris → signal `FireStoreUtils.favouritesVersion` + rechargement silencieux. Le retrait filtre aussi par `user_id` (visait les favoris des autres clients). Testé sur téléphone.
+- Classement accueil vérifié : ouverts d'abord, puis note moyenne (nombre d'avis non pris en compte, comportement d'origine). Option « note pondérée » proposée, non retenue.
+
+### Livrables (Téléchargements)
+- `Viteat-client-1.0.0+5-lot3-release.aab` (Play Store) et `.apk` : compilés sur `e4002bd`, sans `APP_CHECK_DEBUG`, signés clé d'upload (SHA-1 `f8:75:03…`), versionCode 5. Les anciens `…+5-release.*` et `…lot2…` sont dépassés ; `Viteat-client-test-favoris.apk` = test seulement.
+- Empreintes SHA : 3 SHA-1 + 3 SHA-256 (upload, signature Play, debug) présentes dans Firebase (vérifié via `firebase apps:android:sha:list`). Reste à confirmer côté Play Console le lien au projet Cloud pour Play Integrity.
+
+### Pièges
+- Release installée hors Play Store : App Check Play Integrity → 403. Builds de test avec `--dart-define=APP_CHECK_DEBUG=true` + jeton debug enregistré par l'API REST App Check.
+- `whenComplete(() => map.remove(k))` dans `MemoCache` attendait sa propre fin (bloquait tout) : utiliser un bloc.
+- `RxList` partagée entre écrans : toujours passer des copies (menu vidé par un autre écran).
+- Écran persistant (`IndexedStack`) : son contrôleur ne se recrée plus ; toute donnée modifiée ailleurs doit lui être signalée (cf. favoris).
+
+### Pistes ouvertes / décisions utilisateur
+- Fin du lot 3 (accueil + dine-in en slivers) ; distance « km » tronquée sur l'accueil ; l'onglet Favoris repasse sur « Restaurants » au retour.
+- Révoquer les jetons App Check debug (« viteat pc », « token debug viteat », « Infinix X693 recette release (a revoquer) ») en fin de recette.
+- `minInstances: 1` sur `createWhatsAppLinkCode` (déploiement par l'utilisateur).
+- Habillage Wallet 9.2 ; lot 4 ; lot 5 sur validation.
+- Fusion de `feat/app-client-lot3` : sur instruction de l'utilisateur uniquement.
+
 
 ## Session 2026-10-04 — G6 Android natif : build APK vert (branche `feat/app-client-deps-9.2`, NON fusionnée)
 
-- **État : base technique compilée, test sur téléphone pas encore fait.** Il ne faut donc pas encore annoncer `CLIENT_APP_PHASE_1_TECH_BASE_READY`.
+- **État (mis à jour le 09/10) : recette appareil faite, `CLIENT_APP_PHASE_1_TECH_BASE_READY` validé par l'utilisateur ; la suite est dans la section du 09/10 ci-dessus.**
 - **SDK Android** :
   - le 03/10, le SDK n'était pas « absent » : il se trouve sur le disque USB, dans `D:\Explorer\MAYUNDO\Dev\Android\Sdk` (et non dans `D:\Dev\Android\Sdk`) ;
   - avec l'accord de l'utilisateur, les composants utiles ont été copiés dans **`C:\Android\Sdk`** (platform-tools, cmdline-tools, cmake, android-36, build-tools 35 et 36.1, NDK 28.2 et 29). Gradle a ajouté lui-même android-31, 34 et 35 ;
@@ -69,7 +117,7 @@ Dernière mise à jour : 2026-09-03
 - App Flutter cliente d'une plateforme de livraison de repas multi-vendeurs, marque "Rapyogo" (package Android `com.rapyogo.client`).
 - Firebase project : **rapyogo-2bccd** (base Firestore par défaut, `currentEnv = FirebaseEnv.defaultDb` dans `lib/utils/fire_store_utils.dart`).
 - Le repo fait partie d'un ensemble de projets sœurs dans `C:\Projet\AUTRE\Nouveau dossier\` : `Admin Panel`, `customer` (ce repo), `driver`, plus des dossiers d'outillage Firebase (`Firebase Indexing`, `Firebase Import Export Collections`, `Firestore Demo Authentication User Import`, `Order Tracking Firebase Function`) qui ne sont **pas** des dépôts git.
-- Version app : **`1.0.0+4`** (`pubspec.yaml` ligne 19, vérifié le 2026-08-28). Ce fichier annonçait `7.0.0+25`, ce qui était faux — la valeur ne correspond à aucun état du dépôt. ⚠️ La session du 21/08 notait « versionCode 4 → 5 pour la prochaine mise à jour » : **le bump n'a jamais été fait**. Un envoi au Play Store avec le versionCode 4 sera rejeté si le 4 y est déjà publié — à incrémenter avant toute publication.
+- Version app : **`1.0.0+5`** depuis le 09/10 (branche lot3). Historique : **`1.0.0+4`** (`pubspec.yaml` ligne 19, vérifié le 2026-08-28). Ce fichier annonçait `7.0.0+25`, ce qui était faux — la valeur ne correspond à aucun état du dépôt. ⚠️ La session du 21/08 notait « versionCode 4 → 5 pour la prochaine mise à jour » : **le bump n'a jamais été fait**. Un envoi au Play Store avec le versionCode 4 sera rejeté si le 4 y est déjà publié — à incrémenter avant toute publication.
 
 ## État git
 - Branche `master`, remote `origin` = **`https://github.com/rapyogo/viteat`** (le remote par défaut de la config globale, `rapyogo/rapycar`, ne correspond PAS à ce projet — ce dépôt-ci utilise `viteat`, poussé et confirmé le 2026-08-24).
