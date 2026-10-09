@@ -1,3 +1,5 @@
+import 'package:customer/models/vendor_model.dart';
+import 'package:customer/utils/fire_store_utils.dart';
 import 'package:flutter/material.dart';
 
 /// Pastille bleue « Restaurant verifie par Viteat » (champ `isVerified` ecrit
@@ -46,6 +48,28 @@ class VerifiedBadge extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Badge pour un restaurant COPIE dans un document (reservation, commande) :
+/// la copie date du moment de l'enregistrement et ne porte souvent pas
+/// `isVerified`. Si elle ne dit pas « verifie », on lit l'etat actuel du
+/// restaurant (lecture memorisee, partagee avec le reste de l'app).
+class LiveVerifiedBadge extends StatelessWidget {
+  const LiveVerifiedBadge({super.key, required this.vendor, this.size = 16});
+
+  final VendorModel? vendor;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    if (vendor?.isVerified == true) return VerifiedBadge(isVerified: true, size: size);
+    final String id = vendor?.id ?? '';
+    if (id.isEmpty) return const SizedBox.shrink();
+    return FutureBuilder<VendorModel?>(
+      future: FireStoreUtils.getVendorByIdCached(id),
+      builder: (context, snapshot) => VerifiedBadge(isVerified: snapshot.data?.isVerified, size: size),
     );
   }
 }

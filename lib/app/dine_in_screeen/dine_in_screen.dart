@@ -1,3 +1,4 @@
+import 'package:customer/widget/verified_badge.dart';
 import 'package:customer/widget/location_prompt_view.dart';
 import 'package:customer/services/location_service.dart';
 import 'package:customer/app/dine_in_screeen/dine_in_details_screen.dart';
@@ -513,16 +514,23 @@ class PopularRestaurant extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TranslatedText(
-                          vendorModel.title.toString(),
-                          textAlign: TextAlign.start,
-                          maxLines: 1,
-                          style: TextStyle(
-                            fontSize: 18,
-                            overflow: TextOverflow.ellipsis,
-                            fontFamily: AppThemeData.semiBold,
-                            color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: TranslatedText(
+                              vendorModel.title.toString(),
+                              textAlign: TextAlign.start,
+                              maxLines: 1,
+                              style: TextStyle(
+                                fontSize: 18,
+                                overflow: TextOverflow.ellipsis,
+                                fontFamily: AppThemeData.semiBold,
+                                color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                              ),
+                            ),
+                            ),
+                            VerifiedBadge(isVerified: vendorModel.isVerified, size: 16),
+                          ],
                         ),
                         TranslatedText(
                           vendorModel.location.toString(),
@@ -754,16 +762,23 @@ class AllRestaurant extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TranslatedText(
-                          vendorModel.title.toString(),
-                          textAlign: TextAlign.start,
-                          maxLines: 1,
-                          style: TextStyle(
-                            fontSize: 18,
-                            overflow: TextOverflow.ellipsis,
-                            fontFamily: AppThemeData.semiBold,
-                            color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: TranslatedText(
+                              vendorModel.title.toString(),
+                              textAlign: TextAlign.start,
+                              maxLines: 1,
+                              style: TextStyle(
+                                fontSize: 18,
+                                overflow: TextOverflow.ellipsis,
+                                fontFamily: AppThemeData.semiBold,
+                                color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                              ),
+                            ),
+                            ),
+                            VerifiedBadge(isVerified: vendorModel.isVerified, size: 16),
+                          ],
                         ),
                         TranslatedText(
                           vendorModel.location.toString(),
@@ -886,16 +901,23 @@ class NewArrival extends StatelessWidget {
                     const SizedBox(
                       height: 5,
                     ),
-                    TranslatedText(
-                      vendorModel.title.toString(),
-                      textAlign: TextAlign.start,
-                      maxLines: 1,
-                      style: TextStyle(
-                        fontSize: 16,
-                        overflow: TextOverflow.ellipsis,
-                        fontFamily: AppThemeData.semiBold,
-                        color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: TranslatedText(
+                          vendorModel.title.toString(),
+                          textAlign: TextAlign.start,
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: 16,
+                            overflow: TextOverflow.ellipsis,
+                            fontFamily: AppThemeData.semiBold,
+                            color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey50,
+                          ),
+                        ),
+                        ),
+                        VerifiedBadge(isVerified: vendorModel.isVerified, size: 16),
+                      ],
                     ),
                     Row(
                       children: [

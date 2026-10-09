@@ -1,3 +1,4 @@
+import 'package:customer/widget/verified_badge.dart';
 import 'package:customer/constant/constant.dart';
 import 'package:customer/controllers/dine_in_booking_details_controller.dart';
 import 'package:customer/themes/app_them_data.dart';
@@ -109,14 +110,21 @@ class DineInBookingDetails extends StatelessWidget {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          TranslatedText(
-                                            controller.bookingModel.value.vendor!.title.toString(),
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              color: themeChange.getThem() ? AppThemeData.grey100 : AppThemeData.grey800,
-                                              fontFamily: AppThemeData.medium,
-                                              fontWeight: FontWeight.w500,
-                                            ),
+                                          Row(
+                                            children: [
+                                              Flexible(
+                                                child: TranslatedText(
+                                                controller.bookingModel.value.vendor!.title.toString(),
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  color: themeChange.getThem() ? AppThemeData.grey100 : AppThemeData.grey800,
+                                                  fontFamily: AppThemeData.medium,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              ),
+                                              LiveVerifiedBadge(vendor: controller.bookingModel.value.vendor, size: 18),
+                                            ],
                                           ),
                                           TranslatedText(
                                             controller.bookingModel.value.vendor!.location.toString(),
