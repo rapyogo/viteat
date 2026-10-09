@@ -78,12 +78,22 @@ class VendorRepository {
     if (_sourceKey != key) _last = null;
     _sourceKey = key;
     _source = FireStoreUtils.getAllNearestRestaurant().listen((List<VendorModel> vendors) {
+      // Un restaurant sorti de la liste (passe hors ligne, abonnement expire)
+      // est oublie de la memoire : les favoris et l'accueil le relisent.
+      final Set<String?> stillListed = vendors.map((VendorModel v) => v.id).toSet();
+      for (final VendorModel gone in _last ?? const <VendorModel>[]) {
+        if (gone.id != null && !stillListed.contains(gone.id)) FireStoreUtils.forgetVendor(gone.id!);
+      }
       _last = vendors;
       for (final VendorModel v in vendors) {
         if (v.id != null) FireStoreUtils.rememberVendor(v);
       }
       _hub.add(List<VendorModel>.of(vendors));
-    }, onError: (Object e) => debugPrint("VendorRepository :: $e"));
+    }, onError: (Object e) => debugPrint("VendorRepository :: $e"), onDone: () {
+      // Flux termine (erreur interne de la requete) : le prochain abonne le
+      // relancera au lieu de rester sur une source morte.
+      if (_sourceKey == key) _source = null;
+    });
   }
 
   void _closeSource() {

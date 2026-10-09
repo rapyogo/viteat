@@ -44,8 +44,10 @@ class DashBoardController extends GetxController {
     // theme par l'admin) : onglets recalcules seulement s'ils different.
     _layoutWorker = ever<int>(FireStoreUtils.layoutSettingsVersion, (_) {
       if (_currentLayoutSignature() != _layoutSignature) {
+        // Les index des onglets changent (ex. onglet Wallet insere) : retour
+        // sur l'accueil plutot que sur un onglet qui n'est plus le meme.
         getInit();
-        if (selectedIndex.value >= pageList.length) selectedIndex.value = 0;
+        selectedIndex.value = 0;
       }
     });
     if (Get.isRegistered<ConnectivityService>()) {
