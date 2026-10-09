@@ -108,6 +108,10 @@ dependencies:
   
 
 dependency_overrides:
+  # Copie corrigee du plugin Foloosi (MIT) : la version publiee plante a chaque
+  # recreation de l'activite (TODO() dans le cycle de vie Android).
+  foloosi_plugins:
+    path: third_party/foloosi_plugins
   webview_flutter: ^4.9.0
   package_info_plus: ^10.2.1
 

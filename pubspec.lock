@@ -771,10 +771,9 @@ packages:
   foloosi_plugins:
     dependency: "direct main"
     description:
-      name: foloosi_plugins
-      sha256: "2e826d62c067c0f5262a7c0b90edd7e3dbd9cf8ff5a49de34dc08e6bc56d6ea5"
-      url: "https://pub.dev"
-    source: hosted
+      path: "third_party/foloosi_plugins"
+      relative: true
+    source: path
     version: "1.1.0"
   freezed_annotation:
     dependency: transitive
