@@ -422,7 +422,7 @@ class OrderScreen extends StatelessWidget {
                 children: [
                   orderModel.status == Constant.orderCompleted
                       ? FutureBuilder<bool>(
-                          future: controller.hasAnyPublishedProduct(orderModel.products),
+                          future: controller.canReorder(orderModel),
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
                               return const SizedBox();

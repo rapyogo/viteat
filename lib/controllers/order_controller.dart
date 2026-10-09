@@ -38,8 +38,20 @@ class OrderController extends GetxController {
     await getOrder(silent: true);
   }
 
+  /// « Recommander » possible, calcule une fois par commande. Avant, le
+  /// FutureBuilder de la liste relancait ses lectures a chaque reconstruction.
+  final Map<String, Future<bool>> _reorderable = <String, Future<bool>>{};
+
+  Future<bool> canReorder(OrderModel orderModel) {
+    final String key = orderModel.id ?? '';
+    if (key.isEmpty) return hasAnyPublishedProduct(orderModel.products);
+    return _reorderable[key] ??= hasAnyPublishedProduct(orderModel.products);
+  }
+
   Future<void> getOrder({bool silent = false}) async {
     _lastLoaded = DateTime.now();
+    // Liste rechargee : la disponibilite des produits est revue.
+    _reorderable.clear();
     // La session Firebase fait foi : au demarrage hors ligne, le profil peut
     // manquer alors que la session est valide, et la liste restait vide.
     if (FirebaseAuth.instance.currentUser != null) {

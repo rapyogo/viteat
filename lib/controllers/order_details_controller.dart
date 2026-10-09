@@ -195,10 +195,18 @@ class OrderDetailsController extends GetxController {
     update();
   }
 
+  /// Meme regle que la liste des commandes (OrderController) : au moins un
+  /// produit encore disponible, identifiant de variante `produit~variante`
+  /// ramene au produit. Avant : TOUS les produits, sans retirer la variante,
+  /// si bien qu'un plat a variante masquait toujours « Recommander » ici.
   Future<bool> hasAnyPublishedProduct(List<CartProductModel>? products) async {
     if (products == null || products.isEmpty) return false;
-    // Un getProductById() par article, lancés en parallèle plutôt qu'en séquence.
-    final results = await Future.wait(products.map((item) => FireStoreUtils.getProductById(item.id ?? '')));
-    return results.every((product) => product != null && product.publish != false);
+    final results = await Future.wait(products.map((item) => FireStoreUtils.getProductById(item.id?.split('~').first ?? '')));
+    return results.any((product) => product != null && product.publish != false);
   }
+
+  /// Calcule une seule fois (le FutureBuilder du bas de l'ecran le relancait a
+  /// chaque reconstruction).
+  Future<bool>? _reorderable;
+  Future<bool> get reorderable => _reorderable ??= hasAnyPublishedProduct(orderModel.value.products);
 }

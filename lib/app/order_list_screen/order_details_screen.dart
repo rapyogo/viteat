@@ -199,8 +199,10 @@ class OrderDetailsScreen extends StatelessWidget {
                                                     onTap: () async {
                                                       ShowToastDialog.showLoader("Please wait");
 
-                                                      UserModel? customer = await FireStoreUtils.getUserProfile(controller.orderModel.value.authorID.toString());
-                                                      UserModel? restaurantUser = await FireStoreUtils.getUserProfile(controller.orderModel.value.vendor!.author.toString());
+                                                      // Les deux profils sont lus en parallele (avant : l'un apres l'autre).
+                                                      final List<UserModel?> profiles = await Future.wait([FireStoreUtils.getUserProfile(controller.orderModel.value.authorID.toString()), FireStoreUtils.getUserProfile(controller.orderModel.value.vendor!.author.toString())]);
+                                                      UserModel? customer = profiles[0];
+                                                      UserModel? restaurantUser = profiles[1];
                                                       VendorModel? vendorModel = await FireStoreUtils.getVendorById(restaurantUser!.vendorID.toString());
                                                       ShowToastDialog.closeLoader();
 
@@ -330,8 +332,10 @@ class OrderDetailsScreen extends StatelessWidget {
                                                                       onTap: () async {
                                                                         ShowToastDialog.showLoader("Please wait");
 
-                                                                        UserModel? customer = await FireStoreUtils.getUserProfile(controller.orderModel.value.authorID.toString());
-                                                                        UserModel? restaurantUser = await FireStoreUtils.getUserProfile(controller.orderModel.value.vendor!.author.toString());
+                                                                        // Les deux profils sont lus en parallele (avant : l'un apres l'autre).
+                                                                        final List<UserModel?> profiles = await Future.wait([FireStoreUtils.getUserProfile(controller.orderModel.value.authorID.toString()), FireStoreUtils.getUserProfile(controller.orderModel.value.vendor!.author.toString())]);
+                                                                        UserModel? customer = profiles[0];
+                                                                        UserModel? restaurantUser = profiles[1];
                                                                         VendorModel? vendorModel = await FireStoreUtils.getVendorById(restaurantUser!.vendorID.toString());
                                                                         ShowToastDialog.closeLoader();
 
@@ -532,8 +536,10 @@ class OrderDetailsScreen extends StatelessWidget {
                                                                           onTap: () async {
                                                                             ShowToastDialog.showLoader("Please wait");
 
-                                                                            UserModel? customer = await FireStoreUtils.getUserProfile(controller.orderModel.value.authorID.toString());
-                                                                            UserModel? driverUser = await FireStoreUtils.getUserProfile(controller.orderModel.value.driverID.toString());
+                                                                            // Les deux profils sont lus en parallele (avant : l'un apres l'autre).
+                                                                            final List<UserModel?> profiles = await Future.wait([FireStoreUtils.getUserProfile(controller.orderModel.value.authorID.toString()), FireStoreUtils.getUserProfile(controller.orderModel.value.driverID.toString())]);
+                                                                            UserModel? customer = profiles[0];
+                                                                            UserModel? driverUser = profiles[1];
 
                                                                             ShowToastDialog.closeLoader();
 
@@ -1327,7 +1333,7 @@ class OrderDetailsScreen extends StatelessWidget {
                                   },
                                 )
                               : FutureBuilder<bool>(
-                                  future: controller.hasAnyPublishedProduct(controller.orderModel.value.products),
+                                  future: controller.reorderable,
                                   builder: (context, snapshot) {
                                     if (snapshot.connectionState == ConnectionState.waiting) {
                                       return const SizedBox();
