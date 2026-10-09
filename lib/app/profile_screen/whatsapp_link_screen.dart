@@ -165,7 +165,7 @@ class _WhatsAppLinkScreenState extends State<WhatsAppLinkScreen> {
           OutlinedButton.icon(
             onPressed: _copyCommand,
             icon: const Icon(Icons.copy_outlined, size: 18),
-            label: const Text("Copy command"),
+            label: TranslatedText("Copy command"),
             style: OutlinedButton.styleFrom(foregroundColor: AppThemeData.primary300, side: BorderSide(color: AppThemeData.primary300)),
           ),
         ],

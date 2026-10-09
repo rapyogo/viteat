@@ -110,7 +110,7 @@ class ProfileScreen extends StatelessWidget {
                                             Get.to(const EditProfileScreen());
                                           }),
                                     if (Constant.userModel != null)
-                                      cardDecoration(themeChange, controller, "assets/icons/ic_share.svg", "Link WhatsApp", () {
+                                      cardDecoration(themeChange, controller, "assets/icons/ic_whatsapp.svg", "Link WhatsApp", () {
                                         Get.to(const WhatsAppLinkScreen());
                                       }),
                                     if (Constant.isEnabledForCustomer == true)
