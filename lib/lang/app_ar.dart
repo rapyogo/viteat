@@ -691,4 +691,6 @@ const Map<String, String> lnAr = {
   "Available soon…": "قريبًا…",
   "Preparing your code…": "جارٍ تجهيز رمزك…",
   "Beta": "تجريبي",
+  "Cancel Order": "إلغاء الطلب",
+  "Not Found": "لا توجد نتائج",
 };

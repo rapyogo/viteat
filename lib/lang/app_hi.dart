@@ -699,4 +699,6 @@ const Map<String, String> hiIN = {
   "Available soon…": "जल्द उपलब्ध…",
   "Preparing your code…": "आपका कोड तैयार हो रहा है…",
   "Beta": "बीटा",
+  "Cancel Order": "ऑर्डर रद्द करें",
+  "Not Found": "कोई परिणाम नहीं",
 };

@@ -695,4 +695,6 @@ const Map<String, String> enUS = {
   "Available soon…": "Available soon…",
   "Preparing your code…": "Preparing your code…",
   "Beta": "Beta",
+  "Cancel Order": "Cancel Order",
+  "Not Found": "Not Found",
 };

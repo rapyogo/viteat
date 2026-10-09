@@ -699,4 +699,6 @@ const Map<String, String> trFR = {
   "Available soon…": "Bientôt disponible…",
   "Preparing your code…": "Préparation de votre code…",
   "Beta": "Bêta",
+  "Cancel Order": "Annuler la commande",
+  "Not Found": "Aucun résultat",
 };
