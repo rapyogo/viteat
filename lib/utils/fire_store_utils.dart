@@ -278,7 +278,7 @@ class FireStoreUtils {
     if (!value.exists) {
       // Meme garde qu'isLogin() : absent du cache hors ligne ne prouve pas que
       // le compte est supprime ; profil nul => repli hors ligne du splash.
-      return SessionProfile(loggedIn: value.metadata.isFromCache);
+      return SessionProfile(loggedIn: value.metadata.isFromCache, fromCache: value.metadata.isFromCache);
     }
     return SessionProfile(loggedIn: true, profile: UserModel.fromJson(value.data()!), fromCache: value.metadata.isFromCache);
   }
@@ -854,6 +854,9 @@ class FireStoreUtils {
 
   /// Le flux des restaurants proches depose ici les vendeurs qu'il recoit.
   static void rememberVendor(VendorModel vendor) => _vendorMemo.put(vendor.id ?? '', vendor);
+
+  /// Restaurant sorti du flux des restaurants proches : il sera relu.
+  static void forgetVendor(String vendorId) => _vendorMemo.invalidate(vendorId);
 
   static Stream<List<VendorModel>> getAllNearestRestaurant({bool? isDining}) async* {
     // Sans localisation resolue, le centre geographique retombait sur (0,0) —

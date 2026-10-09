@@ -99,21 +99,29 @@ class SplashController extends GetxController {
   /// maintenance, version) : on les reverifie sur le serveur, sans bloquer.
   /// Un compte desactive, une maintenance ou une version trop ancienne
   /// produisent le meme effet qu'avant, quelques instants plus tard.
+  ///
+  /// Maintenance et mise a jour ne remplacent l'ecran que si l'utilisateur est
+  /// sur un ecran racine : jamais au milieu d'un panier ou d'un paiement. La
+  /// valeur serveur est alors dans le cache local et le prochain lancement
+  /// l'applique (confirmee sur le serveur dans _redirectScreen).
   Future<void> _revalidateFromServer({required bool checkProfile}) async {
     try {
+      final bool onRootScreen = const {'/DashBoardScreen', '/OnBoardingScreen', '/LoginScreen', '/LocationPermissionScreen'}.contains(Get.currentRoute);
       if (await FireStoreUtils.isMaintenanceMode()) {
-        Get.offAll(() => MaintenanceModeScreen());
+        if (onRootScreen) Get.offAll(() => MaintenanceModeScreen());
         return;
       }
       final String? updateStoreUrl = await FireStoreUtils.requiredUpdateStoreUrl();
       if (updateStoreUrl != null) {
-        Get.offAll(() => ForceUpdateScreen(storeUrl: updateStoreUrl));
+        if (onRootScreen) Get.offAll(() => ForceUpdateScreen(storeUrl: updateStoreUrl));
         return;
       }
       if (!checkProfile) return;
       final SessionProfile session = await FireStoreUtils.loadSessionProfile();
       final UserModel? fresh = session.profile;
-      if (session.fromCache) return; // toujours hors ligne : rien de nouveau
+      // Toujours hors ligne, ou reponse indeterminee (document absent du cache
+      // hors ligne) : rien ne prouve que le compte a change, la session reste.
+      if (session.fromCache || (session.loggedIn && fresh == null)) return;
       if (!session.loggedIn || fresh == null || fresh.role != Constant.userRoleCustomer || fresh.active != true) {
         if (FirebaseAuth.instance.currentUser == null) return;
         debugPrint("SESSION: deconnexion apres verification serveur (role=${fresh?.role}, actif=${fresh?.active})");
@@ -139,14 +147,27 @@ class SplashController extends GetxController {
       FireStoreUtils.loadSessionProfile(preferCache: true),
       FireStoreUtils.requiredUpdateStoreUrl(preferCache: true),
     ]);
-    final bool maintenanceMode = results[0] == true;
+    bool maintenanceMode = results[0] == true;
     final SessionProfile session = results[1] as SessionProfile;
     final bool isLoginResult = session.loggedIn;
-    final String? updateStoreUrl = results[2] as String?;
+    String? updateStoreUrl = results[2] as String?;
 
-    if (updateStoreUrl != null) {
+    // Un ecran bloquant n'est jamais affiche sur la seule foi du cache : une
+    // maintenance levee ou une version minimale abaissee depuis par l'admin
+    // bloquerait sinon l'utilisateur a chaque lancement (le cache ne serait
+    // jamais rafraichi). Confirmation serveur, comme avant le lot 2.
+    if (updateStoreUrl != null) updateStoreUrl = await FireStoreUtils.requiredUpdateStoreUrl();
+    if (maintenanceMode) maintenanceMode = await FireStoreUtils.isMaintenanceMode();
+
+    // Reverification serveur lancee APRES la navigation (fin de methode) :
+    // lancee avant, un Get.offAll(Login/Maintenance) pouvait etre ecrase par le
+    // Get.offAll(DashBoardScreen) qui suivait. null = pas de reverification.
+    bool? revalidateProfile;
+
+    final String? confirmedStoreUrl = updateStoreUrl;
+    if (confirmedStoreUrl != null) {
       // Version trop ancienne (ex. sans filtre des restaurants hors ligne).
-      Get.offAll(() => ForceUpdateScreen(storeUrl: updateStoreUrl));
+      Get.offAll(() => ForceUpdateScreen(storeUrl: confirmedStoreUrl));
       return;
     }
     if (maintenanceMode == true) {
@@ -156,6 +177,7 @@ class SplashController extends GetxController {
       if (Preferences.getBoolean(Preferences.isClickOnNotification) != true) {
         if (Preferences.getBoolean(Preferences.isFinishOnBoardingKey) == false) {
           Get.offAll(const OnBoardingScreen());
+          revalidateProfile = false;
         } else {
           bool isLogin = isLoginResult;
           if (isLogin == true) {
@@ -177,7 +199,7 @@ class SplashController extends GetxController {
                     // Maintenance et version reverifiees sur le serveur dans tous
                     // les cas ; le profil seulement s'il venait du cache (il
                     // synchronise alors lui-meme le jeton FCM).
-                    unawaited(_revalidateFromServer(checkProfile: session.fromCache));
+                    revalidateProfile = session.fromCache;
                     if (!session.fromCache) unawaited(FireStoreUtils.syncFcmToken(userModel));
                     RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
                     if (initialMessage != null && initialMessage.data['type'] != null) {
@@ -226,12 +248,16 @@ class SplashController extends GetxController {
             await LocationService.clear();
             await FirebaseAuth.instance.signOut();
             Get.offAll(const LoginScreen());
+            revalidateProfile = false;
           }
         }
       } else {
         Get.to(HelpSupportScreen(isNavigateViaNotification: true));
+        revalidateProfile = false;
       }
     }
+    final bool? checkProfile = revalidateProfile;
+    if (checkProfile != null) unawaited(_revalidateFromServer(checkProfile: checkProfile));
   }
 
   // Future<void> handleMessageClick({required String type, required String role, required bool isBgApp}) async {
