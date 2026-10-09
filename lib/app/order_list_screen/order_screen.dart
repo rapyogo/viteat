@@ -1,3 +1,4 @@
+import 'package:customer/widget/verified_badge.dart';
 import 'package:customer/app/auth_screen/login_screen.dart';
 import 'package:customer/app/order_list_screen/live_tracking_screen.dart';
 import 'package:customer/app/order_list_screen/order_details_screen.dart';
@@ -352,14 +353,21 @@ class OrderScreen extends StatelessWidget {
                         const SizedBox(
                           height: 6,
                         ),
-                        TranslatedText(
-                          orderModel.vendor!.title.toString(),
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                            fontFamily: AppThemeData.medium,
-                            fontWeight: FontWeight.w400,
-                          ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: TranslatedText(
+                              orderModel.vendor!.title.toString(),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                                fontFamily: AppThemeData.medium,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                            ),
+                            LiveVerifiedBadge(vendor: orderModel.vendor, size: 16),
+                          ],
                         ),
                         const SizedBox(
                           height: 5,

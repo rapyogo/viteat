@@ -1,3 +1,4 @@
+import 'package:customer/widget/verified_badge.dart';
 import 'package:customer/services/server_api.dart';
 import 'package:customer/app/chat_screens/chat_screen.dart';
 import 'package:customer/app/order_list_screen/live_tracking_screen.dart';
@@ -106,14 +107,21 @@ class OrderDetailsScreen extends StatelessWidget {
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                                              TranslatedText(
-                                                "${controller.orderModel.value.vendor!.title}",
-                                                textAlign: TextAlign.start,
-                                                style: TextStyle(
-                                                  fontFamily: AppThemeData.semiBold,
-                                                  fontSize: 16,
-                                                  color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
-                                                ),
+                                              Row(
+                                                children: [
+                                                  Flexible(
+                                                    child: TranslatedText(
+                                                    "${controller.orderModel.value.vendor!.title}",
+                                                    textAlign: TextAlign.start,
+                                                    style: TextStyle(
+                                                      fontFamily: AppThemeData.semiBold,
+                                                      fontSize: 16,
+                                                      color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
+                                                    ),
+                                                  ),
+                                                  ),
+                                                  LiveVerifiedBadge(vendor: controller.orderModel.value.vendor, size: 16),
+                                                ],
                                               ),
                                               TranslatedText(
                                                 "${controller.orderModel.value.vendor!.location}",
@@ -144,14 +152,21 @@ class OrderDetailsScreen extends StatelessWidget {
                                               child: Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  TranslatedText(
-                                                    "${controller.orderModel.value.vendor!.title}",
-                                                    textAlign: TextAlign.start,
-                                                    style: TextStyle(
-                                                      fontFamily: AppThemeData.semiBold,
-                                                      fontSize: 16,
-                                                      color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
-                                                    ),
+                                                  Row(
+                                                    children: [
+                                                      Flexible(
+                                                        child: TranslatedText(
+                                                        "${controller.orderModel.value.vendor!.title}",
+                                                        textAlign: TextAlign.start,
+                                                        style: TextStyle(
+                                                          fontFamily: AppThemeData.semiBold,
+                                                          fontSize: 16,
+                                                          color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
+                                                        ),
+                                                      ),
+                                                      ),
+                                                      LiveVerifiedBadge(vendor: controller.orderModel.value.vendor, size: 16),
+                                                    ],
                                                   ),
                                                   TranslatedText(
                                                     "${controller.orderModel.value.vendor!.location}",
@@ -277,14 +292,21 @@ class OrderDetailsScreen extends StatelessWidget {
                                                                 child: Column(
                                                                   crossAxisAlignment: CrossAxisAlignment.start,
                                                                   children: [
-                                                                    TranslatedText(
-                                                                      "${controller.orderModel.value.vendor!.title}",
-                                                                      textAlign: TextAlign.start,
-                                                                      style: TextStyle(
-                                                                        fontFamily: AppThemeData.semiBold,
-                                                                        fontSize: 16,
-                                                                        color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
-                                                                      ),
+                                                                    Row(
+                                                                      children: [
+                                                                        Flexible(
+                                                                          child: TranslatedText(
+                                                                          "${controller.orderModel.value.vendor!.title}",
+                                                                          textAlign: TextAlign.start,
+                                                                          style: TextStyle(
+                                                                            fontFamily: AppThemeData.semiBold,
+                                                                            fontSize: 16,
+                                                                            color: themeChange.getThem() ? AppThemeData.primary300 : AppThemeData.primary300,
+                                                                          ),
+                                                                        ),
+                                                                        ),
+                                                                        LiveVerifiedBadge(vendor: controller.orderModel.value.vendor, size: 16),
+                                                                      ],
                                                                     ),
                                                                     TranslatedText(
                                                                       "${controller.orderModel.value.vendor!.location}",
