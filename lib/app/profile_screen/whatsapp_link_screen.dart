@@ -1,14 +1,17 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:customer/constant/collection_name.dart';
 import 'package:customer/constant/show_toast_dialog.dart';
 import 'package:customer/services/whatsapp_link_service.dart';
 import 'package:customer/themes/app_them_data.dart';
 import 'package:customer/themes/round_button_fill.dart';
 import 'package:customer/utils/dark_theme_provider.dart';
+import 'package:customer/utils/fire_store_utils.dart';
 import 'package:customer/widget/translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class WhatsAppLinkScreen extends StatefulWidget {
   const WhatsAppLinkScreen({super.key});
@@ -20,6 +23,38 @@ class WhatsAppLinkScreen extends StatefulWidget {
 class _WhatsAppLinkScreenState extends State<WhatsAppLinkScreen> {
   String? _command;
   bool _isLoading = false;
+
+  /// Numero officiel du bot Viteat (settings/whatsapp_share.botPhone, regle
+  /// par l'admin). Absent : on retombe sur le parcours « copier puis coller ».
+  String? _botPhone;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBotPhone();
+  }
+
+  Future<void> _loadBotPhone() async {
+    try {
+      final doc = await FireStoreUtils.fireStore.collection(CollectionName.settings).doc('whatsapp_share').get();
+      final String phone = '${doc.data()?['botPhone'] ?? ''}'.replaceAll(RegExp(r'\D'), '');
+      if (mounted && phone.length >= 9) setState(() => _botPhone = phone);
+    } catch (_) {
+      // Lecture impossible : le parcours par copie reste disponible.
+    }
+  }
+
+  /// Un seul geste : genere le code puis ouvre la conversation Viteat avec le
+  /// message deja saisi. Le client n'a plus qu'a appuyer sur « Envoyer ».
+  Future<void> _linkWhatsApp() async {
+    if (_command == null) await _generateCode();
+    if (_command == null) return;
+    if (_botPhone == null) {
+      await _copyCommand();
+      return;
+    }
+    await _openWhatsApp();
+  }
 
   Future<void> _generateCode() async {
     if (_isLoading) return;
@@ -37,6 +72,21 @@ class _WhatsAppLinkScreenState extends State<WhatsAppLinkScreen> {
     }
   }
 
+  Future<void> _openWhatsApp() async {
+    if (_command == null || _botPhone == null) return;
+    final Uri uri = Uri.parse('https://wa.me/$_botPhone?text=${Uri.encodeComponent(_command!)}');
+    bool opened = false;
+    try {
+      opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      opened = false;
+    }
+    if (!opened) {
+      // WhatsApp absent ou lien refuse : le code reste copiable.
+      await _copyCommand();
+    }
+  }
+
   Future<void> _copyCommand() async {
     if (_command == null) return;
     await Clipboard.setData(ClipboardData(text: _command!));
@@ -50,6 +100,7 @@ class _WhatsAppLinkScreenState extends State<WhatsAppLinkScreen> {
     final surface = isDark ? AppThemeData.grey900 : AppThemeData.grey50;
     final textColor = isDark ? AppThemeData.grey50 : AppThemeData.grey900;
     final muted = isDark ? AppThemeData.grey400 : AppThemeData.grey500;
+    final bool direct = _botPhone != null;
 
     return Scaffold(
       backgroundColor: isDark ? AppThemeData.surfaceDark : AppThemeData.surface,
@@ -80,18 +131,36 @@ class _WhatsAppLinkScreenState extends State<WhatsAppLinkScreen> {
                 "Securely connect your Viteat account to the WhatsApp number registered on your profile.",
                 style: TextStyle(fontFamily: AppThemeData.regular, fontSize: 15, height: 1.45, color: muted),
               ),
-              const SizedBox(height: 24),
-              _stepsCard(surface, textColor, muted),
+              const SizedBox(height: 22),
+              _stepsCard(surface, textColor, muted, direct),
               const SizedBox(height: 18),
-              if (_command != null) _codeCard(surface, textColor, muted),
+              if (_command != null) _codeCard(surface, textColor, muted, direct),
               if (_command != null) const SizedBox(height: 18),
               RoundedButtonFill(
-                title: _isLoading ? "Please wait" : (_command == null ? "Generate WhatsApp code" : "Generate a new code"),
+                title: _isLoading
+                    ? "Please wait"
+                    : direct
+                        ? (_command == null ? "Link my WhatsApp" : "Open WhatsApp")
+                        : (_command == null ? "Generate WhatsApp code" : "Generate a new code"),
                 color: AppThemeData.primary300,
                 textColor: AppThemeData.grey50,
                 height: 6,
-                onPress: _generateCode,
+                onPress: direct ? _linkWhatsApp : _generateCode,
               ),
+              if (direct && _command != null) ...[
+                const SizedBox(height: 10),
+                Center(
+                  child: TextButton(
+                    onPressed: _isLoading
+                        ? null
+                        : () async {
+                            setState(() => _command = null);
+                            await _generateCode();
+                          },
+                    child: TranslatedText("Generate a new code", style: TextStyle(fontFamily: AppThemeData.medium, fontSize: 14, color: AppThemeData.primary300)),
+                  ),
+                ),
+              ],
               const SizedBox(height: 14),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,12 +182,18 @@ class _WhatsAppLinkScreenState extends State<WhatsAppLinkScreen> {
     );
   }
 
-  Widget _stepsCard(Color surface, Color textColor, Color muted) {
-    const steps = [
-      "Generate your one-time code below.",
-      "Open the Viteat WhatsApp conversation from your registered number.",
-      "Send the copied command to confirm the connection.",
-    ];
+  Widget _stepsCard(Color surface, Color textColor, Color muted, bool direct) {
+    final List<String> steps = direct
+        ? const [
+            "Tap « Link my WhatsApp » below.",
+            "WhatsApp opens the Viteat conversation with the message ready.",
+            "Press Send from your registered number: it's done.",
+          ]
+        : const [
+            "Generate your one-time code below.",
+            "Open the Viteat WhatsApp conversation from your registered number.",
+            "Send the copied command to confirm the connection.",
+          ];
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -150,25 +225,32 @@ class _WhatsAppLinkScreenState extends State<WhatsAppLinkScreen> {
     );
   }
 
-  Widget _codeCard(Color surface, Color textColor, Color muted) {
+  Widget _codeCard(Color surface, Color textColor, Color muted, bool direct) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(18, 14, 8, 14),
       decoration: BoxDecoration(border: Border.all(color: AppThemeData.primary200), color: surface, borderRadius: BorderRadius.circular(14)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          TranslatedText("Your WhatsApp command", style: TextStyle(fontFamily: AppThemeData.semiBold, fontSize: 14, color: textColor)),
-          const SizedBox(height: 8),
-          SelectableText(_command!, style: TextStyle(fontFamily: AppThemeData.bold, fontSize: 20, letterSpacing: 1.2, color: AppThemeData.primary300)),
-          const SizedBox(height: 4),
-          TranslatedText("Copy this command and send it to Viteat on WhatsApp.", style: TextStyle(fontFamily: AppThemeData.regular, fontSize: 12, color: muted)),
-          const SizedBox(height: 14),
-          OutlinedButton.icon(
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TranslatedText("Your WhatsApp command", style: TextStyle(fontFamily: AppThemeData.semiBold, fontSize: 14, color: textColor)),
+                const SizedBox(height: 6),
+                SelectableText(_command!, style: TextStyle(fontFamily: AppThemeData.bold, fontSize: 20, letterSpacing: 1.2, color: AppThemeData.primary300)),
+                if (!direct) ...[
+                  const SizedBox(height: 4),
+                  TranslatedText("Copy this command and send it to Viteat on WhatsApp.", style: TextStyle(fontFamily: AppThemeData.regular, fontSize: 12, color: muted)),
+                ],
+              ],
+            ),
+          ),
+          // Copie toujours possible (WhatsApp sur un autre telephone, etc.).
+          IconButton(
             onPressed: _copyCommand,
-            icon: const Icon(Icons.copy_outlined, size: 18),
-            label: TranslatedText("Copy command"),
-            style: OutlinedButton.styleFrom(foregroundColor: AppThemeData.primary300, side: BorderSide(color: AppThemeData.primary300)),
+            tooltip: "Copy command",
+            icon: Icon(Icons.copy_rounded, color: AppThemeData.primary300),
           ),
         ],
       ),
