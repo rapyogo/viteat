@@ -77,15 +77,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(22),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.16),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: Colors.white.withValues(alpha: 0.30), width: 1.5),
-                                    ),
-                                    child: Image.asset("assets/images/ic_logo.png", height: 96, width: 96),
-                                  ),
+                                  // Logo seul, sans cercle de fond ; format 3:2 du logo.
+                                  Image.asset("assets/images/ic_logo.png", height: 100, width: 150),
                                   const SizedBox(height: 26),
                                   const TranslatedText(
                                     "Welcome to Viteat",

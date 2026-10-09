@@ -276,11 +276,6 @@ class HomeScreenTwo extends StatelessWidget {
                                                 child: ClipOval(
                                                   child: Container(
                                                       padding: const EdgeInsets.all(8.0),
-                                                      decoration: BoxDecoration(
-                                                        color: AppThemeData.grey50.withValues(alpha: 0.22),
-                                                        shape: BoxShape.circle,
-                                                        border: Border.all(color: AppThemeData.grey50.withValues(alpha: 0.35)),
-                                                      ),
                                                       child: SvgPicture.asset(
                                                         "assets/icons/ic_shoping_cart.svg",
                                                         colorFilter: const ColorFilter.mode(AppThemeData.grey50, BlendMode.srcIn),

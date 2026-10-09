@@ -292,11 +292,6 @@ class HomeScreen extends StatelessWidget {
                                                     child: Container(
                                                       width: 42,
                                                       height: 42,
-                                                      decoration: BoxDecoration(
-                                                        color: AppThemeData.grey50.withValues(alpha: 0.22),
-                                                        shape: BoxShape.circle,
-                                                        border: Border.all(width: 1, color: AppThemeData.grey50.withValues(alpha: 0.35)),
-                                                      ),
                                                       child: Padding(
                                                         padding: const EdgeInsets.all(8.0),
                                                         child: SvgPicture.asset(
