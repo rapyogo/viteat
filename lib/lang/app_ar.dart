@@ -690,4 +690,5 @@ const Map<String, String> lnAr = {
   "Meanwhile, order and chat with Viteat on WhatsApp": "في الأثناء، اطلب وتحدث مع Viteat عبر واتساب",
   "Available soon…": "قريبًا…",
   "Preparing your code…": "جارٍ تجهيز رمزك…",
+  "Beta": "تجريبي",
 };

@@ -698,4 +698,5 @@ const Map<String, String> hiIN = {
   "Meanwhile, order and chat with Viteat on WhatsApp": "तब तक, WhatsApp पर Viteat से ऑर्डर करें और बात करें",
   "Available soon…": "जल्द उपलब्ध…",
   "Preparing your code…": "आपका कोड तैयार हो रहा है…",
+  "Beta": "बीटा",
 };

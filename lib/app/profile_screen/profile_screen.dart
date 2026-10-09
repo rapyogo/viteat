@@ -114,9 +114,9 @@ class ProfileScreen extends StatelessWidget {
                                       cardDecoration(themeChange, controller, "assets/icons/ic_whatsapp.svg", "Link WhatsApp", () {
                                         Get.to(const WhatsAppLinkScreen());
                                       }),
-                                    cardDecoration(themeChange, controller, "assets/icons/ic_ai_agent_color.svg", "AI Agent · Coming soon", () {
+                                    cardDecoration(themeChange, controller, "assets/icons/ic_ai_agent_color.svg", "AI Agent", () {
                                       Get.to(const AiAgentScreen());
-                                    }),
+                                    }, badge: "Beta"),
                                     if (Constant.isEnabledForCustomer == true)
                                       cardDecoration(themeChange, controller, "assets/images/ic_dinin.svg", "Dine-In", () {
                                         Get.to(const DineInScreen());
@@ -495,7 +495,8 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Padding cardDecoration(DarkThemeProvider themeChange, MyProfileController controller, String image, String title, Function()? onPress) {
+  /// [badge] : petite etiquette optionnelle apres le titre (ex. « Beta »).
+  Padding cardDecoration(DarkThemeProvider themeChange, MyProfileController controller, String image, String title, Function()? onPress, {String? badge}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: InkWell(
@@ -539,20 +540,34 @@ class ProfileScreen extends StatelessWidget {
               width: 12,
             ),
             Expanded(
-              child: TranslatedText(
-                title,
-                textAlign: TextAlign.start,
-                style: TextStyle(
-                  fontFamily: AppThemeData.medium,
-                  fontSize: 16,
-                  color: title == "Log out"
-                      ? AppThemeData.danger300
-                      : title == "Log In"
-                          ? AppThemeData.success500
-                          : themeChange.getThem()
-                              ? AppThemeData.grey100
-                              : AppThemeData.grey800,
-                ),
+              child: Row(
+                children: [
+                  Flexible(
+                    child: TranslatedText(
+                      title,
+                      textAlign: TextAlign.start,
+                      style: TextStyle(
+                        fontFamily: AppThemeData.medium,
+                        fontSize: 16,
+                        color: title == "Log out"
+                            ? AppThemeData.danger300
+                            : title == "Log In"
+                                ? AppThemeData.success500
+                                : themeChange.getThem()
+                                    ? AppThemeData.grey100
+                                    : AppThemeData.grey800,
+                      ),
+                    ),
+                  ),
+                  if (badge != null) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(color: AppThemeData.primary300.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
+                      child: TranslatedText(badge, style: TextStyle(fontFamily: AppThemeData.semiBold, fontSize: 11, color: AppThemeData.primary300)),
+                    ),
+                  ],
+                ],
               ),
             ),
             title == "Dark Mode"

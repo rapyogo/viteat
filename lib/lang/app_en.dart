@@ -694,4 +694,5 @@ const Map<String, String> enUS = {
   "Meanwhile, order and chat with Viteat on WhatsApp": "Meanwhile, order and chat with Viteat on WhatsApp",
   "Available soon…": "Available soon…",
   "Preparing your code…": "Preparing your code…",
+  "Beta": "Beta",
 };

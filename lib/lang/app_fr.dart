@@ -698,4 +698,5 @@ const Map<String, String> trFR = {
   "Meanwhile, order and chat with Viteat on WhatsApp": "En attendant, commandez et discutez avec Viteat sur WhatsApp",
   "Available soon…": "Bientôt disponible…",
   "Preparing your code…": "Préparation de votre code…",
+  "Beta": "Bêta",
 };

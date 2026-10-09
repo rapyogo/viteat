@@ -22,7 +22,7 @@ class AiAgentButton extends StatelessWidget {
           width: size,
           height: size,
           child: Padding(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(8),
             child: SvgPicture.asset("assets/icons/ic_ai_agent.svg"),
           ),
         ),
