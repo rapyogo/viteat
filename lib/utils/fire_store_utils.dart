@@ -1065,25 +1065,35 @@ class FireStoreUtils {
     return favouriteList;
   }
 
+  /// Incremente a chaque ajout/retrait de favori (restaurant ou plat) : l'onglet
+  /// Favoris reste monte dans le dashboard et se recharge sur ce signal.
+  static final RxInt favouritesVersion = 0.obs;
+
   static Future removeFavouriteRestaurant(FavouriteModel favouriteModel) async {
-    await fireStore.collection(CollectionName.favoriteRestaurant).where("restaurant_id", isEqualTo: favouriteModel.restaurantId).get().then((value) {
-      value.docs.forEach((element) async {
-        await fireStore.collection(CollectionName.favoriteRestaurant).doc(element.id).delete();
-      });
-    });
+    // Filtre user_id : sans lui, on visait aussi ce favori chez les autres clients.
+    final value = await fireStore
+        .collection(CollectionName.favoriteRestaurant)
+        .where("user_id", isEqualTo: getCurrentUid())
+        .where("restaurant_id", isEqualTo: favouriteModel.restaurantId)
+        .get();
+    await Future.wait(value.docs.map((element) => element.reference.delete()));
+    favouritesVersion.value++;
   }
 
   static Future<void> setFavouriteRestaurant(FavouriteModel favouriteModel) async {
     await fireStore.collection(CollectionName.favoriteRestaurant).add(favouriteModel.toJson());
+    favouritesVersion.value++;
   }
 
   static Future<void> removeFavouriteItem(FavouriteItemModel favouriteModel) async {
     try {
       final favoriteCollection = fireStore.collection(CollectionName.favoriteItem);
-      final querySnapshot = await favoriteCollection.where("product_id", isEqualTo: favouriteModel.productId).get();
+      final querySnapshot =
+          await favoriteCollection.where("user_id", isEqualTo: getCurrentUid()).where("product_id", isEqualTo: favouriteModel.productId).get();
       for (final doc in querySnapshot.docs) {
         await favoriteCollection.doc(doc.id).delete();
       }
+      favouritesVersion.value++;
     } catch (e) {
       print("Error removing favourite item: $e");
     }
@@ -1091,6 +1101,7 @@ class FireStoreUtils {
 
   static Future<void> setFavouriteItem(FavouriteItemModel favouriteModel) async {
     await fireStore.collection(CollectionName.favoriteItem).add(favouriteModel.toJson());
+    favouritesVersion.value++;
   }
 
   static Future<List<ProductModel>> getProductByVendorId(String vendorId, {void Function(List<ProductModel>)? onRefresh}) async {

@@ -22,24 +22,43 @@ class FavouriteController extends GetxController {
 
   RxBool isLoading = true.obs;
 
+  Worker? _favouritesWorker;
+
+  /// Rechargements qui se chevauchent : seul le dernier ecrit les listes.
+  int _loadId = 0;
+
   @override
   void onInit() {
-    // TODO: implement onInit
-
     super.onInit();
     getData();
+    // L'onglet reste monte (IndexedStack du dashboard) : sans ce signal, un plat
+    // ou un restaurant ajoute ailleurs n'apparaissait jamais ici.
+    _favouritesWorker = debounce<int>(FireStoreUtils.favouritesVersion, (_) => getData(silent: true), time: const Duration(milliseconds: 400));
   }
 
-  Future<void> getData() async {
-    reset();
+  @override
+  void onClose() {
+    _favouritesWorker?.dispose();
+    super.onClose();
+  }
+
+  /// [silent] : rechargement en arriere-plan, sans spinner ni liste videe.
+  Future<void> getData({bool silent = false}) async {
+    final int loadId = ++_loadId;
+    if (!silent) reset();
+    final List<FavouriteModel> favouriteList = <FavouriteModel>[];
+    final List<VendorModel> favouriteVendorList = <VendorModel>[];
+    final List<FavouriteItemModel> favouriteItemList = <FavouriteItemModel>[];
+    final List<ProductModel> favouriteFoodList = <ProductModel>[];
+    final Map<String, VendorModel> foodVendorCache = <String, VendorModel>{};
     if (Constant.userModel != null) {
       // getFavouriteRestaurant() et getFavouriteItem() sont indépendants.
       final List<dynamic> baseLists = await Future.wait([
         FireStoreUtils.getFavouriteRestaurant(),
         FireStoreUtils.getFavouriteItem(),
       ]);
-      favouriteList.value = baseLists[0] as List<FavouriteModel>;
-      favouriteItemList.value = baseLists[1] as List<FavouriteItemModel>;
+      favouriteList.addAll(baseLists[0] as List<FavouriteModel>);
+      favouriteItemList.addAll(baseLists[1] as List<FavouriteItemModel>);
 
       // Un getVendorById() par favori, mais lancés en parallèle plutôt qu'en
       // séquence (N allers-retours l'un après l'autre auparavant).
@@ -70,7 +89,7 @@ class FavouriteController extends GetxController {
         if (aOpen == bOpen) return 0;
         return aOpen ? -1 : 1;
       });
-      favouriteVendorList.value = favouriteVendorData;
+      favouriteVendorList.addAll(favouriteVendorData);
 
       // Idem pour les articles favoris : chaque résolution (produit puis,
       // si nécessaire, son vendeur) tourne en parallèle des autres.
@@ -79,18 +98,22 @@ class FavouriteController extends GetxController {
       );
       favouriteFoodList.addAll(foodResults.whereType<ProductModel>());
     }
-    List<ProductModel> favouriteFoodData = favouriteFoodList;
-    List<VendorModel> favouriteVendorData = favouriteVendorList;
-    favouriteFoodList.value = removeDuplicateFoods(favouriteFoodData);
-    favouriteVendorList.value = removeDuplicateVendor(favouriteVendorData);
-    await _loadFoodVendorCache();
+    final List<ProductModel> foods = removeDuplicateFoods(favouriteFoodList);
+    final List<VendorModel> vendors = removeDuplicateVendor(favouriteVendorList);
+    await _loadFoodVendorCache(foods, foodVendorCache);
     // Plats dont le restaurant est hors ligne (isLive == false) : non proposes.
-    favouriteFoodList.removeWhere((p) => !Constant.isVendorLive(foodVendorCache[p.vendorID]));
+    foods.removeWhere((p) => !Constant.isVendorLive(foodVendorCache[p.vendorID]));
+    if (loadId != _loadId || isClosed) return;
+    this.favouriteList.value = favouriteList;
+    this.favouriteItemList.value = favouriteItemList;
+    this.favouriteVendorList.value = vendors;
+    this.foodVendorCache.assignAll(foodVendorCache);
+    this.favouriteFoodList.value = foods;
     isLoading.value = false;
   }
 
-  Future<void> _loadFoodVendorCache() async {
-    final List<String> vendorIds = favouriteFoodList.map((p) => p.vendorID).whereType<String>().toSet().where((id) => !foodVendorCache.containsKey(id)).toList();
+  Future<void> _loadFoodVendorCache(List<ProductModel> foods, Map<String, VendorModel> foodVendorCache) async {
+    final List<String> vendorIds = foods.map((p) => p.vendorID).whereType<String>().toSet().where((id) => !foodVendorCache.containsKey(id)).toList();
     if (vendorIds.isEmpty) return;
     final List<VendorModel?> results = await Future.wait(vendorIds.map((id) => FireStoreUtils.getVendorByIdCached(id)));
     for (int i = 0; i < vendorIds.length; i++) {
