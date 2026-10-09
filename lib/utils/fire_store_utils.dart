@@ -381,6 +381,17 @@ class FireStoreUtils {
     }
   }
 
+  static final MemoCache<String, UserModel?> _profileMemo = MemoCache<String, UserModel?>(const Duration(minutes: 5), maxEntries: 200);
+
+  /// Profil d'un tiers pour l'AFFICHAGE (nom et photo du restaurant ou du
+  /// livreur dans les messageries) : memorise 5 min, une seule lecture meme si
+  /// plusieurs lignes le demandent. Avant, chaque ligne relisait le profil a
+  /// chaque reconstruction de la liste.
+  static Future<UserModel?> getUserProfileCached(String uuid) {
+    if (uuid.isEmpty) return Future<UserModel?>.value(null);
+    return _profileMemo.get(uuid, (_) => getUserProfile(uuid));
+  }
+
   /// Profil lu uniquement depuis le cache local de Firestore (aucun appel reseau).
   static Future<UserModel?> getUserProfileFromCache(String uuid) async {
     if (uuid.isEmpty) return null;
