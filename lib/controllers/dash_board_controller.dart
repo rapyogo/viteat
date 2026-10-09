@@ -58,10 +58,31 @@ class DashBoardController extends GetxController {
   }
 
   @override
+  void onReady() {
+    super.onReady();
+    unawaited(_warmUpTabs());
+  }
+
+  @override
   void onClose() {
     _connectivityWorker?.dispose();
     _layoutWorker?.dispose();
     super.onClose();
+  }
+
+  /// Prechargement des autres onglets une fois l'accueil affiche : chacun est
+  /// monte en arriere-plan (son controleur charge ses donnees), un par un et
+  /// espaces pour ne pas saccader l'accueil ni saturer un telephone modeste.
+  /// Le premier tap sur un onglet l'affiche alors quasi instantanement.
+  Future<void> _warmUpTabs() async {
+    await Future<void>.delayed(const Duration(seconds: 3));
+    for (int i = 0; i < pageList.length; i++) {
+      if (isClosed) return;
+      if (visitedTabs.contains(i)) continue;
+      visitedTabs.add(i);
+      pageList.refresh();
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+    }
   }
 
   /// Retour du reseau : relit le profil (qui a pu manquer au demarrage hors
