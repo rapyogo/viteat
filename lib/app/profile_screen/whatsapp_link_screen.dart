@@ -7,6 +7,7 @@ import 'package:customer/utils/dark_theme_provider.dart';
 import 'package:customer/widget/translated_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 class WhatsAppLinkScreen extends StatefulWidget {
@@ -68,8 +69,9 @@ class _WhatsAppLinkScreenState extends State<WhatsAppLinkScreen> {
               Container(
                 width: 56,
                 height: 56,
-                decoration: BoxDecoration(color: AppThemeData.primary50, borderRadius: BorderRadius.circular(16)),
-                child: Icon(Icons.chat_outlined, size: 30, color: AppThemeData.primary300),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: const Color(0xFFE7F8EE), borderRadius: BorderRadius.circular(16)),
+                child: SvgPicture.asset("assets/icons/ic_whatsapp.svg", width: 30, height: 30),
               ),
               const SizedBox(height: 18),
               TranslatedText("Order and track on WhatsApp", style: TextStyle(fontFamily: AppThemeData.semiBold, fontSize: 24, color: textColor)),
