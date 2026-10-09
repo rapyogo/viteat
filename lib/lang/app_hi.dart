@@ -697,4 +697,5 @@ const Map<String, String> hiIN = {
   "Remember your preferences and allergies": "आपकी पसंद और एलर्जी याद रखना",
   "Meanwhile, order and chat with Viteat on WhatsApp": "तब तक, WhatsApp पर Viteat से ऑर्डर करें और बात करें",
   "Available soon…": "जल्द उपलब्ध…",
+  "Preparing your code…": "आपका कोड तैयार हो रहा है…",
 };

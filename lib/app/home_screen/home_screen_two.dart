@@ -251,7 +251,7 @@ class HomeScreenTwo extends StatelessWidget {
                                             width: 5,
                                           ),
                                           // Agent IA (bientot disponible), a cote du panier.
-                                          const AiAgentButton(),
+                                          const AiAgentButton(size: 38),
                                           const SizedBox(width: 8),
                                           Obx(
                                             () => badges.Badge(

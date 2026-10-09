@@ -28,10 +28,16 @@ class _WhatsAppLinkScreenState extends State<WhatsAppLinkScreen> {
   /// par l'admin). Absent : on retombe sur le parcours « copier puis coller ».
   String? _botPhone;
 
+  /// Code prepare en arriere-plan des l'ouverture de l'ecran : la fonction
+  /// serveur peut mettre plusieurs secondes (demarrage a froid). Au tap, il est
+  /// en general deja pret et WhatsApp s'ouvre immediatement.
+  Future<void>? _prefetch;
+
   @override
   void initState() {
     super.initState();
     _loadBotPhone();
+    _prefetch = _generateCode(silent: true);
   }
 
   Future<void> _loadBotPhone() async {
@@ -47,6 +53,13 @@ class _WhatsAppLinkScreenState extends State<WhatsAppLinkScreen> {
   /// Un seul geste : genere le code puis ouvre la conversation Viteat avec le
   /// message deja saisi. Le client n'a plus qu'a appuyer sur « Envoyer ».
   Future<void> _linkWhatsApp() async {
+    if (_command == null && _prefetch != null) {
+      // Preparation encore en cours : on l'attend (le bouton l'indique),
+      // puis on redirige juste apres la creation du code.
+      setState(() => _waitingForCode = true);
+      await _prefetch;
+      if (mounted) setState(() => _waitingForCode = false);
+    }
     if (_command == null) await _generateCode();
     if (_command == null) return;
     if (_botPhone == null) {
@@ -56,19 +69,24 @@ class _WhatsAppLinkScreenState extends State<WhatsAppLinkScreen> {
     await _openWhatsApp();
   }
 
-  Future<void> _generateCode() async {
+  bool _waitingForCode = false;
+
+  /// [silent] : preparation en arriere-plan, sans spinner ni message d'erreur
+  /// (un echec sera retente, et signale, au tap).
+  Future<void> _generateCode({bool silent = false}) async {
     if (_isLoading) return;
-    setState(() => _isLoading = true);
+    if (!silent) setState(() => _isLoading = true);
     try {
       final data = await WhatsAppLinkService.createCode();
       if (!mounted) return;
       setState(() => _command = data['whatsappCommand']?.toString());
     } on FirebaseFunctionsException catch (error) {
-      ShowToastDialog.showToast(error.message ?? "Unable to create the WhatsApp link code.");
+      if (!silent) ShowToastDialog.showToast(error.message ?? "Unable to create the WhatsApp link code.");
     } catch (_) {
-      ShowToastDialog.showToast("Unable to create the WhatsApp link code.");
+      if (!silent) ShowToastDialog.showToast("Unable to create the WhatsApp link code.");
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (silent) _prefetch = null;
+      if (mounted && !silent) setState(() => _isLoading = false);
     }
   }
 
@@ -137,7 +155,9 @@ class _WhatsAppLinkScreenState extends State<WhatsAppLinkScreen> {
               if (_command != null) _codeCard(surface, textColor, muted, direct),
               if (_command != null) const SizedBox(height: 18),
               RoundedButtonFill(
-                title: _isLoading
+                title: _waitingForCode
+                    ? "Preparing your code…"
+                    : _isLoading
                     ? "Please wait"
                     : direct
                         ? (_command == null ? "Link my WhatsApp" : "Open WhatsApp")

@@ -693,4 +693,5 @@ const Map<String, String> enUS = {
   "Remember your preferences and allergies": "Remember your preferences and allergies",
   "Meanwhile, order and chat with Viteat on WhatsApp": "Meanwhile, order and chat with Viteat on WhatsApp",
   "Available soon…": "Available soon…",
+  "Preparing your code…": "Preparing your code…",
 };
