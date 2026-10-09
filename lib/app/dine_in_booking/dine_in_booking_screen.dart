@@ -1,3 +1,4 @@
+import 'package:customer/widget/verified_badge.dart';
 import 'package:customer/app/dine_in_booking/dine_in_booking_details.dart';
 import 'package:customer/constant/constant.dart';
 import 'package:customer/controllers/dine_in_booking_controller.dart';
@@ -230,14 +231,21 @@ class DineInBookingScreen extends StatelessWidget {
                           const SizedBox(
                             height: 5,
                           ),
-                          TranslatedText(
-                            orderModel.vendor!.title.toString(),
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
-                              fontFamily: AppThemeData.medium,
-                              fontWeight: FontWeight.w400,
-                            ),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: TranslatedText(
+                                orderModel.vendor!.title.toString(),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: themeChange.getThem() ? AppThemeData.grey50 : AppThemeData.grey900,
+                                  fontFamily: AppThemeData.medium,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              ),
+                              LiveVerifiedBadge(vendor: orderModel.vendor, size: 16),
+                            ],
                           ),
                           const SizedBox(
                             height: 5,
