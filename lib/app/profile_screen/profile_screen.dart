@@ -1,3 +1,4 @@
+import 'package:customer/app/ai_agent/ai_agent_screen.dart';
 import 'package:customer/services/location_service.dart';
 import 'package:customer/app/profile_screen/whatsapp_link_screen.dart';
 import 'package:customer/app/auth_screen/login_screen.dart';
@@ -113,6 +114,9 @@ class ProfileScreen extends StatelessWidget {
                                       cardDecoration(themeChange, controller, "assets/icons/ic_whatsapp.svg", "Link WhatsApp", () {
                                         Get.to(const WhatsAppLinkScreen());
                                       }),
+                                    cardDecoration(themeChange, controller, "assets/icons/ic_ai_agent_color.svg", "AI Agent · Coming soon", () {
+                                      Get.to(const AiAgentScreen());
+                                    }),
                                     if (Constant.isEnabledForCustomer == true)
                                       cardDecoration(themeChange, controller, "assets/images/ic_dinin.svg", "Dine-In", () {
                                         Get.to(const DineInScreen());

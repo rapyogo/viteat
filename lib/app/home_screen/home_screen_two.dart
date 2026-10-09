@@ -1,3 +1,4 @@
+import 'package:customer/widget/ai_agent_button.dart';
 import 'package:customer/widget/location_prompt_view.dart';
 import 'package:customer/widget/home_skeleton.dart';
 import 'package:customer/widget/fade_in_section.dart';
@@ -249,6 +250,9 @@ class HomeScreenTwo extends StatelessWidget {
                                           const SizedBox(
                                             width: 5,
                                           ),
+                                          // Agent IA (bientot disponible), a cote du panier.
+                                          const AiAgentButton(),
+                                          const SizedBox(width: 8),
                                           Obx(
                                             () => badges.Badge(
                                               showBadge: cartItem.isNotEmpty,
