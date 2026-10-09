@@ -63,7 +63,7 @@ class OrderController extends GetxController {
   Future<void> _loadVendorCache() async {
     final List<String> vendorIds = allList.map((o) => o.vendorID).whereType<String>().toSet().where((id) => !vendorCache.containsKey(id)).toList();
     if (vendorIds.isEmpty) return;
-    final List<VendorModel?> results = await Future.wait(vendorIds.map((id) => FireStoreUtils.getVendorById(id)));
+    final List<VendorModel?> results = await Future.wait(vendorIds.map((id) => FireStoreUtils.getVendorByIdCached(id)));
     for (int i = 0; i < vendorIds.length; i++) {
       final VendorModel? vendor = results[i];
       if (vendor != null) vendorCache[vendorIds[i]] = vendor;

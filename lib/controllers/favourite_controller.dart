@@ -44,7 +44,7 @@ class FavouriteController extends GetxController {
       // Un getVendorById() par favori, mais lancés en parallèle plutôt qu'en
       // séquence (N allers-retours l'un après l'autre auparavant).
       final List<VendorModel?> vendorResults = await Future.wait(
-        favouriteList.map((element) => FireStoreUtils.getVendorById(element.restaurantId.toString())),
+        favouriteList.map((element) => FireStoreUtils.getVendorByIdCached(element.restaurantId.toString())),
       );
       List<VendorModel> favouriteVendorData = [];
       for (final value in vendorResults) {
@@ -92,7 +92,7 @@ class FavouriteController extends GetxController {
   Future<void> _loadFoodVendorCache() async {
     final List<String> vendorIds = favouriteFoodList.map((p) => p.vendorID).whereType<String>().toSet().where((id) => !foodVendorCache.containsKey(id)).toList();
     if (vendorIds.isEmpty) return;
-    final List<VendorModel?> results = await Future.wait(vendorIds.map((id) => FireStoreUtils.getVendorById(id)));
+    final List<VendorModel?> results = await Future.wait(vendorIds.map((id) => FireStoreUtils.getVendorByIdCached(id)));
     for (int i = 0; i < vendorIds.length; i++) {
       final VendorModel? vendor = results[i];
       if (vendor != null) foodVendorCache[vendorIds[i]] = vendor;

@@ -933,7 +933,7 @@ class BannerView extends StatelessWidget {
                 VendorModel? vendorModel = Constant.restaurantList?.where((v) => v.id == wantedVendorId).firstOrNull;
                 if (vendorModel == null) {
                   ShowToastDialog.showLoader("Please wait");
-                  vendorModel = await FireStoreUtils.getVendorById(wantedVendorId);
+                  vendorModel = await FireStoreUtils.getVendorByIdCached(wantedVendorId);
                 }
 
                 if (vendorModel!.zoneId == Constant.selectedZone!.id) {
@@ -946,7 +946,7 @@ class BannerView extends StatelessWidget {
               } else if (bannerModel.redirect_type == "product") {
                 ShowToastDialog.showLoader("Please wait");
                 ProductModel? productModel = await FireStoreUtils.getProductById(bannerModel.redirect_id.toString());
-                VendorModel? vendorModel = await FireStoreUtils.getVendorById(productModel!.vendorID.toString());
+                VendorModel? vendorModel = await FireStoreUtils.getVendorByIdCached(productModel!.vendorID.toString());
 
                 if (vendorModel!.zoneId == Constant.selectedZone!.id) {
                   ShowToastDialog.closeLoader();

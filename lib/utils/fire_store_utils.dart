@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Constant;
+import 'package:customer/data/memo_cache.dart';
 import 'package:customer/app/chat_screens/ChatVideoContainer.dart';
 import 'package:customer/constant/collection_name.dart';
 import 'package:customer/constant/constant.dart';
@@ -684,12 +685,28 @@ class FireStoreUtils {
     return null;
   }
 
+  // ---------------------------------------------------------------------------
+  // Cache memoire (lot 2) : catalogue partage entre les ecrans, voir MemoCache.
+  // Durees courtes pour ce qui bouge (menus, vendeurs), longues pour ce que
+  // l'admin modifie rarement (zones, categories, attributs).
+  // ---------------------------------------------------------------------------
+  static final MemoCache<String, List<ZoneModel>> _zoneMemo = MemoCache<String, List<ZoneModel>>(const Duration(minutes: 10));
+  static final MemoCache<String, List<VendorCategoryModel>> _categoryListMemo = MemoCache<String, List<VendorCategoryModel>>(const Duration(minutes: 10));
+  static final MemoCache<String, VendorCategoryModel?> _categoryMemo = MemoCache<String, VendorCategoryModel?>(const Duration(minutes: 30));
+  static final MemoCache<String, List<AttributesModel>> _attributesMemo = MemoCache<String, List<AttributesModel>>(const Duration(minutes: 30));
+  static final MemoCache<String, List<ProductModel>> _menuMemo = MemoCache<String, List<ProductModel>>(const Duration(minutes: 2), maxEntries: 40);
+  static final MemoCache<String, VendorModel?> _vendorMemo = MemoCache<String, VendorModel?>(const Duration(minutes: 2), maxEntries: 500);
+
   static Future<List<ZoneModel>?> getZone({void Function(List<ZoneModel>)? onRefresh}) async {
-    return _cacheFirstQuery<ZoneModel>(
-      fireStore.collection(CollectionName.zone).where('publish', isEqualTo: true),
-      ZoneModel.fromJson,
+    return _zoneMemo.get(
+      'zones',
+      (onFresh) => _cacheFirstQuery<ZoneModel>(
+        fireStore.collection(CollectionName.zone).where('publish', isEqualTo: true),
+        ZoneModel.fromJson,
+        onRefresh: onFresh,
+        tag: 'getZone',
+      ),
       onRefresh: onRefresh,
-      tag: 'getZone',
     );
   }
 
@@ -767,6 +784,19 @@ class FireStoreUtils {
       tag: 'getVendorById',
     );
   }
+
+  /// getVendorById pour l'AFFICHAGE (accueil, stories, favoris, liste des
+  /// commandes) : servi par la memoire si le vendeur est connu depuis moins de
+  /// 2 min (le flux des restaurants proches l'y depose), sinon lu une seule
+  /// fois meme demande en parallele. Le panier et le parcours de commande
+  /// gardent getVendorById, toujours relu.
+  static Future<VendorModel?> getVendorByIdCached(String vendorId) {
+    if (vendorId.isEmpty) return Future<VendorModel?>.value(null);
+    return _vendorMemo.get(vendorId, (onFresh) => getVendorById(vendorId, onRefresh: onFresh));
+  }
+
+  /// Le flux des restaurants proches depose ici les vendeurs qu'il recoit.
+  static void rememberVendor(VendorModel vendor) => _vendorMemo.put(vendor.id ?? '', vendor);
 
   static Stream<List<VendorModel>> getAllNearestRestaurant({bool? isDining}) async* {
     // Sans localisation resolue, le centre geographique retombait sur (0,0) —
@@ -895,20 +925,28 @@ class FireStoreUtils {
   }
 
   static Future<List<VendorCategoryModel>> getHomeVendorCategory({void Function(List<VendorCategoryModel>)? onRefresh}) async {
-    return _cacheFirstQuery<VendorCategoryModel>(
-      fireStore.collection(CollectionName.vendorCategories).where("show_in_homepage", isEqualTo: true).where('publish', isEqualTo: true),
-      VendorCategoryModel.fromJson,
+    return _categoryListMemo.get(
+      'home',
+      (onFresh) => _cacheFirstQuery<VendorCategoryModel>(
+        fireStore.collection(CollectionName.vendorCategories).where("show_in_homepage", isEqualTo: true).where('publish', isEqualTo: true),
+        VendorCategoryModel.fromJson,
+        onRefresh: onFresh,
+        tag: 'getHomeVendorCategory',
+      ),
       onRefresh: onRefresh,
-      tag: 'getHomeVendorCategory',
     );
   }
 
   static Future<List<VendorCategoryModel>> getVendorCategory({void Function(List<VendorCategoryModel>)? onRefresh}) async {
-    return _cacheFirstQuery<VendorCategoryModel>(
-      fireStore.collection(CollectionName.vendorCategories).where('publish', isEqualTo: true),
-      VendorCategoryModel.fromJson,
+    return _categoryListMemo.get(
+      'all',
+      (onFresh) => _cacheFirstQuery<VendorCategoryModel>(
+        fireStore.collection(CollectionName.vendorCategories).where('publish', isEqualTo: true),
+        VendorCategoryModel.fromJson,
+        onRefresh: onFresh,
+        tag: 'getVendorCategory',
+      ),
       onRefresh: onRefresh,
-      tag: 'getVendorCategory',
     );
   }
 
@@ -988,24 +1026,35 @@ class FireStoreUtils {
     final String selectedFoodType = Preferences.getString(Preferences.foodDeliveryType, defaultValue: "Delivery");
     // Les deux branches d'origine executaient exactement la meme requete : seul
     // le filtre client differait. Une seule requete, un filtre conditionnel.
-    return _cacheFirstQuery<ProductModel>(
-      fireStore.collection(CollectionName.vendorProducts).where("vendorID", isEqualTo: vendorId).where('publish', isEqualTo: true).orderBy("createdAt", descending: false),
-      ProductModel.fromJson,
-      // Le filtre reste cote client : where("takeawayOption", isEqualTo: false)
-      // cote Firestore excluait les plats ou le champ est absent (bug corrige le
-      // 2026-08-25). Ne pas le redeplacer cote serveur.
-      where: selectedFoodType == "TakeAway" ? null : (ProductModel p) => p.takeawayOption != true,
+    // Memoire de 2 min seulement : reouvrir un restaurant ou passer de la
+    // recherche a sa fiche ne relit pas le menu, mais un plat retire par le
+    // restaurant disparait vite (revalidation au-dela de 2 min).
+    return _menuMemo.get(
+      '$vendorId|$selectedFoodType',
+      (onFresh) => _cacheFirstQuery<ProductModel>(
+        fireStore.collection(CollectionName.vendorProducts).where("vendorID", isEqualTo: vendorId).where('publish', isEqualTo: true).orderBy("createdAt", descending: false),
+        ProductModel.fromJson,
+        // Le filtre reste cote client : where("takeawayOption", isEqualTo: false)
+        // cote Firestore excluait les plats ou le champ est absent (bug corrige le
+        // 2026-08-25). Ne pas le redeplacer cote serveur.
+        where: selectedFoodType == "TakeAway" ? null : (ProductModel p) => p.takeawayOption != true,
+        onRefresh: onFresh,
+        tag: 'getProductByVendorId',
+      ),
       onRefresh: onRefresh,
-      tag: 'getProductByVendorId',
     );
   }
 
   static Future<VendorCategoryModel?> getVendorCategoryById(String categoryId, {void Function(VendorCategoryModel?)? onRefresh}) async {
-    return _cacheThenServer<VendorCategoryModel>(
-      fireStore.collection(CollectionName.vendorCategories).doc(categoryId),
-      (value) => value.exists ? VendorCategoryModel.fromJson(value.data()!) : null,
+    return _categoryMemo.get(
+      categoryId,
+      (onFresh) => _cacheThenServer<VendorCategoryModel>(
+        fireStore.collection(CollectionName.vendorCategories).doc(categoryId),
+        (value) => value.exists ? VendorCategoryModel.fromJson(value.data()!) : null,
+        onRefresh: onFresh,
+        tag: 'getVendorCategoryById',
+      ),
       onRefresh: onRefresh,
-      tag: 'getVendorCategoryById',
     );
   }
 
@@ -1033,11 +1082,15 @@ class FireStoreUtils {
   }
 
   static Future<List<AttributesModel>?> getAttributes({void Function(List<AttributesModel>)? onRefresh}) async {
-    return _cacheFirstQuery<AttributesModel>(
-      fireStore.collection(CollectionName.vendorAttributes),
-      AttributesModel.fromJson,
+    return _attributesMemo.get(
+      'all',
+      (onFresh) => _cacheFirstQuery<AttributesModel>(
+        fireStore.collection(CollectionName.vendorAttributes),
+        AttributesModel.fromJson,
+        onRefresh: onFresh,
+        tag: 'getAttributes',
+      ),
       onRefresh: onRefresh,
-      tag: 'getAttributes',
     );
   }
 

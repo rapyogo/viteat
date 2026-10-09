@@ -38,7 +38,7 @@ class MoreStoriesState extends State<MoreStories> {
   Future<VendorModel?> _cachedVendor(int index, String vendorId) async {
     final VendorModel? cached = _vendorCache[index];
     if (cached != null) return cached;
-    final VendorModel? fetched = await FireStoreUtils.getVendorById(vendorId);
+    final VendorModel? fetched = await FireStoreUtils.getVendorByIdCached(vendorId);
     if (fetched != null) _vendorCache[index] = fetched;
     return fetched;
   }
