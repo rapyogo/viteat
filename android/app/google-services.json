@@ -75,6 +75,14 @@
           }
         },
         {
+          "client_id": "1041336319516-rdiffopjg5st5mmocncr94qb6ucde0uk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rapyogo.customer.android",
+            "certificate_hash": "f87503ca24d3280c86edf8c1aa43709bafe02f1a"
+          }
+        },
+        {
           "client_id": "1041336319516-vtu431imdv258f273e9qkq0bsa6imtev.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
