@@ -34,19 +34,24 @@ class SearchScreenController extends GetxController {
     }
     isLoading.value = false;
 
-    for (var element in vendorList) {
-      await FireStoreUtils.getProductByVendorId(element.id.toString()).then((value) {
-        if ((Constant.isSubscriptionModelApplied == true || Constant.adminCommission?.isEnabled == true) && element.subscriptionPlan != null) {
-          if (element.subscriptionPlan?.itemLimit == '-1') {
-            productList.addAll(value);
-          } else {
-            int selectedProduct = value.length < int.parse(element.subscriptionPlan?.itemLimit ?? '0') ? (value.isEmpty ? 0 : (value.length)) : int.parse(element.subscriptionPlan?.itemLimit ?? '0');
-            productList.addAll(value.sublist(0, selectedProduct));
-          }
-        } else {
+    // Menus lus en parallele (avant : un await par restaurant, en serie). Le
+    // resultat est applique dans l'ordre des restaurants, avec la meme regle de
+    // limite d'articles par abonnement.
+    final List<VendorModel> vendors = List<VendorModel>.of(vendorList);
+    final List<List<ProductModel>> menus = await Future.wait(vendors.map((VendorModel v) => FireStoreUtils.getProductByVendorId(v.id.toString())));
+    for (int i = 0; i < vendors.length; i++) {
+      final VendorModel element = vendors[i];
+      final List<ProductModel> value = menus[i];
+      if ((Constant.isSubscriptionModelApplied == true || Constant.adminCommission?.isEnabled == true) && element.subscriptionPlan != null) {
+        if (element.subscriptionPlan?.itemLimit == '-1') {
           productList.addAll(value);
+        } else {
+          int selectedProduct = value.length < int.parse(element.subscriptionPlan?.itemLimit ?? '0') ? (value.isEmpty ? 0 : (value.length)) : int.parse(element.subscriptionPlan?.itemLimit ?? '0');
+          productList.addAll(value.sublist(0, selectedProduct));
         }
-      });
+      } else {
+        productList.addAll(value);
+      }
     }
   }
 
