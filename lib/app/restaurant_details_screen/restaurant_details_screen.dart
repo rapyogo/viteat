@@ -1090,13 +1090,17 @@ class ProductListView extends StatelessWidget {
             ),
             children: [
               Obx(
-                () => ListView.builder(
-                  itemCount: controller.productList.where((p0) => p0.categoryID == vendorCategoryModel.id).toList().length,
+                () {
+                  // Plats de la categorie calcules une fois par reconstruction
+                  // (avant : la liste entiere refiltree pour chaque plat).
+                  final List<ProductModel> items = controller.productList.where((p0) => p0.categoryID == vendorCategoryModel.id).toList();
+                  return ListView.builder(
+                  itemCount: items.length,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   padding: EdgeInsets.zero,
                   itemBuilder: (context, index) {
-                    ProductModel productModel = controller.productList.where((p0) => p0.categoryID == vendorCategoryModel.id).toList()[index];
+                    ProductModel productModel = items[index];
 
                     String price = "0.0";
                     String disPrice = "0.0";
@@ -1474,7 +1478,8 @@ class ProductListView extends StatelessWidget {
                       ),
                     );
                   },
-                ),
+                );
+                },
               )
             ],
           );

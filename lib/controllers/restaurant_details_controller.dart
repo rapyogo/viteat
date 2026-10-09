@@ -111,7 +111,7 @@ class RestaurantDetailsController extends GetxController {
       if ((Constant.isSubscriptionModelApplied == true || Constant.adminCommission?.isEnabled == true) && vendorModel.value.subscriptionPlan != null) {
         if (vendorModel.value.subscriptionPlan?.itemLimit == '-1') {
           allProductList.value = value;
-          productList.value = value;
+          productList.value = List<ProductModel>.of(value);
         } else {
           int selectedProduct =
               value.length < int.parse(vendorModel.value.subscriptionPlan?.itemLimit ?? '0') ? (value.isEmpty ? 0 : (value.length)) : int.parse(vendorModel.value.subscriptionPlan?.itemLimit ?? '0');
@@ -119,8 +119,10 @@ class RestaurantDetailsController extends GetxController {
           productList.value = value.sublist(0, selectedProduct);
         }
       } else {
+        // Deux listes distinctes : effacer la recherche (productList.clear())
+        // vidait aussi allProductList quand c'etait le meme objet.
         allProductList.value = value;
-        productList.value = value;
+        productList.value = List<ProductModel>.of(value);
       }
     });
 
