@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Constant;
 import 'package:customer/data/memo_cache.dart';
+import 'package:get/get_rx/get_rx.dart';
 import 'package:customer/app/chat_screens/ChatVideoContainer.dart';
 import 'package:customer/constant/collection_name.dart';
 import 'package:customer/constant/constant.dart';
@@ -65,6 +66,15 @@ enum FirebaseEnv { defaultDb, staging }
 
 /// Change this to switch between default / staging
 const FirebaseEnv currentEnv = FirebaseEnv.defaultDb;
+
+/// Resultat de [FireStoreUtils.loadSessionProfile].
+class SessionProfile {
+  const SessionProfile({required this.loggedIn, this.profile, this.fromCache = false});
+
+  final bool loggedIn;
+  final UserModel? profile;
+  final bool fromCache;
+}
 
 class FireStoreUtils {
   FireStoreUtils._privateConstructor();
@@ -245,12 +255,53 @@ class FireStoreUtils {
     return value.exists;
   }
 
+  /// Profil lu UNE fois au demarrage (remplace isLogin() puis getUserProfile(),
+  /// qui lisaient le meme document deux fois sur le reseau).
+  ///
+  /// [preferCache] : le profil du cache local est rendu tout de suite s'il
+  /// existe ; l'appelant doit alors le reverifier sur le serveur (voir
+  /// SplashController._revalidateFromServer). Sans cache, lecture normale, avec
+  /// la meme garde hors ligne qu'isLogin().
+  static Future<SessionProfile> loadSessionProfile({bool preferCache = false}) async {
+    final User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const SessionProfile(loggedIn: false);
+    final DocumentReference<Map<String, dynamic>> ref = fireStore.collection(CollectionName.users).doc(user.uid);
+    if (preferCache) {
+      try {
+        final DocumentSnapshot<Map<String, dynamic>> cached = await ref.get(const GetOptions(source: Source.cache));
+        if (cached.exists) return SessionProfile(loggedIn: true, profile: UserModel.fromJson(cached.data()!), fromCache: true);
+      } catch (_) {
+        // Jamais lu sur ce telephone : lecture normale ci-dessous.
+      }
+    }
+    final DocumentSnapshot<Map<String, dynamic>> value = await ref.get();
+    if (!value.exists) {
+      // Meme garde qu'isLogin() : absent du cache hors ligne ne prouve pas que
+      // le compte est supprime ; profil nul => repli hors ligne du splash.
+      return SessionProfile(loggedIn: value.metadata.isFromCache);
+    }
+    return SessionProfile(loggedIn: true, profile: UserModel.fromJson(value.data()!), fromCache: value.metadata.isFromCache);
+  }
+
+  /// Document de reglages servi par le cache local s'il y est, sinon par le
+  /// serveur : le splash n'attend plus le reseau pour maintenance et version.
+  static Future<DocumentSnapshot<Map<String, dynamic>>> _settingsDoc(String id, {bool preferCache = false}) async {
+    final DocumentReference<Map<String, dynamic>> ref = fireStore.collection(CollectionName.settings).doc(id);
+    if (preferCache) {
+      try {
+        final DocumentSnapshot<Map<String, dynamic>> cached = await ref.get(const GetOptions(source: Source.cache));
+        if (cached.exists) return cached;
+      } catch (_) {}
+    }
+    return ref.get();
+  }
+
   /// Renvoie l'URL du store si la version installee est plus ancienne que
   /// `settings/Version.minCustomerBuildNumber`, sinon null. Ne bloque jamais
   /// sur une erreur : une lecture ratee laisse passer l'utilisateur.
-  static Future<String?> requiredUpdateStoreUrl() async {
+  static Future<String?> requiredUpdateStoreUrl({bool preferCache = false}) async {
     try {
-      final doc = await fireStore.collection(CollectionName.settings).doc('Version').get();
+      final doc = await _settingsDoc('Version', preferCache: preferCache);
       final int minBuild = int.tryParse('${doc.data()?['minCustomerBuildNumber'] ?? ''}') ?? 0;
       if (minBuild <= 0) return null;
       final PackageInfo info = await PackageInfo.fromPlatform();
@@ -264,10 +315,10 @@ class FireStoreUtils {
     }
   }
 
-  static Future<bool> isMaintenanceMode() async {
+  static Future<bool> isMaintenanceMode({bool preferCache = false}) async {
     bool isMaintenance = false;
     try {
-      await fireStore.collection(CollectionName.settings).doc('maintenance_mode_settings').get().then((value) async {
+      await _settingsDoc('maintenance_mode_settings', preferCache: preferCache).then((value) async {
         isMaintenance = value.data()?['customerApp'] == true;
         log("isMaintenance :: $isMaintenance");
       });
@@ -426,6 +477,10 @@ class FireStoreUtils {
     );
   }
 
+  /// Incremente a chaque reception du theme d'accueil ou du reglage wallet :
+  /// le dashboard recalcule ses onglets s'ils ont change.
+  static final RxInt layoutSettingsVersion = 0.obs;
+
   static Future<void> getSettings() async {
     try {
       // --- Flux temps reel ---------------------------------------------------
@@ -455,6 +510,7 @@ class FireStoreUtils {
       fireStore.collection(CollectionName.settings).doc("home_page_theme").snapshots().listen((event) {
         if (event.exists) {
           Constant.theme = event.data()!["theme"];
+          layoutSettingsVersion.value++;
         }
       });
 
@@ -473,6 +529,7 @@ class FireStoreUtils {
       fireStore.collection(CollectionName.settings).doc("walletSettings").snapshots().listen((event) {
         if (event.exists) {
           Constant.walletSetting = event.data()!["isEnabled"];
+          layoutSettingsVersion.value++;
         }
       });
 

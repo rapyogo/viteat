@@ -23,6 +23,10 @@ class DashBoardController extends GetxController {
   final Set<int> visitedTabs = <int>{0};
 
   Worker? _connectivityWorker;
+  Worker? _layoutWorker;
+
+  /// Theme et wallet pour lesquels les onglets ont ete calcules.
+  String? _layoutSignature;
 
   @override
   void onInit() {
@@ -36,6 +40,14 @@ class DashBoardController extends GetxController {
         unawaited(Get.find<OrderController>().refreshIfStale(const Duration(minutes: 1)));
       }
     });
+    // Reglages arrives apres l'ouverture (premier lancement, ou changement de
+    // theme par l'admin) : onglets recalcules seulement s'ils different.
+    _layoutWorker = ever<int>(FireStoreUtils.layoutSettingsVersion, (_) {
+      if (_currentLayoutSignature() != _layoutSignature) {
+        getInit();
+        if (selectedIndex.value >= pageList.length) selectedIndex.value = 0;
+      }
+    });
     if (Get.isRegistered<ConnectivityService>()) {
       _connectivityWorker = ever<SyncState>(Get.find<ConnectivityService>().state, (state) {
         if (state == SyncState.online) unawaited(refreshSessionData());
@@ -46,6 +58,7 @@ class DashBoardController extends GetxController {
   @override
   void onClose() {
     _connectivityWorker?.dispose();
+    _layoutWorker?.dispose();
     super.onClose();
   }
 
@@ -60,7 +73,10 @@ class DashBoardController extends GetxController {
     if (Get.isRegistered<OrderController>()) unawaited(Get.find<OrderController>().getOrder());
   }
 
+  String _currentLayoutSignature() => '${Constant.theme}|${Constant.walletSetting}';
+
   Future<void> getInit() async {
+    _layoutSignature = _currentLayoutSignature();
     // Nouvelle liste d'onglets (theme ou wallet differents) : les index changent.
     visitedTabs
       ..clear()

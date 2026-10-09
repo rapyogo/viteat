@@ -95,16 +95,53 @@ class SplashController extends GetxController {
     }
   }
 
+  /// Le splash a ouvert l'app sur des donnees du cache local (profil,
+  /// maintenance, version) : on les reverifie sur le serveur, sans bloquer.
+  /// Un compte desactive, une maintenance ou une version trop ancienne
+  /// produisent le meme effet qu'avant, quelques instants plus tard.
+  Future<void> _revalidateFromServer({required bool checkProfile}) async {
+    try {
+      if (await FireStoreUtils.isMaintenanceMode()) {
+        Get.offAll(() => MaintenanceModeScreen());
+        return;
+      }
+      final String? updateStoreUrl = await FireStoreUtils.requiredUpdateStoreUrl();
+      if (updateStoreUrl != null) {
+        Get.offAll(() => ForceUpdateScreen(storeUrl: updateStoreUrl));
+        return;
+      }
+      if (!checkProfile) return;
+      final SessionProfile session = await FireStoreUtils.loadSessionProfile();
+      final UserModel? fresh = session.profile;
+      if (session.fromCache) return; // toujours hors ligne : rien de nouveau
+      if (!session.loggedIn || fresh == null || fresh.role != Constant.userRoleCustomer || fresh.active != true) {
+        if (FirebaseAuth.instance.currentUser == null) return;
+        debugPrint("SESSION: deconnexion apres verification serveur (role=${fresh?.role}, actif=${fresh?.active})");
+        await LocationService.clear();
+        await FirebaseAuth.instance.signOut();
+        Get.offAll(const LoginScreen());
+        return;
+      }
+      Constant.userModel = fresh;
+      unawaited(FireStoreUtils.syncFcmToken(fresh));
+    } catch (e) {
+      // Reseau indisponible : on garde la session et les donnees du cache.
+      debugPrint("SplashController._revalidateFromServer :: $e");
+    }
+  }
+
   Future<void> _redirectScreen() async {
-    // isMaintenanceMode() et isLogin() sont indépendants — seule la logique de
-    // branchement ci-dessous dépend de leurs résultats, pas leur exécution.
+    // Maintenance, profil et version sont lus depuis le cache local quand il
+    // existe : plus d'attente reseau au lancement. Ils sont reverifies sur le
+    // serveur juste apres l'ouverture (_revalidateFromServer).
     final List<Object?> results = await Future.wait<Object?>([
-      FireStoreUtils.isMaintenanceMode(),
-      FireStoreUtils.isLogin(),
-      FireStoreUtils.requiredUpdateStoreUrl(),
+      FireStoreUtils.isMaintenanceMode(preferCache: true),
+      FireStoreUtils.loadSessionProfile(preferCache: true),
+      FireStoreUtils.requiredUpdateStoreUrl(preferCache: true),
     ]);
     final bool maintenanceMode = results[0] == true;
-    final bool isLoginResult = results[1] == true;
+    final SessionProfile session = results[1] as SessionProfile;
+    final bool isLoginResult = session.loggedIn;
     final String? updateStoreUrl = results[2] as String?;
 
     if (updateStoreUrl != null) {
@@ -122,7 +159,7 @@ class SplashController extends GetxController {
         } else {
           bool isLogin = isLoginResult;
           if (isLogin == true) {
-            await FireStoreUtils.getUserProfile(FireStoreUtils.getCurrentUid()).then((value) async {
+            await Future<UserModel?>.value(session.profile).then((value) async {
               if (value != null) {
                 UserModel userModel = value;
                 // userModel.shippingAddress?[0].location = UserLocation(latitude: 23.8500, longitude: 72.1210);
@@ -137,7 +174,11 @@ class SplashController extends GetxController {
                     // bord par updateUser() ; sans cette ligne l'app s'affichait
                     // comme pour un invite alors que la session etait valide.
                     Constant.userModel = userModel;
-                    unawaited(FireStoreUtils.syncFcmToken(userModel));
+                    // Maintenance et version reverifiees sur le serveur dans tous
+                    // les cas ; le profil seulement s'il venait du cache (il
+                    // synchronise alors lui-meme le jeton FCM).
+                    unawaited(_revalidateFromServer(checkProfile: session.fromCache));
+                    if (!session.fromCache) unawaited(FireStoreUtils.syncFcmToken(userModel));
                     RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
                     if (initialMessage != null && initialMessage.data['type'] != null) {
                     } else if (userModel.shippingAddress != null && userModel.shippingAddress!.isNotEmpty) {
