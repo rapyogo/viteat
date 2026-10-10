@@ -54,7 +54,7 @@ android {
         applicationId = "com.rapyogo.customer.android"
         minSdkVersion flutter.minSdkVersion
         targetSdk 36
-        versionCode 5
+        versionCode 6
         versionName flutterVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
